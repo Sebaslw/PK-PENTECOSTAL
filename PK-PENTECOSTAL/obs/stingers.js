@@ -112,7 +112,7 @@
       html += `<optgroup label="${NOM[c]}">` + lista.map((f) => { const val = `lib:${c}/${f}`; if (val === v) esta = true; return `<option value="${esc(val)}" ${val === v ? 'selected' : ''}>${esc(f)}</option>`; }).join('') + '</optgroup>';
     }
     if (carpetas.includes('logos')) {
-      html += '<optgroup label="PK-PENTECOSTAL">' + [['/logo-ipuc.webp', 'Logo IPUC'], ['/icono-512.png', 'Logo PK-PENTECOSTAL']].map(([val, t]) => { if (val === v) esta = true; return `<option value="${val}" ${val === v ? 'selected' : ''}>${t}</option>`; }).join('') + '</optgroup>';
+      html += '<optgroup label="PK-PENTECOSTAL">' + [['/logo-ipuc.webp', 'Logo IPUC'], ['/logo-pk.webp', 'Logo PK-PENTECOSTAL']].map(([val, t]) => { if (val === v) esta = true; return `<option value="${val}" ${val === v ? 'selected' : ''}>${t}</option>`; }).join('') + '</optgroup>';
     }
     if (!esta) html = `<option value="${esc(v)}" selected>${esc(String(v).replace(/^lib:/, ''))} (no encontrado)</option>` + html;
     return html;
