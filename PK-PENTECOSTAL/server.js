@@ -95,6 +95,20 @@ const CONFIG_FILE = fs.existsSync(PRIV.config) || !fs.existsSync(path.join(APP_D
 
 // Dirección propia del proyector (distinta del panel): http://proyector.localhost:8889/
 const PORT_PROY = Number(process.env.PORT_PROYECTOR) || PORT + 1;
+
+// Dirección con nombre: http://pkipuc.localhost — Chrome, Edge, Firefox y OBS mandan cualquier
+// "*.localhost" a este mismo equipo, sin instalar nada. Si el puerto 80 está libre la dirección queda
+// sin número; si no, http://pkipuc.localhost:8888. Los celulares siguen usando la IP de la red (:8888)
+// y las direcciones antiguas (localhost:8888, proyector.localhost:8889) siguen funcionando.
+const DOMINIO = 'pkipuc.localhost';
+const PORT_WEB = process.env.PORT_WEB === undefined ? 80 : Number(process.env.PORT_WEB); // 0 = no usar
+let webActiva = false;
+const sufijoWeb = () => (PORT_WEB === 80 ? '' : ':' + PORT_WEB);
+const urlPanel = () => (webActiva ? `http://${DOMINIO}${sufijoWeb()}` : `http://${DOMINIO}:${PORT}`);
+const urlProyector = () => (webActiva ? `http://proyector.${DOMINIO}${sufijoWeb()}` : `http://proyector.${DOMINIO}:${PORT_PROY}`);
+// Ajustes que el navegador guardaba en la dirección antigua (OBS, textos, Biblia elegida…), de paso
+// hacia la dirección nueva. Solo vive en memoria y se entrega una vez.
+let almacenPendiente = null;
 const APP_NOMBRE = 'PK-PENTECOSTAL';
 const APP_VERSION = '1.0.2';
 const ABRIR = process.argv.includes('--abrir');
@@ -1408,7 +1422,24 @@ async function handle(req, res) {
     catch (e) { return sendJSON(res, { error: e.message }, 500); }
     return sendJSON(res, { ok: true });
   }
-  if (p === '/api/info') return sendJSON(res, { app: APP_NOMBRE, version: APP_VERSION, puertoProyector: PORT_PROY, autor: 'Hecho por Sebastian Lopez · IPUC Natania 6° Etapa', zona: 'Zona Especial Misionera – Archipiélago de San Andrés, Providencia y Santa Catalina', puerto: PORT, ips: localIPs(), sistema: process.platform });
+  // --- Paso de los ajustes del navegador de la dirección antigua a http://pkipuc.localhost
+  if (p === '/api/migrar-almacen') {
+    if (!equipo) return sendJSON(res, { error: 'Solo desde el computador' }, 403);
+    if (req.method === 'POST') {
+      const b = await readBody(req, 4 * 1024 * 1024);
+      const datos = {};
+      if (b && b.datos && typeof b.datos === 'object') {
+        for (const [k, v] of Object.entries(b.datos).slice(0, 500)) if (typeof v === 'string' && k.length < 200) datos[k] = v;
+      }
+      almacenPendiente = datos;
+      config.almacenMigrado = true; escribirConfig();
+      return sendJSON(res, { ok: true, url: urlPanel() });
+    }
+    const datos = almacenPendiente || {};
+    almacenPendiente = null;
+    return sendJSON(res, { datos });
+  }
+  if (p === '/api/info') return sendJSON(res, { app: APP_NOMBRE, version: APP_VERSION, url: urlPanel(), urlProyector: urlProyector(), puertoProyector: PORT_PROY, autor: 'Hecho por Sebastian Lopez · IPUC Natania 6° Etapa', zona: 'Zona Especial Misionera – Archipiélago de San Andrés, Providencia y Santa Catalina', puerto: PORT, ips: localIPs(), sistema: process.platform });
   if (p === '/api/apagar' && req.method === 'POST') {
     // Solo desde este mismo equipo (no desde celulares/tabletas de la red)
     if (!esEquipo(req)) return sendJSON(res, { error: 'Solo se puede cerrar desde el equipo donde corre el programa' }, 403);
@@ -1423,6 +1454,11 @@ async function handle(req, res) {
   // --- Archivos
   if (p.startsWith('/fondos/')) { const f = archivoFondo(p.slice(8)); return f ? serveFile(req, res, f) : send(res, 403, 'Prohibido', 'text/plain'); }
   if (p.startsWith('/fuentes/')) { const f = safeJoin(DIRS.fuentes, p.slice(9)); return f ? serveFile(req, res, f) : send(res, 403, 'Prohibido', 'text/plain'); }
+  // Dirección antigua (localhost:8888) en este equipo → salto a http://pkipuc.localhost llevando los
+  // ajustes. Si el navegador no conoce los nombres *.localhost (Safari antiguo), se queda aquí.
+  if ((p === '/' || p === '/control') && req.method === 'GET' && esHostAntiguo(req) && !url.searchParams.has('quedarse')) {
+    return send(res, 200, paginaSalto(), 'text/html; charset=utf-8');
+  }
   if (p === '/' || p === '/control') return serveFile(req, res, path.join(PUBLIC_DIR, 'control.html'));
   if (p === '/salida' || p === '/proyector' || /^\/(visor|proyector)\/[1-9]$/.test(p) || p === '/obs' || p === '/pantalla' || p === '/chroma') return serveFile(req, res, path.join(PUBLIC_DIR, 'salida.html'));
   if (p === '/stinger') return serveFile(req, res, path.join(OBS_DIR, 'stinger.html'));
@@ -1436,6 +1472,38 @@ async function handle(req, res) {
   return f ? serveFile(req, res, f) : send(res, 403, 'Prohibido', 'text/plain');
 }
 
+function esHostAntiguo(req) {
+  const h = String(req.headers.host || '').toLowerCase();
+  return esLocal(req) && ['localhost:' + PORT, '127.0.0.1:' + PORT, '[::1]:' + PORT].includes(h);
+}
+// Página mínima de la dirección antigua: comprueba que http://pkipuc.localhost responde, le pasa los
+// ajustes guardados en este navegador (solo la primera vez) y salta. Si no responde, sigue en la antigua.
+function paginaSalto() {
+  const destino = JSON.stringify(urlPanel());
+  const migrar = config.almacenMigrado ? 'false' : 'true';
+  return `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>PK-PENTECOSTAL</title>
+<link rel="icon" href="/icono-192.png"><style>body{margin:0;height:100vh;display:grid;place-items:center;background:#04162e;color:#cfe0ff;font:16px system-ui,sans-serif}</style></head>
+<body><p>Abriendo PK-PENTECOSTAL…</p><script>
+(async () => {
+  const destino = ${destino}, migrar = ${migrar};
+  const quedarse = () => location.replace('/?quedarse=1' + location.hash);
+  try {
+    const c = new AbortController(); setTimeout(() => c.abort(), 2500);
+    await fetch(destino + '/icono-64.png?ping=' + Date.now(), { mode: 'no-cors', cache: 'no-store', signal: c.signal });
+  } catch (_) { return quedarse(); }
+  let extra = '';
+  if (migrar) {
+    const datos = {};
+    try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); datos[k] = localStorage.getItem(k); } } catch (_) { /* sin almacenamiento */ }
+    try {
+      await fetch('/api/migrar-almacen', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ datos }) });
+      if (Object.keys(datos).length) extra = '?migrar=1';
+    } catch (_) { /* sigue sin ajustes */ }
+  }
+  location.replace(destino + '/' + extra + location.hash);
+})();
+</script></body></html>`;
+}
 function esLocal(req) {
   const a = req.socket.remoteAddress || '';
   return a === '127.0.0.1' || a === '::1' || a === '::ffff:127.0.0.1';
@@ -1496,7 +1564,7 @@ server.on('error', (e) => {
         let info = null; try { info = JSON.parse(d); } catch (_) { /* no es nuestro */ }
         if (info && info.app === APP_NOMBRE) {
           console.log(`\n   ${APP_NOMBRE} ya estaba abierto. Abriendo el panel…\n`);
-          if (ABRIR) abrirNavegador(`http://localhost:${PORT}/`);
+          if (ABRIR) abrirNavegador(`http://localhost:${PORT}/`); // salta solo a la dirección con nombre
           process.exit(0);
         }
         errorPuerto();
@@ -1511,26 +1579,59 @@ function errorPuerto() {
   process.exit(2);
 }
 // Servidor exclusivo del proyector: otra dirección y otro puerto, solo muestra la salida.
-const serverProy = http.createServer((req, res) => {
+function manejarProy(req, res) {
   const p = (req.url || '/').split('?')[0];
   if (p === '/' || p === '/control' || p === '/index.html') { res.writeHead(302, { Location: '/proyector' }); return res.end(); }
   handle(req, res).catch((e) => { console.error(e); if (!res.headersSent) sendJSON(res, { error: e.message }, 500); });
-});
+}
+const serverProy = http.createServer(manejarProy);
+
+// Puerto 80 (solo dentro de este equipo): http://pkipuc.localhost y http://proyector.pkipuc.localhost
+function manejarWeb(req, res) {
+  if (/^proyector\./i.test(String(req.headers.host || ''))) return manejarProy(req, res);
+  handle(req, res).catch((e) => { console.error(e); if (!res.headersSent) sendJSON(res, { error: e.message }, 500); });
+}
+// ¿Algún otro programa (IIS, XAMPP, Skype…) ya atiende ese puerto? Entonces no lo tocamos.
+function puertoOcupado(host, puerto) {
+  return new Promise((ok) => {
+    const s = require('net').connect({ host, port: puerto });
+    const fin = (v) => { s.destroy(); ok(v); };
+    s.setTimeout(700, () => fin(false));
+    s.once('connect', () => fin(true));
+    s.once('error', () => fin(false));
+  });
+}
+async function abrirPuertoWeb() {
+  if (!PORT_WEB || PORT_WEB === PORT || PORT_WEB === PORT_PROY) return;
+  if ((await puertoOcupado('127.0.0.1', PORT_WEB)) || (await puertoOcupado('::1', PORT_WEB))) {
+    console.log(`   (El puerto ${PORT_WEB} lo usa otro programa: se usará ${urlPanel()})`);
+    return;
+  }
+  const escuchar = (host) => new Promise((ok) => {
+    const s = http.createServer(manejarWeb);
+    s.once('error', () => ok(false));
+    s.listen(PORT_WEB, host, () => ok(true));
+  });
+  if (await escuchar('127.0.0.1')) { webActiva = true; await escuchar('::1'); }
+}
 serverProy.on('error', (e) => console.error(`
    Aviso: no se pudo abrir la dirección del proyector (puerto ${PORT_PROY}): ${e.code || e.message}
 `));
-server.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, '0.0.0.0', async () => {
   serverProy.listen(PORT_PROY, '0.0.0.0');
+  await abrirPuertoWeb();
   const en = String(config.idioma).startsWith('en');
   const T = (es, ing) => (en ? ing : es);
+  const U = urlPanel();
   console.log('\n  ==============================================');
   console.log(T('   PK-PENTECOSTAL  -  Biblia y Canciones en vivo', '   PK-PENTECOSTAL  -  Bible and Songs, live'));
   console.log('  ==============================================');
-  console.log(T('   Panel de control : ', '   Control panel     : ') + `http://localhost:${PORT}/`);
-  console.log(T('   OBS (tercio inf.) : ', '   OBS (lower third) : ') + `http://localhost:${PORT}/salida?modo=obs`);
-  console.log(T('   OBS (pantalla)    : ', '   OBS (full screen) : ') + `http://localhost:${PORT}/salida?modo=pantalla`);
-  console.log(T('   Proyector (F11)   : ', '   Projector (F11)   : ') + `http://proyector.localhost:${PORT_PROY}/`);
-  console.log(T('   OBS rótulos+banner: ', '   OBS tags+banner   : ') + `http://localhost:${PORT}/capa`);
+  console.log(T('   Panel de control : ', '   Control panel     : ') + `${U}/`);
+  console.log(T('   OBS (tercio inf.) : ', '   OBS (lower third) : ') + `${U}/salida?modo=obs`);
+  console.log(T('   OBS (pantalla)    : ', '   OBS (full screen) : ') + `${U}/salida?modo=pantalla`);
+  console.log(T('   Proyector (F11)   : ', '   Projector (F11)   : ') + `${urlProyector()}/`);
+  console.log(T('   OBS rótulos+banner: ', '   OBS tags+banner   : ') + `${U}/capa`);
+  console.log(T('   (Si su navegador no abre esas direcciones, use http://localhost:' + PORT + '/ )', '   (If your browser cannot open them, use http://localhost:' + PORT + '/ )'));
   for (const ip of localIPs()) console.log(T('   En la red local   : ', '   On local network  : ') + `http://${ip}:${PORT}/`);
   console.log(T('   Celular           : botón 📱 "Conectar celular" del panel (código QR)', '   Phone             : 📱 "Connect phone" button on the panel (QR code)'));
   console.log(T('\n   Deje esta ventana abierta mientras use el programa.', '\n   Keep this window open while using the program.'));

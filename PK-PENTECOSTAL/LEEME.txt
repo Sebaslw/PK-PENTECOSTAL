@@ -24,6 +24,15 @@ WINDOWS (dos formas, igual que el Proyektor original)
      doble clic en "Crear acceso directo (Windows).vbs" (solo una vez).
   Si el programa ya está abierto, volver a abrirlo solo muestra el panel.
 
+DIRECCIÓN DEL PANEL:  http://pkipuc.localhost
+  Proyector:          http://proyector.pkipuc.localhost
+  Si otro programa usa el puerto 80, el programa usa solo
+  http://pkipuc.localhost:8888 (y el proyector :8889).
+  La dirección antigua http://localhost:8888 sigue sirviendo: lleva a la
+  nueva y pasa sus ajustes (OBS, textos, Biblia elegida, idioma).
+  Si su navegador no abre *.localhost, se queda en la antigua.
+  Los celulares usan la IP de la red, por ejemplo http://192.168.1.20:8888
+
 LINUX
   En una terminal, dentro de la carpeta "Proyektor - 64Bits":
      chmod +x iniciar-linux.sh        (solo la primera vez)
@@ -56,13 +65,13 @@ el puerto 8888.
 OBS STUDIO
 ---------------------------------------------------------------------
   Fuentes > + > Navegador. Ancho 1920, Alto 1080. URL:
-    http://localhost:8888/capa                          Rótulos + Banner (recomendado)
-    http://localhost:8888/capa?solo=overlay             Solo rótulos (nombres)
-    http://localhost:8888/capa?solo=banner              Solo banner (versículos/letras)
-    http://localhost:8888/salida?modo=obs               Tercio inferior clásico
-    http://localhost:8888/salida?modo=pantalla          Pantalla completa con fondo
-    http://localhost:8888/salida?modo=pantalla&fondo=0  Pantalla completa transparente
-    http://localhost:8888/salida?modo=chroma            Fondo verde (ATEM, vMix)
+    http://pkipuc.localhost/capa                          Rótulos + Banner (recomendado)
+    http://pkipuc.localhost/capa?solo=overlay             Solo rótulos (nombres)
+    http://pkipuc.localhost/capa?solo=banner              Solo banner (versículos/letras)
+    http://pkipuc.localhost/salida?modo=obs               Tercio inferior clásico
+    http://pkipuc.localhost/salida?modo=pantalla          Pantalla completa con fondo
+    http://pkipuc.localhost/salida?modo=pantalla&fondo=0  Pantalla completa transparente
+    http://pkipuc.localhost/salida?modo=chroma            Fondo verde (ATEM, vMix)
   O conecte OBS (pestaña OBS) y pulse "Añadir la capa..." para crearla sola.
 
   Control de OBS desde el panel (OBS 28 o superior):
@@ -150,7 +159,7 @@ CUENTA REGRESIVA (pestaña OBS > OVERLAY > "Cuenta regresiva")
   "EMPEZAMOS EN 10:00" sobre la transmisión. Botones 5/10/15/30 min, minutos
   a mano o "hasta las HH:MM"; +1 / -1 min y Detener. Al llegar a cero muestra
   un mensaje ("¡Bienvenidos!") o se oculta. Sale en /capa o en una fuente
-  aparte: http://localhost:8888/cuenta
+  aparte: http://pkipuc.localhost/cuenta
 
 BANNERS LATERALES (pestaña OBS > BANNER > Ajustes > Diseño)
   Diseños de ProyectoRP tal cual y su versión PK-PENTECOSTAL: franja lateral
@@ -168,7 +177,7 @@ VERSIÓN NUEVA: el botón con el número de versión (pie de página) consulta
 
 STINGERS (pestaña OBS > STINGERS)
   Transiciones a pantalla completa con logo, sonido y efectos.
-  En OBS agregue la fuente de navegador http://localhost:8888/stinger
+  En OBS agregue la fuente de navegador http://pkipuc.localhost/stinger
   (o pulse "Añadir el stinger a todas las escenas").
   "Cambio de escena con stinger": al tocar una escena, el stinger cubre,
   OBS cambia y el stinger se retira. "Importar desde ProyectoRP" trae sus

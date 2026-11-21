@@ -542,16 +542,25 @@
     b.textContent = on ? '⏹ Detener' : '📽 Proyectar';
     b.title = on ? 'Cerrar la ventana del proyector' : 'Abrir la salida en el proyector / segunda pantalla';
   }
-  // El proyector tiene su PROPIA dirección (otro puerto), distinta del panel:
-  //   panel → http://localhost:8888/      proyector → http://proyector.localhost:8889/
+  // El proyector tiene su PROPIA dirección, distinta del panel:
+  //   panel → http://pkipuc.localhost/    proyector → http://proyector.pkipuc.localhost/
+  //   (antiguas: localhost:8888 → proyector.localhost:8889 · celulares: IP:8888 → IP:8889)
   let PUERTO_PROY = (+location.port || 8888) + 1;
   const ES_LOCAL = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
-  const origenProy = () => `${location.protocol}//${ES_LOCAL ? 'proyector.localhost' : location.hostname}:${PUERTO_PROY}`;
+  const ES_NOMBRE = /^pkipuc\.localhost$/i.test(location.hostname);
+  let ORIGEN_PROY = '';
+  const origenProy = () => ORIGEN_PROY || (ES_NOMBRE
+    ? `${location.protocol}//proyector.${location.host}`
+    : `${location.protocol}//${ES_LOCAL ? 'proyector.localhost' : location.hostname}:${PUERTO_PROY}`);
   // Cada pestaña del panel tiene su propio visor: /proyector (visor 1), /visor/2, /visor/3…
   const VISOR = window.PK_VISOR || 1;
   const rutaVisor = () => (VISOR === 1 ? '/proyector' : '/proyector/' + VISOR);
   function pintarUrlProy() { const i = $('#urlProyector'); if (i) i.value = origenProy() + rutaVisor(); }
-  api('/api/info').then((i) => { if (i.puertoProyector) PUERTO_PROY = i.puertoProyector; pintarUrlProy(); }).catch(() => {});
+  api('/api/info').then((i) => {
+    if (i.puertoProyector) PUERTO_PROY = i.puertoProyector;
+    if (ES_NOMBRE && i.urlProyector) ORIGEN_PROY = i.urlProyector;
+    pintarUrlProy();
+  }).catch(() => {});
   pintarUrlProy();
   // Teclas presionadas en la ventana del proyector (flechas, B, H, números) → panel
   addEventListener('message', (e) => {

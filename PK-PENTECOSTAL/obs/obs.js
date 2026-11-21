@@ -385,7 +385,7 @@
   // ================================================================ OBS WebSocket
   const obs = new OBSWS();
   PP.obs = obs;
-  const cfg = () => Object.assign({ host: location.hostname || 'localhost', puerto: 4455, clave: '', auto: true }, store.get('obs', {}));
+  const cfg = () => Object.assign({ host: /localhost$/.test(location.hostname) ? 'localhost' : (location.hostname || 'localhost'), puerto: 4455, clave: '', auto: true }, store.get('obs', {}));
   let reintento = null, escenaActual = '', escenas = [], transiciones = [], plataforma = 'windows', streamPoll = null, miniT = null, timerT = null;
 
   function estadoOBS(modo, txt, sub) {

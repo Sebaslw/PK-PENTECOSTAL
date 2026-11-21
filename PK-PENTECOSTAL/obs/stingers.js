@@ -425,7 +425,7 @@
       if (r.obs && r.obs.clave) {
         const c = store.get('obs', {});
         if (!c.clave && confirm(`ProyectoRP tiene guardada la conexión con OBS (puerto ${r.obs.puerto}). ¿Usarla también en PK-PENTECOSTAL?`)) {
-          store.set('obs', { host: r.obs.host || location.hostname || 'localhost', puerto: r.obs.puerto, clave: r.obs.clave, auto: true });
+          store.set('obs', { host: r.obs.host || (/localhost$/.test(location.hostname) ? 'localhost' : location.hostname) || 'localhost', puerto: r.obs.puerto, clave: r.obs.clave, auto: true });
           PP.conectarOBS?.(true);
         }
       }

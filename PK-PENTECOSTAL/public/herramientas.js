@@ -77,7 +77,7 @@
   // Una revisión silenciosa al día (solo en el computador, no en los celulares)
   api('/api/info').then((i) => { btnV.textContent = 'v' + i.version; }).catch(() => {});
   const hoy = new Date().toISOString().slice(0, 10);
-  if (store.get('actRevisada') !== hoy && /^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
+  if (store.get('actRevisada') !== hoy && /(^|\.)localhost$|^127\.0\.0\.1$/.test(location.hostname)) {
     store.set('actRevisada', hoy);
     setTimeout(() => revisar(false).then((i) => { if (i && i.hay) toast(`⬆ Hay una versión nueva de PK-PENTECOSTAL: ${i.ultima}`); }), 8000);
   }

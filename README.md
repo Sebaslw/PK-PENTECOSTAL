@@ -206,11 +206,11 @@ Todo corre en **un solo computador**, se maneja desde el **navegador** y **no ne
 ```mermaid
 flowchart LR
     subgraph PC["💻 Computador"]
-        S["⚙️ server.js<br/>Node.js · puerto 8888"]
+        S["⚙️ server.js<br/>Node.js · pkipuc.localhost"]
         D[("📚 biblias/<br/>🎵 cancioneros/<br/>🖼️ fondos/")]
         D --> S
     end
-    S -- "Panel de control" --> P["🖥️ Navegador<br/>localhost:8888"]
+    S -- "Panel de control" --> P["🖥️ Navegador$1pkipuc.localhost"]
     S -- "Pantalla completa" --> R["📽️ Proyector / TV<br/>puerto 8889"]
     S -- "Capa transparente" --> O["🎬 OBS Studio<br/>/capa · /salida"]
     S -- "Wi-Fi + QR" --> M["📱 Celulares<br/>Android · iPhone"]
@@ -242,7 +242,9 @@ o use el botón verde **Code → Download ZIP** y descomprímalo.
 | 🍎 **macOS** | Doble clic en **`iniciar-mac.command`** (la primera vez: clic derecho → Abrir). |
 | 🐧 **Linux** | `chmod +x iniciar-linux.sh && ./iniciar-linux.sh` · Para agregarlo al menú: `./iniciar-linux.sh --instalar` |
 
-El panel se abre en el navegador en **http://localhost:8888**.
+El panel se abre en el navegador en **http://pkipuc.localhost**.
+
+> 🏷️ **Dirección con nombre:** Chrome, Edge, Firefox y OBS envían cualquier dirección `*.localhost` al propio computador, sin instalar nada. Si otro programa ya usa el puerto 80, la dirección pasa a ser `http://pkipuc.localhost:8888` (el programa lo detecta solo). La dirección antigua `http://localhost:8888` sigue funcionando y lleva a la nueva con sus ajustes; si su navegador no conoce los nombres `*.localhost`, se queda en la antigua. Los celulares siguen usando la IP de la red (`http://192.168.x.x:8888`).
 
 ### 4. (Opcional) Traductor automático sin internet
 
@@ -260,17 +262,17 @@ Instala la librería en la carpeta privada `BSPK/` y descarga **una sola vez** e
 
 | URL | Qué muestra |
 |---|---|
-| `http://localhost:8888/capa` | Rótulos + Banner *(recomendado)* |
-| `http://localhost:8888/capa?solo=overlay` | Solo rótulos (nombres) |
-| `http://localhost:8888/capa?solo=banner` | Solo banner (versículos / letras) |
-| `http://localhost:8888/salida?modo=obs` | Tercio inferior clásico |
-| `http://localhost:8888/salida?modo=pantalla` | Pantalla completa con fondo |
-| `http://localhost:8888/salida?modo=pantalla&fondo=0` | Pantalla completa transparente |
-| `http://localhost:8888/salida?modo=chroma` | Fondo verde (ATEM, vMix) |
-| `http://localhost:8888/stinger` | Stinger (transición a pantalla completa) |
-| `http://localhost:8888/cuenta` | Solo la cuenta regresiva |
+| `http://pkipuc.localhost/capa` | Rótulos + Banner *(recomendado)* |
+| `http://pkipuc.localhost/capa?solo=overlay` | Solo rótulos (nombres) |
+| `http://pkipuc.localhost/capa?solo=banner` | Solo banner (versículos / letras) |
+| `http://pkipuc.localhost/salida?modo=obs` | Tercio inferior clásico |
+| `http://pkipuc.localhost/salida?modo=pantalla` | Pantalla completa con fondo |
+| `http://pkipuc.localhost/salida?modo=pantalla&fondo=0` | Pantalla completa transparente |
+| `http://pkipuc.localhost/salida?modo=chroma` | Fondo verde (ATEM, vMix) |
+| `http://pkipuc.localhost/stinger` | Stinger (transición a pantalla completa) |
+| `http://pkipuc.localhost/cuenta` | Solo la cuenta regresiva |
 
-> ⚡ **Stingers:** pestaña **OBS → STINGERS**. Transiciones a pantalla completa con logo, sonido, efectos y textos animados (iris, persianas, barrido, rombo, giro 3D, mosaico, cortina, zoom y destello). Agregue `http://localhost:8888/stinger` a sus escenas (o use *“Añadir el stinger a todas las escenas”*) y active *“Cambio de escena con stinger”* para cambiar de escena sin cortes. Si tiene ProyectoRP, *“Importar desde ProyectoRP”* trae sus stingers, logos, sonidos, fuentes y overlay tal cual.
+> ⚡ **Stingers:** pestaña **OBS → STINGERS**. Transiciones a pantalla completa con logo, sonido, efectos y textos animados (iris, persianas, barrido, rombo, giro 3D, mosaico, cortina, zoom y destello). Agregue `http://pkipuc.localhost/stinger` a sus escenas (o use *“Añadir el stinger a todas las escenas”*) y active *“Cambio de escena con stinger”* para cambiar de escena sin cortes. Si tiene ProyectoRP, *“Importar desde ProyectoRP”* trae sus stingers, logos, sonidos, fuentes y overlay tal cual.
 
 > ⏳ **Cuenta regresiva** "EMPEZAMOS EN…" (OBS → Overlay) · 🎞 **Banners laterales** de ProyectoRP y versión PK (OBS → Banner → Diseño) · ⌨️ **S** = stinger · 💾 **Respaldo** completo en un .zip · ⬆ **Aviso de versión nueva** (pie de página).
 

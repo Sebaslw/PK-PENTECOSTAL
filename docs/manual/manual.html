@@ -163,7 +163,7 @@
   <li>Uno o varios <b>celulares</b>, desde donde también se puede manejar todo (capítulo 13).</li>
 </ul>
 <p>Y además el programa completo, las Biblias y las canciones se pueden poner <b>en inglés</b> con un clic (capítulo 14), para llevar la Palabra a quienes solo hablan inglés.</p>
-<div class="nota"><b>¿Cómo funciona por dentro?</b>El programa enciende un pequeño servidor en el computador (dirección <code>http://localhost:8888</code>). El panel, el proyector, OBS y los celulares se conectan a él, por eso todo cambia al mismo tiempo. <b>No necesita internet</b> para funcionar, ni siquiera para traducir.</div>
+<div class="nota"><b>¿Cómo funciona por dentro?</b>El programa enciende un pequeño servidor en el computador (dirección <code>http://pkipuc.localhost</code>). El panel, el proyector, OBS y los celulares se conectan a él, por eso todo cambia al mismo tiempo. <b>No necesita internet</b> para funcionar, ni siquiera para traducir.</div>
 
 <!-- ======================= 2 ======================= -->
 <h1 id="c2"><span class="n">2</span>Instalación (una sola vez)</h1>
@@ -422,7 +422,7 @@
   <li>Haga <b>doble clic</b> dentro de ella, o pulse <kbd>F</kbd> o <kbd>F11</kbd>, para ponerla en pantalla completa.</li>
 </ol>
 <div class="tip"><b>Puede seguir controlando desde la ventana del proyector</b>Si por error hizo clic en la ventana del proyector, las teclas <kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd> <kbd>Espacio</kbd> <kbd>B</kbd> <kbd>H</kbd> y <kbd>1</kbd>–<kbd>9</kbd> siguen funcionando igual que en el panel.</div>
-<div class="nota"><b>Recuperar el permiso</b>Si respondió “Bloquear” por error: en Chrome haga clic en el candado a la izquierda de la dirección <code>localhost:8888</code> → <b>Administración de ventanas</b> → <b>Permitir</b>, y recargue con <kbd>F5</kbd>. Si el navegador bloquea la ventana emergente, permita “Ventanas emergentes” para este sitio de la misma forma.</div>
+<div class="nota"><b>Recuperar el permiso</b>Si respondió “Bloquear” por error: en Chrome haga clic en el candado a la izquierda de la dirección $1pkipuc.localhost</code> → <b>Administración de ventanas</b> → <b>Permitir</b>, y recargue con <kbd>F5</kbd>. Si el navegador bloquea la ventana emergente, permita “Ventanas emergentes” para este sitio de la misma forma.</div>
 <p>También puede abrir el proyector desde <b>📡 OBS → 🔗 URLs para OBS → Abrir ventana de proyector</b>; funciona igual que el botón Proyectar.</p>
 
 <!-- ======================= 12 ======================= -->
@@ -437,9 +437,9 @@
 </ol>
 <table>
   <tr><th style="width:44%">Dirección</th><th>Uso</th></tr>
-  <tr><td><code>localhost:8888/capa</code></td><td><b>Recomendada.</b> Rótulos + banner en una sola fuente.</td></tr>
-  <tr><td><code>localhost:8888/capa?solo=overlay</code></td><td>Solo los rótulos de nombres.</td></tr>
-  <tr><td><code>localhost:8888/capa?solo=banner</code></td><td>Solo el banner (versículos/letras con fondo y efectos).</td></tr>
+  <tr><td>$1pkipuc.localhost/capa</code></td><td><b>Recomendada.</b> Rótulos + banner en una sola fuente.</td></tr>
+  <tr><td>$1pkipuc.localhost/capa?solo=overlay</code></td><td>Solo los rótulos de nombres.</td></tr>
+  <tr><td>$1pkipuc.localhost/capa?solo=banner</code></td><td>Solo el banner (versículos/letras con fondo y efectos).</td></tr>
   <tr><td><code>/salida?modo=obs</code></td><td>Tercio inferior clásico (se ajusta en la pestaña Estilo).</td></tr>
   <tr><td><code>/salida?modo=pantalla</code></td><td>Pantalla completa con fondo (escena dedicada a la letra).</td></tr>
   <tr><td><code>/salida?modo=pantalla&amp;fondo=0</code></td><td>Pantalla completa sin fondo (transparente).</td></tr>
@@ -678,7 +678,7 @@
   <tr><td>Dice que necesita Node.js</td><td>Instale Node.js versión LTS (capítulo 2) y vuelva a abrir el programa.</td></tr>
   <tr><td>“No se pudo iniciar PK-PENTECOSTAL”</td><td>El puerto 8888 está ocupado, casi siempre porque el <b>Proyektor original</b> está abierto. Ciérrelo. Para ver el detalle del error, abra <code>PK-PENTECOSTAL.bat</code>.</td></tr>
   <tr><td>El panel dice “Conectando…” o “Desconectado”</td><td>El servidor se cerró. Vuelva a abrir el programa desde el ícono.</td></tr>
-  <tr><td>Pulso Proyectar y no pasa nada</td><td>El navegador bloqueó la ventana emergente. Permita “Ventanas emergentes” para <code>localhost:8888</code> (ícono a la izquierda de la dirección) y pulse de nuevo.</td></tr>
+  <tr><td>Pulso Proyectar y no pasa nada</td><td>El navegador bloqueó la ventana emergente. Permita “Ventanas emergentes” para $1pkipuc.localhost</code> (ícono a la izquierda de la dirección) y pulse de nuevo.</td></tr>
   <tr><td>La salida se abre en mi monitor, no en el proyector</td><td>Revise que el proyector esté en modo <b>Extender</b> (<kbd>Windows</kbd>+<kbd>P</kbd>) y que el permiso de “Administración de ventanas” esté en Permitir. Si no, arrastre la ventana al proyector y haga doble clic.</td></tr>
   <tr><td>El público ve el panel de control</td><td>Está en modo “Duplicar”. Pulse <kbd>Windows</kbd>+<kbd>P</kbd> → <b>Extender</b>.</td></tr>
   <tr><td>El texto queda tapado abajo o cortado arriba</td><td>Estilo → <b>Posición vertical del texto</b>: suba o baje el texto. También puede aumentar el <b>Margen</b>.</td></tr>
