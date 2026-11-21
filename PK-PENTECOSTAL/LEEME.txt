@@ -8,9 +8,23 @@
                                                          Salmos 19:4
 =====================================================================
 
-REQUISITO (una sola vez)
-  Node.js 16 o superior (gratis): https://nodejs.org  -> versión "LTS".
-  Si no está instalado, los lanzadores lo avisan y abren la página.
+VERSIÓN 2.0 PARA WINDOWS (recomendada) - NO NECESITA NODE.JS
+  · PK-PENTECOSTAL-Instalador-2.0.0.exe -> doble clic, "Siguiente".
+      Crea accesos directos en el Escritorio y en el menú Inicio.
+      Se desinstala desde Configuración -> Aplicaciones.
+  · PK-PENTECOSTAL-Portable-2.0.0.exe   -> no se instala (memoria USB).
+  Al abrirlo: si ya estaba abierto solo muestra la ventana; si el puerto
+  8888 lo usa otro programa, elige otro libre (sin cerrar ese programa).
+  Datos del usuario (se conservan al actualizar y al desinstalar):
+      instalado -> %APPDATA%\PK-PENTECOSTAL
+      portable  -> carpeta "PK-PENTECOSTAL datos" junto al .exe
+  Venía de la versión de carpeta (1.x)?  Alt -> Archivo ->
+      "Importar datos de una versión anterior..." (guarda un respaldo antes).
+  Registro de eventos: Alt -> Archivo -> Ver registro de eventos.
+
+VERSIÓN DE CARPETA (código fuente: macOS, Linux o Windows con Node.js)
+  Requisito: Node.js 16 o superior (gratis): https://nodejs.org -> "LTS".
+  Si no está instalado, los lanzadores lo avisan.
 
 ---------------------------------------------------------------------
 ABRIR EL PROGRAMA
@@ -28,6 +42,8 @@ DIRECCIÓN DEL PANEL:  http://pkipuc.localhost
   Proyector:          http://proyector.pkipuc.localhost
   Si otro programa usa el puerto 80, el programa usa solo
   http://pkipuc.localhost:8888 (y el proyector :8889).
+  Si otro programa usa el 8888, se elige solo el siguiente libre
+  (queda anotado en BSPK\puerto.json).
   La dirección antigua http://localhost:8888 sigue sirviendo: lleva a la
   nueva y pasa sus ajustes (OBS, textos, Biblia elegida, idioma).
   Si su navegador no abre *.localhost, se queda en la antigua.

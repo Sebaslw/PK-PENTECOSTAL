@@ -1,26 +1,29 @@
-﻿# PK-PENTECOSTAL · Crea el .zip que se descarga desde la página web.
-# Uso:  clic derecho → "Ejecutar con PowerShell"   (o: powershell -ExecutionPolicy Bypass -File web\crear-zip.ps1)
+﻿# PK-PENTECOSTAL · Prepara las descargas de la página web.
+# Uso:  primero  npm run dist  (crea el instalador y el portable en dist\)
+#       luego    powershell -ExecutionPolicy Bypass -File web\crear-zip.ps1
 #
-# Incluye exactamente lo que se sube a GitHub (respeta .gitignore):
-#   NO incluye BSPK/ (ajustes, claves y respaldos privados), .git/ ni la carpeta web/.
+# 1. Crea el .zip del código fuente (macOS / Linux / quien use Node.js). Respeta .gitignore:
+#    NO incluye BSPK/ (ajustes, claves y respaldos privados), .git/, dist/ ni la carpeta web/.
+# 2. Escribe web\descargas\info.js con nombre, tamaño y SHA-256 del instalador, el portable y el .zip.
+# Los tres archivos se suben como Release v<versión> en GitHub (pesan más de 100 MB).
 
 $ErrorActionPreference = 'Stop'
 $web  = Split-Path -Parent $MyInvocation.MyCommand.Path
 $raiz = Split-Path -Parent $web
-$version = '1.0.2'
-$repoGitHub = 'Sebaslw/PK-PENTECOSTAL'   # donde se publica el .zip como Release (v$version)
-$nombre  = "PK-PENTECOSTAL-$version.zip"
+$version = (Get-Content -Raw (Join-Path $raiz 'package.json') | ConvertFrom-Json).version
+$repoGitHub = 'Sebaslw/PK-PENTECOSTAL'
+$urlRelease = "https://github.com/$repoGitHub/releases/download/v$version"
 $destDir = Join-Path $web 'descargas'
-$dest    = Join-Path $destDir $nombre
 New-Item -ItemType Directory -Force $destDir | Out-Null
-if (Test-Path -LiteralPath $dest) { Remove-Item -LiteralPath $dest -Force }
 
-# Lista de archivos (con tildes y ñ correctas)
+# ---------- .zip del código fuente
+$nombreZip = "PK-PENTECOSTAL-$version-codigo-fuente.zip"
+$dest = Join-Path $destDir $nombreZip
+if (Test-Path -LiteralPath $dest) { Remove-Item -LiteralPath $dest -Force }
 $lista = git -C $raiz -c core.quotepath=false ls-files -co --exclude-standard -z
 $archivos = ($lista -join '') -split "`0" | Where-Object {
-  $_ -and $_ -notmatch '^(web/|BSPK/|\.git/)' -and $_ -notmatch '(^|/)\.claude/'
+  $_ -and $_ -notmatch '^(web/|BSPK/|dist/|node_modules/|\.git/)' -and $_ -notmatch '(^|/)\.claude/'
 }
-
 Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
 $zip = [System.IO.Compression.ZipFile]::Open($dest, 'Create')
 $carpeta = "PK-PENTECOSTAL $version"
@@ -34,26 +37,31 @@ try {
   }
 } finally { $zip.Dispose() }
 
-$tam  = (Get-Item -LiteralPath $dest).Length
-$mb   = [math]::Round($tam / 1MB, 1)
-$hash = (Get-FileHash -LiteralPath $dest -Algorithm SHA256).Hash.ToLower()
+function Datos($ruta, $nombre) {
+  if (-not (Test-Path -LiteralPath $ruta)) { return 'null' }
+  $mb = [math]::Round((Get-Item -LiteralPath $ruta).Length / 1MB, 1).ToString([Globalization.CultureInfo]::InvariantCulture)
+  $hash = (Get-FileHash -LiteralPath $ruta -Algorithm SHA256).Hash.ToLower()
+  return "{ nombre: '$nombre', url: '$urlRelease/$nombre', tamanoMB: $mb, sha256: '$hash' }"
+}
+$inst = "PK-PENTECOSTAL-Instalador-$version.exe"
+$port = "PK-PENTECOSTAL-Portable-$version.exe"
+$dist = Join-Path $raiz 'dist'
 $fecha = Get-Date -Format 'yyyy-MM-dd'
 
 # Datos que muestra la página (archivo .js para que funcione también abriendo index.html sin servidor)
 $info = @"
 window.PK_DESCARGA = {
-  archivo: 'descargas/$nombre',
-  urlWeb: 'https://github.com/$repoGitHub/releases/download/v$version/$nombre',
-  nombre: '$nombre',
   version: '$version',
-  tamanoMB: $($mb.ToString([Globalization.CultureInfo]::InvariantCulture)),
-  archivos: $n,
   fecha: '$fecha',
-  sha256: '$hash'
+  instalador: $(Datos (Join-Path $dist $inst) $inst),
+  portable: $(Datos (Join-Path $dist $port) $port),
+  zip: $(Datos $dest $nombreZip),
+  archivosZip: $n
 };
 "@
 [System.IO.File]::WriteAllText((Join-Path $destDir 'info.js'), $info, (New-Object System.Text.UTF8Encoding $false))
 
 Write-Host ""
-Write-Host "  Listo: $dest"
-Write-Host "  $n archivos - $mb MB - SHA-256 $hash"
+Write-Host "  Listo: $destDir\info.js"
+Write-Host "  .zip: $n archivos"
+Write-Host "  Suba a la Release v$version : dist\$inst, dist\$port y web\descargas\$nombreZip"

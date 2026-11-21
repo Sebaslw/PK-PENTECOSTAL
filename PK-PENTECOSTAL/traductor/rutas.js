@@ -7,7 +7,9 @@ const fs = require('fs');
 const { createRequire } = require('module');
 const { pathToFileURL } = require('url');
 
-const BSPK = path.resolve(__dirname, '..', '..', 'BSPK', 'traductor');
+// En la app de escritorio los datos viven aparte (PK_DATA_ROOT); desde el código fuente, junto al programa
+const RAIZ = process.env.PK_DATA_ROOT ? path.resolve(process.env.PK_DATA_ROOT) : path.resolve(__dirname, '..', '..');
+const BSPK = path.join(RAIZ, 'BSPK', 'traductor');
 const MODELOS = path.join(BSPK, 'modelos');
 const BASES = [BSPK, __dirname];
 

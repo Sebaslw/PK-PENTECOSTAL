@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' file:; style-src 'unsafe-inline' file:; script-src 'unsafe-inline'; img-src file: data:">
+<title>PK-PENTECOSTAL</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #04162e; color: #cfe0ff; font: 15px "Segoe UI", system-ui, sans-serif; overflow: hidden; -webkit-user-select: none; user-select: none; -webkit-app-region: drag; }
+  .caja { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; padding: 0 28px; box-sizing: border-box;
+    background: radial-gradient(circle at 50% 30%, rgba(63,169,220,.18), transparent 60%); }
+  img { width: 96px; height: 96px; }
+  h1 { margin: 4px 0 0; font-size: 28px; letter-spacing: .5px; color: #fff; font-weight: 400; }
+  h1 b { color: #f5b301; font-weight: 800; }
+  .estado { margin-top: 6px; color: #9fb8de; }
+  .barra { width: 220px; height: 4px; border-radius: 4px; background: rgba(255,255,255,.12); overflow: hidden; }
+  .barra i { display: block; width: 40%; height: 100%; background: linear-gradient(90deg, #3fa9dc, #f5b301); border-radius: 4px; animation: ir 1.2s ease-in-out infinite; }
+  @keyframes ir { 0% { transform: translateX(-100%); } 100% { transform: translateX(260%); } }
+  .pie { position: absolute; bottom: 12px; left: 0; right: 0; font-size: 11px; color: #6f86ad; text-align: center; }
+</style>
+</head>
+<body>
+  <div class="caja">
+    <img src="../PK-PENTECOSTAL/public/logo.svg" alt="">
+    <h1>PK-<b>PENTECOSTAL</b></h1>
+    <div class="estado">Iniciando… espere por favor</div>
+    <div class="barra"><i></i></div>
+  </div>
+  <div class="pie">Hecho por Sebastian Lopez · IPUC Natania 6° Etapa · <span id="v"></span></div>
+  <script>document.getElementById('v').textContent = 'v' + (new URLSearchParams(location.search).get('v') || '');</script>
+</body>
+</html>

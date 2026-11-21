@@ -4,8 +4,9 @@
 
 <br/>
 
-![Versión](https://img.shields.io/badge/versión-1.0.2-f59e0b?style=for-the-badge)
-![Node.js](https://img.shields.io/badge/Node.js-16%2B-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
+![Versión](https://img.shields.io/badge/versión-2.0.0-f59e0b?style=for-the-badge)
+![Windows](https://img.shields.io/badge/Windows-10%20%C2%B7%2011%20(64%20bits)-0078D4?style=for-the-badge&logo=windows&logoColor=white)
+![Sin Node.js](https://img.shields.io/badge/no%20necesita-Node.js-339933?style=for-the-badge&logo=electron&logoColor=white)
 ![OBS Studio](https://img.shields.io/badge/OBS_Studio-28%2B-302E31?style=for-the-badge&logo=obsstudio&logoColor=white)
 ![Windows](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)
 ![macOS](https://img.shields.io/badge/macOS-000000?style=for-the-badge&logo=apple&logoColor=white)
@@ -206,47 +207,88 @@ Todo corre en **un solo computador**, se maneja desde el **navegador** y **no ne
 ```mermaid
 flowchart LR
     subgraph PC["💻 Computador"]
-        S["⚙️ server.js<br/>Node.js · pkipuc.localhost"]
+        S["⚙️ PK-PENTECOSTAL.exe<br/>servidor interno · pkipuc.localhost"]
         D[("📚 biblias/<br/>🎵 cancioneros/<br/>🖼️ fondos/")]
         D --> S
     end
-    S -- "Panel de control" --> P["🖥️ Navegador$1pkipuc.localhost"]
+    S -- "Panel de control" --> P["🖥️ Ventana del programa<br/>pkipuc.localhost"]
     S -- "Pantalla completa" --> R["📽️ Proyector / TV<br/>puerto 8889"]
     S -- "Capa transparente" --> O["🎬 OBS Studio<br/>/capa · /salida"]
     S -- "Wi-Fi + QR" --> M["📱 Celulares<br/>Android · iPhone"]
     P <-. "WebSocket" .-> O
 ```
 
-El servidor está hecho en **Node.js puro, sin dependencias**: no hay que instalar paquetes para usar el programa. Solo el traductor automático (opcional) usa una librería extra.
+Desde la **versión 2.0**, PK-PENTECOSTAL es una **aplicación de escritorio para Windows** (Electron). Trae su propio motor (el Node.js de Electron) para el servidor interno: **no hay que instalar Node.js**, abrir consolas ni configurar puertos.
+
+```mermaid
+flowchart LR
+    E["🪟 PK-PENTECOSTAL.exe<br/>(una sola instancia)"] -- "inicia y vigila" --> S2["⚙️ server.js<br/>proceso interno"]
+    S2 -- "puerto 8888 u otro libre" --> V["🖥️ Ventana del panel"]
+    E -- "si se cae, lo reinicia" --> S2
+    S2 --- DD[("📁 Datos del usuario<br/>%APPDATA%/PK-PENTECOSTAL")]
+```
+
+El servidor sigue siendo **JavaScript puro, sin dependencias**: la misma carpeta también funciona con Node.js instalado (macOS, Linux o desarrollo).
 
 ---
 
 ## 📦 Instalación
 
-### 1. Requisito (una sola vez)
-Instale **[Node.js](https://nodejs.org) 16 o superior** (versión **LTS**, gratis). Si no está instalado, los lanzadores lo avisan y abren la página de descarga.
+### 🪟 Windows 10 / 11 (64 bits) — recomendado
 
-### 2. Descargue el programa
+Descargue desde la **[página web](https://sebaslw.github.io/pk-pentecostal.io/)** o desde **[Releases](https://github.com/Sebaslw/PK-PENTECOSTAL/releases/latest)**:
 
-```bash
-git clone <URL-de-este-repositorio>
-```
+| Archivo | Para qué |
+|---|---|
+| **`PK-PENTECOSTAL-Instalador-2.0.0.exe`** | Doble clic → *Siguiente*. Crea el acceso directo en el **Escritorio** y en el **menú Inicio**. Se desinstala desde *Configuración → Aplicaciones*. |
+| **`PK-PENTECOSTAL-Portable-2.0.0.exe`** | No se instala: doble clic y listo. Ideal para una memoria USB. |
 
-o use el botón verde **Code → Download ZIP** y descomprímalo.
+**No necesita Node.js** ni ningún otro programa. Al abrirlo:
 
-### 3. Ábralo
+1. Si ya estaba abierto, solo se muestra la ventana (nunca se abren dos servidores).
+2. Inicia el servidor interno y elige el puerto: **8888**, o el siguiente libre si otro programa lo usa (sin cerrar ese programa).
+3. Abre el panel en su propia ventana. Si el servidor interno se cae, se reinicia solo.
+
+> 🖱️ Menú del programa: pulse **Alt** → *Archivo* (abrir en el navegador, carpeta de datos, importar una versión anterior, registro de eventos), *Ver* (pantalla completa, zoom) y *Ayuda* (manual PDF). **F11** = pantalla completa.
+
+#### ¿Dónde quedan mis datos?
+
+| Versión | Carpeta de datos |
+|---|---|
+| Instalada | `%APPDATA%\PK-PENTECOSTAL` (se **conserva** al actualizar y al desinstalar) |
+| Portable | `PK-PENTECOSTAL datos`, al lado del `.exe` |
+
+Ahí viven `BSPK/` (ajustes, claves de los celulares, respaldos, fondos subidos, registro de eventos en `BSPK/logs`), los cancioneros con sus cambios y la biblioteca de OBS. Los archivos del programa nunca se modifican.
+
+#### ¿Venía de la versión de carpeta (1.x)?
+
+Abra PK-PENTECOSTAL → **Alt → Archivo → Importar datos de una versión anterior…** → elija la carpeta donde estaba `PK-PENTECOSTAL.vbs`. Se copian sus ajustes, claves, canciones, stingers y fondos subidos; **antes se guarda una copia** de lo actual en `BSPK/respaldos`. También sirve el **💾 Respaldo** (.zip) de siempre.
+
+### 🍎 🐧 macOS, Linux o desde el código fuente
+
+Requiere **[Node.js](https://nodejs.org) 16 o superior**. Descargue el `.zip` del código fuente (Releases) o `git clone`, y:
 
 | Sistema | Cómo abrirlo |
 |---|---|
-| 🪟 **Windows** | Doble clic en **`PK-PENTECOSTAL.vbs`** (sin ventana negra) o **`PK-PENTECOSTAL.bat`** (muestra las direcciones y los errores). Para crear el acceso directo con logo: **`Crear acceso directo (Windows).vbs`**. |
+| 🪟 **Windows** | Doble clic en **`PK-PENTECOSTAL.vbs`** (sin ventana negra) o **`PK-PENTECOSTAL.bat`** (muestra las direcciones y los errores). |
 | 🍎 **macOS** | Doble clic en **`iniciar-mac.command`** (la primera vez: clic derecho → Abrir). |
 | 🐧 **Linux** | `chmod +x iniciar-linux.sh && ./iniciar-linux.sh` · Para agregarlo al menú: `./iniciar-linux.sh --instalar` |
 
-El panel se abre en el navegador en **http://pkipuc.localhost**.
+El panel se abre en el navegador en **http://pkipuc.localhost**. En este modo los datos viven en `BSPK/`, al lado de `PK-PENTECOSTAL/`, como siempre.
 
-> 🏷️ **Dirección con nombre:** Chrome, Edge, Firefox y OBS envían cualquier dirección `*.localhost` al propio computador, sin instalar nada. Si otro programa ya usa el puerto 80, la dirección pasa a ser `http://pkipuc.localhost:8888` (el programa lo detecta solo). La dirección antigua `http://localhost:8888` sigue funcionando y lleva a la nueva con sus ajustes; si su navegador no conoce los nombres `*.localhost`, se queda en la antigua. Los celulares siguen usando la IP de la red (`http://192.168.x.x:8888`).
+> 🏷️ **Dirección con nombre:** Chrome, Edge, Firefox y OBS envían cualquier dirección `*.localhost` al propio computador, sin instalar nada. Si otro programa ya usa el puerto 80, la dirección pasa a ser `http://pkipuc.localhost:8888` (o el puerto que el programa haya elegido). Los celulares usan la IP de la red; el QR del panel siempre trae la dirección correcta.
 
-### 4. (Opcional) Traductor automático sin internet
+### 🛠️ Para desarrolladores
+
+```bash
+npm install          # Electron y electron-builder (solo para compilar)
+npm start            # abre la app de escritorio
+npm run probar       # pruebas del servidor (primer inicio, puertos, instancias)
+npm run dist         # crea dist/PK-PENTECOSTAL-Instalador-x.y.z.exe y dist/PK-PENTECOSTAL-Portable-x.y.z.exe
+powershell -ExecutionPolicy Bypass -File web\crear-zip.ps1   # .zip del código fuente + datos de la página web
+```
+
+### (Opcional) Traductor automático sin internet — versión de código fuente
 
 ```bash
 node PK-PENTECOSTAL/traductor/instalar.js
@@ -331,13 +373,15 @@ Las citas salen en inglés (*John 3:16*) y se puede buscar `juan 3:16` o `jn 3:1
 
 ```text
 PK-PENTECOSTAL/
-├── PK-PENTECOSTAL.vbs / .bat      ← Abrir en Windows
+├── electron/                      ← App de escritorio: main.js (ventana, servidor, instancias) y splash
+├── package.json                   ← Compilación del instalador y el portable (electron-builder)
+├── PK-PENTECOSTAL.vbs / .bat      ← Abrir desde el código fuente en Windows (con Node.js)
 ├── iniciar-mac.command            ← Abrir en macOS
 ├── iniciar-linux.sh               ← Abrir en Linux
 ├── Manual PK-PENTECOSTAL.pdf      ← Manual de usuario completo
 ├── BSPK/                          ← Privado: ajustes, claves, stingers, respaldos (no se sube)
 ├── PK-PENTECOSTAL/
-│   ├── server.js                  ← Servidor local (Node.js, sin dependencias)
+│   ├── server.js                  ← Servidor local (JavaScript puro, sin dependencias)
 │   ├── public/                    ← Panel, proyector, capas OBS y vista móvil
 │   ├── traductor/                 ← Traductor español → inglés sin internet (opcional)
 │   └── LEEME.txt                  ← Guía rápida en texto
@@ -349,7 +393,7 @@ PK-PENTECOSTAL/
 └── docs/                          ← Manual (HTML → PDF) y documentos de diseño
 ```
 
-Todo lo privado de cada instalación vive en la carpeta **`BSPK/`** (al lado de `PK-PENTECOSTAL/`): ajustes y claves de los celulares (`config.json`), stingers y su biblioteca, respaldos, fondos subidos, videos muy pesados y el traductor. Se crea sola la primera vez y **no se sube al repositorio**. Si actualiza desde una versión anterior, el programa mueve ahí sus archivos automáticamente al abrirse.
+Todo lo privado de cada instalación vive en la carpeta **`BSPK/`** (en la app de escritorio, dentro de la carpeta de datos; desde el código fuente, al lado de `PK-PENTECOSTAL/`): ajustes y claves de los celulares (`config.json`), stingers y su biblioteca, respaldos, fondos subidos, videos muy pesados y el traductor. Se crea sola la primera vez y **no se sube al repositorio**. Si actualiza desde una versión anterior, el programa mueve ahí sus archivos automáticamente al abrirse.
 
 ---
 
@@ -358,7 +402,7 @@ Todo lo privado de cada instalación vive en la carpeta **`BSPK/`** (al lado de 
 <details>
 <summary><b>"El puerto 8888 está ocupado"</b></summary>
 
-Otro programa usa el puerto (por ejemplo, el Proyektor original). Ciérrelo y abra PK-PENTECOSTAL de nuevo. Si el programa ya estaba abierto, volver a abrirlo solo muestra el panel.
+Ya no hace falta hacer nada: si otro programa (por ejemplo, el Proyektor original) usa el puerto 8888, PK-PENTECOSTAL elige solo el siguiente libre (8890, 8891…) y **no cierra** el otro programa. El puerto en uso queda anotado en `BSPK/puerto.json`. Si PK-PENTECOSTAL ya estaba abierto, abrirlo de nuevo solo muestra la ventana.
 </details>
 
 <details>
@@ -369,10 +413,17 @@ Otro programa usa el puerto (por ejemplo, el Proyektor original). Ciérrelo y ab
 - Permita el programa en el Firewall de Windows (PowerShell como administrador):
 
 ```powershell
-New-NetFirewallRule -DisplayName "PK-PENTECOSTAL (celulares en la red local)" -Direction Inbound -Protocol TCP -LocalPort 8888 -RemoteAddress LocalSubnet -Action Allow
+New-NetFirewallRule -DisplayName "PK-PENTECOSTAL (celulares en la red local)" -Direction Inbound -Protocol TCP -LocalPort 8888-8999 -RemoteAddress LocalSubnet -Action Allow
 ```
 
 - O use **Wi-Fi propio** desde la ventana del QR.
+- En la app de escritorio, la primera vez Windows pregunta si permite a *PK-PENTECOSTAL* usar la red: marque **Redes privadas** y pulse *Permitir*.
+</details>
+
+<details>
+<summary><b>El programa no abre o muestra un error</b></summary>
+
+Los mensajes de error explican qué pasó. Para más detalle: **Alt → Archivo → Ver registro de eventos** (`BSPK/logs/escritorio.log` y `servidor.log`). Si el servidor interno se cierra solo, el programa lo reinicia automáticamente.
 </details>
 
 <details>

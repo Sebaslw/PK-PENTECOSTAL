@@ -1,0 +1,90 @@
+{
+  "name": "pk-pentecostal",
+  "productName": "PK-PENTECOSTAL",
+  "version": "2.0.0",
+  "description": "Biblia y canciones en vivo para proyector, OBS y celulares",
+  "author": "Sebastian Lopez · IPUC Natania 6° Etapa",
+  "homepage": "https://sebaslw.github.io/pk-pentecostal.io/",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "servidor": "node PK-PENTECOSTAL/server.js --abrir",
+    "probar": "node electron/pruebas.js",
+    "dist": "electron-builder --win --x64 --publish never"
+  },
+  "devDependencies": {
+    "electron": "45.4.1",
+    "electron-builder": "26.18.0"
+  },
+  "build": {
+    "appId": "co.ipuc.natania.pkpentecostal",
+    "productName": "PK-PENTECOSTAL",
+    "copyright": "Hecho por Sebastian Lopez · IPUC Natania 6° Etapa",
+    "asar": false,
+    "compression": "normal",
+    "directories": {
+      "output": "dist",
+      "buildResources": "electron/build"
+    },
+    "files": [
+      "package.json",
+      "electron/main.js",
+      "electron/splash.html",
+      "PK-PENTECOSTAL/**/*",
+      "!PK-PENTECOSTAL/traductor/node_modules{,/**}",
+      "!PK-PENTECOSTAL/traductor/modelos{,/**}",
+      "!PK-PENTECOSTAL/traductor/*.log",
+      "!PK-PENTECOSTAL/{config.json,config.json.tmp}",
+      "!PK-PENTECOSTAL/{respaldos,respaldo-logo-anterior}{,/**}",
+      "!PK-PENTECOSTAL/obs/{stingers,laterales,overlays}.json",
+      "!PK-PENTECOSTAL/obs/*.tmp",
+      "!PK-PENTECOSTAL/obs/biblioteca/{animaciones,fondos,fuentes,imagenes,logos,overlays,proyectorp,sonidos}{,/**}",
+      "!PK-PENTECOSTAL/obs/biblioteca/pk/logo-ipuc.webp",
+      "biblias/**/*",
+      "cancioneros/**/*",
+      "fondos/**/*",
+      "!fondos/Subidos{,/**}",
+      "!fondos/VIDEOS ANIMADOS/Particles Blue Bokeh*",
+      "css/**/*",
+      "Manual PK-PENTECOSTAL.pdf"
+    ],
+    "win": {
+      "icon": "PK-PENTECOSTAL/pk-pentecostal.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "PK-PENTECOSTAL",
+      "deleteAppDataOnUninstall": false,
+      "installerIcon": "PK-PENTECOSTAL/pk-pentecostal.ico",
+      "uninstallerIcon": "PK-PENTECOSTAL/pk-pentecostal.ico",
+      "uninstallDisplayName": "PK-PENTECOSTAL",
+      "language": "3082",
+      "artifactName": "PK-PENTECOSTAL-Instalador-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "PK-PENTECOSTAL-Portable-${version}.${ext}",
+      "unpackDirName": "PK-PENTECOSTAL-${version}"
+    }
+  }
+}

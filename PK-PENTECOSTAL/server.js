@@ -15,15 +15,27 @@ const crypto = require('crypto');
 
 const APP_DIR = __dirname;
 const PUBLIC_DIR = path.join(APP_DIR, 'public');
-const OBS_DIR = path.join(APP_DIR, 'obs');           // módulo OBS: panel, capa, stingers y su biblioteca
-const DATA_ROOT = path.resolve(APP_DIR, '..');
+const OBS_DIR = path.join(APP_DIR, 'obs');           // módulo OBS: código (panel, capa, stingers)
+// Dos raíces:
+//  · RES_ROOT  = contenido de fábrica (biblias, fondos, fuentes, cancioneros iniciales). En la versión
+//                instalada (PK-PENTECOSTAL.exe) es de solo lectura.
+//  · DATA_ROOT = datos del usuario (BSPK, cancioneros editados, biblioteca OBS). En la versión instalada
+//                vive en %APPDATA%\PK-PENTECOSTAL (o junto al .exe portable); desde el código fuente es
+//                la misma carpeta de siempre, así que todo sigue funcionando igual que antes.
+const RES_ROOT = path.resolve(APP_DIR, '..');
+const DATA_ROOT = process.env.PK_DATA_ROOT ? path.resolve(process.env.PK_DATA_ROOT) : RES_ROOT;
+const DATOS_APARTE = DATA_ROOT !== RES_ROOT;
+const OBS_DATA = DATOS_APARTE ? path.join(DATA_ROOT, 'obs') : OBS_DIR; // stingers.json, laterales, overlays, biblioteca
 const DIRS = {
-  biblias: path.join(DATA_ROOT, 'biblias'),
+  biblias: path.join(RES_ROOT, 'biblias'),
   cancioneros: path.join(DATA_ROOT, 'cancioneros'),
-  fondos: path.join(DATA_ROOT, 'fondos'),
-  fuentes: path.join(DATA_ROOT, 'css', 'font'),
+  fondos: path.join(RES_ROOT, 'fondos'),
+  fuentes: path.join(DATA_ROOT, 'css', 'font'),       // aquí se instalan las fuentes importadas
+  fuentesFabrica: path.join(RES_ROOT, 'css', 'font'),
 };
-const PORT = Number(process.env.PORT) || 8888;
+const PORT_PREFERIDO = Number(process.env.PORT) || 8888;
+let PORT = PORT_PREFERIDO; // puede cambiar si 8888 lo usa otro programa (ver iniciarServidor)
+const EN_ELECTRON = !!process.parentPort || process.env.PK_ELECTRON === '1';
 
 // ---------------------------------------------------------------- Carpeta BSPK (privada)
 // Todo lo propio de esta instalación (ajustes y claves, stingers, respaldos, fondos subidos, traductor)
@@ -34,14 +46,41 @@ const PRIV = {
   obs: path.join(BSPK, 'obs'),       // solo para mudar instalaciones anteriores
   respaldos: path.join(BSPK, 'respaldos'),
   fondos: path.join(BSPK, 'fondos'),
+  logs: path.join(BSPK, 'logs'),
+  puerto: path.join(BSPK, 'puerto.json'), // puerto en uso (lo leen PK-PENTECOSTAL.vbs y la app de escritorio)
 };
-// ¿Ya hay otro PK-PENTECOSTAL abierto en este puerto? (entonces no se mueve nada)
-function puertoOcupado() {
+// Se declara aquí arriba (antes de cualquier guardado): antes estaba más abajo y en la primera ejecución
+// escribirConfig() la leía antes de existir → "Cannot access 'guardadoBloqueado' before initialization".
+let guardadoBloqueado = false; // tras importar un respaldo, la configuración en memoria ya no debe pisar la importada
+
+// ¿Ya hay otro PK-PENTECOSTAL abierto en el puerto preferido? (entonces no se mueve nada).
+// Síncrono a propósito: corre antes de leer la configuración. Antes se llamaba igual que la función
+// asíncrona puertoOcupado(host, puerto) de más abajo, que la reemplazaba y devolvía siempre una Promise
+// (verdadera) → la mudanza a BSPK nunca se hacía.
+function otraInstanciaAbierta() {
   try {
     require('child_process').execFileSync(process.execPath, ['-e',
-      `const s=require('net').connect(${PORT},'127.0.0.1');s.on('connect',()=>process.exit(1));s.on('error',()=>process.exit(0));setTimeout(()=>process.exit(0),800)`], { stdio: 'ignore', timeout: 3000 });
+      `const s=require('net').connect(${PORT_PREFERIDO},'127.0.0.1');s.on('connect',()=>process.exit(1));s.on('error',()=>process.exit(0));setTimeout(()=>process.exit(0),800)`],
+      { stdio: 'ignore', timeout: 3000, windowsHide: true, env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' } });
     return false;
   } catch (_) { return true; }
+}
+
+// Contenido de fábrica que el usuario puede editar (cancioneros, biblioteca OBS): cuando los datos viven
+// aparte, se copia UNA vez lo que falte. Nunca se reemplaza un archivo que ya exista.
+function sembrar(origen, destino) {
+  let lista = [];
+  try { lista = fs.readdirSync(origen, { withFileTypes: true }); } catch (_) { return; }
+  fs.mkdirSync(destino, { recursive: true });
+  for (const e of lista) {
+    const a = path.join(origen, e.name), b = path.join(destino, e.name);
+    if (e.isDirectory()) sembrar(a, b);
+    else if (e.isFile() && !fs.existsSync(b)) { try { fs.copyFileSync(a, b); } catch (_) { /* se intenta la próxima vez */ } }
+  }
+}
+if (DATOS_APARTE) {
+  sembrar(path.join(RES_ROOT, 'cancioneros'), DIRS.cancioneros);
+  sembrar(path.join(OBS_DIR, 'biblioteca'), path.join(OBS_DATA, 'biblioteca'));
 }
 // Mueve un archivo o carpeta; si el destino ya existe, mezcla lo que falte
 function mover(origen, destino) {
@@ -83,18 +122,18 @@ function migrarABSPK() {
   }
   if (!fs.existsSync(path.join(OBS_DIR, 'stingers.json'))) lista.push([path.join(PRIV.obs, 'stingers.json'), path.join(OBS_DIR, 'stingers.json')]);
   const pend = lista.filter(([a]) => fs.existsSync(a));
-  if (!pend.length || puertoOcupado()) return;
+  if (!pend.length || otraInstanciaAbierta()) return;
   for (const [a, b] of pend) {
     try { mover(a, b); console.log('  BSPK ← ' + path.relative(DATA_ROOT, a)); }
     catch (e) { console.log('  No se pudo mover a BSPK: ' + path.relative(DATA_ROOT, a) + ' (' + e.message + ')'); }
   }
 }
-migrarABSPK();
+if (!DATOS_APARTE) migrarABSPK(); // la versión instalada ya nace con los datos separados
 // Si otro PK-PENTECOSTAL abierto impidió mover config.json, se lee desde donde está
 const CONFIG_FILE = fs.existsSync(PRIV.config) || !fs.existsSync(path.join(APP_DIR, 'config.json')) ? PRIV.config : path.join(APP_DIR, 'config.json');
 
 // Dirección propia del proyector (distinta del panel): http://proyector.localhost:8889/
-const PORT_PROY = Number(process.env.PORT_PROYECTOR) || PORT + 1;
+let PORT_PROY = Number(process.env.PORT_PROYECTOR) || PORT + 1;
 
 // Dirección con nombre: http://pkipuc.localhost — Chrome, Edge, Firefox y OBS mandan cualquier
 // "*.localhost" a este mismo equipo, sin instalar nada. Si el puerto 80 está libre la dirección queda
@@ -110,7 +149,7 @@ const urlProyector = () => (webActiva ? `http://proyector.${DOMINIO}${sufijoWeb(
 // hacia la dirección nueva. Solo vive en memoria y se entrega una vez.
 let almacenPendiente = null;
 const APP_NOMBRE = 'PK-PENTECOSTAL';
-const APP_VERSION = '1.0.2';
+const APP_VERSION = process.env.PK_VERSION || '2.0.0';
 const ABRIR = process.argv.includes('--abrir');
 
 if (parseInt(process.versions.node, 10) < 16) {
@@ -264,7 +303,7 @@ function apagarZonaAlSalir() {
 let saveTimer = null, savePendiente = false;
 function escribirConfig() {
   clearTimeout(saveTimer); savePendiente = false;
-  if (typeof guardadoBloqueado !== 'undefined' && guardadoBloqueado) return; // se importó un respaldo: manda el archivo
+  if (guardadoBloqueado) return; // se importó un respaldo: manda el archivo
   try {
     const tmp = CONFIG_FILE + '.tmp';
     fs.mkdirSync(path.dirname(CONFIG_FILE), { recursive: true });
@@ -633,15 +672,22 @@ function listBackgrounds() {
 }
 
 // ---------------------------------------------------------------- Fuentes
+// Fuentes de fábrica (css/font del programa) + las instaladas por el usuario (al importar de ProyectoRP)
+const raicesFuentes = () => [...new Set([DIRS.fuentes, DIRS.fuentesFabrica])];
+function archivoFuente(rel) {
+  for (const r of raicesFuentes()) { const f = safeJoin(r, rel); if (f && fs.existsSync(f)) return f; }
+  return safeJoin(DIRS.fuentesFabrica, rel);
+}
 function buildFontsCss() {
-  let css = ''; const families = new Set();
-  try {
-    for (const d of fs.readdirSync(DIRS.fuentes, { withFileTypes: true })) {
-      if (!d.isDirectory()) continue;
-      for (const f of fs.readdirSync(path.join(DIRS.fuentes, d.name))) {
+  let css = ''; const families = new Set(); const vistas = new Set();
+  for (const raiz of raicesFuentes()) try {
+    for (const d of fs.readdirSync(raiz, { withFileTypes: true })) {
+      if (!d.isDirectory() || vistas.has(d.name)) continue;
+      vistas.add(d.name);
+      for (const f of fs.readdirSync(path.join(raiz, d.name))) {
         if (!f.endsWith('.css')) continue;
         // Los CSS originales tienen llaves mal cerradas: se re-generan las @font-face limpias.
-        const txt = fs.readFileSync(path.join(DIRS.fuentes, d.name, f), 'utf8');
+        const txt = fs.readFileSync(path.join(raiz, d.name, f), 'utf8');
         for (const block of txt.split('@font-face').slice(1)) {
           const fam = (block.match(/font-family:\s*['"]?([^;'"\n]+)/) || [])[1];
           const url = (block.match(/url\((['"]?)([^)'"]+)\1\)/) || [])[2];
@@ -661,8 +707,8 @@ let FONTS = buildFontsCss();
 // ---------------------------------------------------------------- Stingers (OBS)
 // Biblioteca en PK-PENTECOSTAL/obs: stingers.json + biblioteca/ (imagenes, logos, sonidos, animaciones, fondos, fuentes, pk)
 // El formato de cada stinger es el mismo de ProyectoRP, así se pueden importar tal cual.
-const OBS_LIB = path.join(OBS_DIR, 'biblioteca');
-const STG_FILE = path.join(OBS_DIR, 'stingers.json');
+const OBS_LIB = path.join(OBS_DATA, 'biblioteca');
+const STG_FILE = path.join(OBS_DATA, 'stingers.json');
 const STG_CARPETAS = {
   imagenes: [...IMG_EXT, '.svg'], logos: [...IMG_EXT, '.svg'], fondos: [...IMG_EXT, '.svg'], pk: [...IMG_EXT, '.svg'],
   sonidos: ['.mp3', '.wav', '.ogg', '.m4a'], animaciones: VID_EXT,
@@ -900,7 +946,7 @@ async function rutasStinger(req, res, p, url, equipo) {
 }
 
 // ---------------------------------------------------------------- Banners laterales (diseños de ProyectoRP + versión PK)
-const LAT_FILE = path.join(OBS_DIR, 'laterales.json');
+const LAT_FILE = path.join(OBS_DATA, 'laterales.json');
 function leerLaterales() {
   let lista = null;
   try { lista = JSON.parse(fs.readFileSync(LAT_FILE, 'utf8')); } catch (_) { /* aún no hay copia propia */ }
@@ -964,8 +1010,10 @@ function archivosRespaldo() {
     }
   };
   walk(BSPK, 'BSPK', (r) => /^BSPK\/traductor\/(node_modules|modelos)$/.test(r) || /\.tmp$/.test(r));
-  for (const f of ['stingers.json', 'laterales.json']) if (fs.existsSync(path.join(OBS_DIR, f))) out.push(['obs/' + f, path.join(OBS_DIR, f)]);
+  for (const f of ['stingers.json', 'laterales.json']) if (fs.existsSync(path.join(OBS_DATA, f))) out.push(['obs/' + f, path.join(OBS_DATA, f)]);
   walk(OBS_LIB, 'obs/biblioteca');
+  // Cancioneros (canciones nuevas o editadas y sus traducciones)
+  walk(DIRS.cancioneros, 'cancioneros', (r) => /\.tmp$/.test(r));
   return out;
 }
 function crearZip(lista) {
@@ -1013,7 +1061,6 @@ function leerZip(buf) {
   }
   return out;
 }
-let guardadoBloqueado = false; // tras importar, la configuración en memoria ya no debe pisar la importada
 function importarRespaldo(buf) {
   const entradas = leerZip(buf);
   if (!entradas.some(([n]) => n.startsWith('BSPK/') || n.startsWith('obs/'))) throw new Error('Este .zip no es un respaldo de PK-PENTECOSTAL');
@@ -1023,10 +1070,14 @@ function importarRespaldo(buf) {
   for (const f of [PRIV.config, STG_FILE, LAT_FILE]) if (fs.existsSync(f)) { fs.mkdirSync(copia, { recursive: true }); fs.copyFileSync(f, path.join(copia, path.basename(f))); }
   let n = 0;
   for (const [nombre, datos] of entradas) {
-    const destino = nombre.startsWith('BSPK/') ? safeJoin(BSPK, nombre.slice(5)) : nombre.startsWith('obs/') ? safeJoin(OBS_DIR, nombre.slice(4)) : null;
+    const destino = nombre.startsWith('BSPK/') ? safeJoin(BSPK, nombre.slice(5)) : nombre.startsWith('obs/') ? safeJoin(OBS_DATA, nombre.slice(4)) : nombre.startsWith('cancioneros/') ? safeJoin(DIRS.cancioneros, nombre.slice(12)) : null;
     if (!destino || /[\\/]traductor[\\/](node_modules|modelos)/.test(destino)) continue;
-    if (destino.startsWith(OBS_DIR) && !destino.startsWith(OBS_LIB) && !/[\\/](stingers|laterales)\.json$/.test(destino)) continue; // nunca reemplaza código
+    if (destino.startsWith(OBS_DATA) && !destino.startsWith(OBS_LIB) && !/[\\/](stingers|laterales)\.json$/.test(destino)) continue; // nunca reemplaza código
     fs.mkdirSync(path.dirname(destino), { recursive: true });
+    if (destino.startsWith(DIRS.cancioneros) && fs.existsSync(destino)) { // copia del cancionero actual antes de reemplazarlo
+      const c = path.join(copia, 'cancioneros', path.relative(DIRS.cancioneros, destino));
+      fs.mkdirSync(path.dirname(c), { recursive: true }); fs.copyFileSync(destino, c);
+    }
     fs.writeFileSync(destino, datos); n++;
   }
   guardadoBloqueado = true;
@@ -1097,7 +1148,7 @@ async function rutasIdeas(req, res, p, url, equipo) {
 // Cada diseño es una imagen 1920×1080 transparente (franja, logo, adornos) y su propia distribución de textos:
 // zonas { nombre, sub, extra } con x, y, w, h en píxeles. Los diseños PK traen sus zonas; para el resto
 // (ProyectoRP o imágenes subidas) el panel las detecta solo analizando la imagen y las guarda aquí.
-const OVL_FILE = path.join(OBS_DIR, 'overlays.json');
+const OVL_FILE = path.join(OBS_DATA, 'overlays.json');
 const OVL_EXT = ['.png', '.webp', '.svg'];
 const z = (x, y, w, h, alinear = 'left', color = '#ffffff', negrita = true) => ({ x, y, w, h, alinear, color, negrita });
 const OVL_PK = {
@@ -1439,7 +1490,7 @@ async function handle(req, res) {
     almacenPendiente = null;
     return sendJSON(res, { datos });
   }
-  if (p === '/api/info') return sendJSON(res, { app: APP_NOMBRE, version: APP_VERSION, url: urlPanel(), urlProyector: urlProyector(), puertoProyector: PORT_PROY, autor: 'Hecho por Sebastian Lopez · IPUC Natania 6° Etapa', zona: 'Zona Especial Misionera – Archipiélago de San Andrés, Providencia y Santa Catalina', puerto: PORT, ips: localIPs(), sistema: process.platform });
+  if (p === '/api/info') return sendJSON(res, { app: APP_NOMBRE, version: APP_VERSION, url: urlPanel(), urlProyector: urlProyector(), puertoProyector: PORT_PROY, autor: 'Hecho por Sebastian Lopez · IPUC Natania 6° Etapa', zona: 'Zona Especial Misionera – Archipiélago de San Andrés, Providencia y Santa Catalina', puerto: PORT, ips: localIPs(), sistema: process.platform, datos: ID_DATOS, escritorio: EN_ELECTRON });
   if (p === '/api/apagar' && req.method === 'POST') {
     // Solo desde este mismo equipo (no desde celulares/tabletas de la red)
     if (!esEquipo(req)) return sendJSON(res, { error: 'Solo se puede cerrar desde el equipo donde corre el programa' }, 403);
@@ -1453,7 +1504,7 @@ async function handle(req, res) {
 
   // --- Archivos
   if (p.startsWith('/fondos/')) { const f = archivoFondo(p.slice(8)); return f ? serveFile(req, res, f) : send(res, 403, 'Prohibido', 'text/plain'); }
-  if (p.startsWith('/fuentes/')) { const f = safeJoin(DIRS.fuentes, p.slice(9)); return f ? serveFile(req, res, f) : send(res, 403, 'Prohibido', 'text/plain'); }
+  if (p.startsWith('/fuentes/')) { const f = archivoFuente(p.slice(9)); return f ? serveFile(req, res, f) : send(res, 403, 'Prohibido', 'text/plain'); }
   // Dirección antigua (localhost:8888) en este equipo → salto a http://pkipuc.localhost llevando los
   // ajustes. Si el navegador no conoce los nombres *.localhost (Safari antiguo), se queda aquí.
   if ((p === '/' || p === '/control') && req.method === 'GET' && esHostAntiguo(req) && !url.searchParams.has('quedarse')) {
@@ -1553,38 +1604,22 @@ function redesLocales() {
 }
 function localIPs() { return redesLocales().map((r) => r.ip); }
 
+// ---------------------------------------------------------------- Inicio del servidor y puertos
+// 1) Si ya hay un PK-PENTECOSTAL abierto con ESTOS MISMOS datos, no se abre otro: se muestra ese.
+// 2) Si 8888 lo usa otro programa (Proyektor original, etc.) se busca solo un puerto libre (8890…8999).
+//    Nunca se cierra ni se toca un programa ajeno.
+// 3) El puerto elegido queda en BSPK/puerto.json para el lanzador y la app de escritorio.
+const ID_DATOS = crypto.createHash('sha1').update(DATA_ROOT.toLowerCase()).digest('hex').slice(0, 12);
 const server = http.createServer((req, res) => {
   handle(req, res).catch((e) => { console.error(e); if (!res.headersSent) sendJSON(res, { error: e.message }, 500); });
 });
-server.on('error', (e) => {
-  if (e.code === 'EADDRINUSE') {
-    // ¿Ya está abierto PK-PENTECOSTAL? Entonces solo abrimos el panel.
-    http.get({ host: '127.0.0.1', port: PORT, path: '/api/info', timeout: 2000 }, (r) => {
-      let d = ''; r.on('data', (c) => (d += c)); r.on('end', () => {
-        let info = null; try { info = JSON.parse(d); } catch (_) { /* no es nuestro */ }
-        if (info && info.app === APP_NOMBRE) {
-          console.log(`\n   ${APP_NOMBRE} ya estaba abierto. Abriendo el panel…\n`);
-          if (ABRIR) abrirNavegador(`http://localhost:${PORT}/`); // salta solo a la dirección con nombre
-          process.exit(0);
-        }
-        errorPuerto();
-      });
-    }).on('error', errorPuerto).on('timeout', errorPuerto);
-    return;
-  }
-  throw e;
-});
-function errorPuerto() {
-  console.error(`\n  El puerto ${PORT} está ocupado por otro programa (¿el Proyektor original?).\n  Ciérrelo e intente de nuevo.\n`);
-  process.exit(2);
-}
-// Servidor exclusivo del proyector: otra dirección y otro puerto, solo muestra la salida.
+const serverProy = http.createServer(manejarProy);
+
 function manejarProy(req, res) {
   const p = (req.url || '/').split('?')[0];
   if (p === '/' || p === '/control' || p === '/index.html') { res.writeHead(302, { Location: '/proyector' }); return res.end(); }
   handle(req, res).catch((e) => { console.error(e); if (!res.headersSent) sendJSON(res, { error: e.message }, 500); });
 }
-const serverProy = http.createServer(manejarProy);
 
 // Puerto 80 (solo dentro de este equipo): http://pkipuc.localhost y http://proyector.pkipuc.localhost
 function manejarWeb(req, res) {
@@ -1614,12 +1649,98 @@ async function abrirPuertoWeb() {
   });
   if (await escuchar('127.0.0.1')) { webActiva = true; await escuchar('::1'); }
 }
-serverProy.on('error', (e) => console.error(`
-   Aviso: no se pudo abrir la dirección del proyector (puerto ${PORT_PROY}): ${e.code || e.message}
-`));
-server.listen(PORT, '0.0.0.0', async () => {
-  serverProy.listen(PORT_PROY, '0.0.0.0');
+
+// Registro interno (BSPK/logs/servidor.log): en la app de escritorio no hay consola visible
+const LOG_FILE = path.join(PRIV.logs, 'servidor.log');
+function registrar(nivel, args) {
+  try {
+    fs.mkdirSync(PRIV.logs, { recursive: true });
+    try { if (fs.statSync(LOG_FILE).size > 2 * 1024 * 1024) fs.renameSync(LOG_FILE, LOG_FILE + '.1'); } catch (_) { /* aún no existe */ }
+    const txt = args.map((a) => (a instanceof Error ? a.stack : typeof a === 'string' ? a : JSON.stringify(a))).join(' ');
+    fs.appendFileSync(LOG_FILE, `${new Date().toISOString()} [${nivel}] ${txt}\n`);
+  } catch (_) { /* sin registro */ }
+}
+for (const [nivel, fn] of [['info', 'log'], ['error', 'error'], ['aviso', 'warn']]) {
+  const orig = console[fn].bind(console);
+  console[fn] = (...a) => { registrar(nivel, a); if (!EN_ELECTRON) orig(...a); };
+}
+process.on('uncaughtException', (e) => { console.error('Error inesperado (el programa sigue funcionando):', e); });
+process.on('unhandledRejection', (e) => { console.error('Promesa rechazada sin manejar:', e); });
+
+function infoEn(puerto) {
+  return new Promise((ok) => {
+    const r = http.get({ host: '127.0.0.1', port: puerto, path: '/api/info', timeout: 1500 }, (res) => {
+      let d = ''; res.on('data', (c) => (d += c));
+      res.on('end', () => { try { ok(JSON.parse(d)); } catch (_) { ok(null); } });
+    });
+    r.on('error', () => ok(null)); r.on('timeout', () => { r.destroy(); ok(null); });
+  });
+}
+function escucharEn(srv, puerto) {
+  return new Promise((ok) => {
+    const mal = (e) => { srv.removeListener('listening', bien); ok(e.code || 'ERROR'); };
+    const bien = () => { srv.removeListener('error', mal); ok(true); };
+    srv.once('error', mal); srv.once('listening', bien);
+    srv.listen(puerto, '0.0.0.0');
+  });
+}
+// Escucha en el primer puerto libre de la lista. En Windows otro programa puede tener el puerto solo en
+// 127.0.0.1 y aun así dejarnos abrir 0.0.0.0 → primero se comprueba que nadie conteste allí.
+async function primerPuertoLibre(srv, candidatos) {
+  for (const p of candidatos) {
+    if (!p || p > 65535) continue;
+    if ((await puertoOcupado('127.0.0.1', p)) || (await puertoOcupado('::1', p))) continue;
+    if ((await escucharEn(srv, p)) === true) return p;
+  }
+  return 0;
+}
+const rango = (desde, hasta) => Array.from({ length: hasta - desde + 1 }, (_, i) => desde + i);
+
+function avisarPadre(msg) { try { if (process.parentPort) process.parentPort.postMessage(msg); else if (process.send) process.send(msg); } catch (_) { /* sin ventana */ } }
+function escribirPuerto() {
+  try {
+    fs.mkdirSync(BSPK, { recursive: true });
+    fs.writeFileSync(PRIV.puerto, JSON.stringify({ puerto: PORT, proyector: PORT_PROY, pid: process.pid, url: urlPanel(), datos: ID_DATOS, t: Date.now() }));
+  } catch (_) { /* no crítico */ }
+}
+function borrarPuerto() {
+  try { const d = JSON.parse(fs.readFileSync(PRIV.puerto, 'utf8')); if (d.pid === process.pid) fs.unlinkSync(PRIV.puerto); } catch (_) { /* ya no está */ }
+}
+process.on('exit', borrarPuerto);
+
+async function iniciarServidor() {
+  // ¿Ya está abierto con estos mismos datos? (puerto preferido o el que quedó anotado)
+  let anotado = 0;
+  try { anotado = +JSON.parse(fs.readFileSync(PRIV.puerto, 'utf8')).puerto || 0; } catch (_) { /* no hay */ }
+  for (const p of [...new Set([PORT_PREFERIDO, anotado].filter(Boolean))]) {
+    const info = await infoEn(p);
+    if (info && info.app === APP_NOMBRE && (info.datos === ID_DATOS || (!info.datos && !DATOS_APARTE))) {
+      const url = `http://localhost:${p}/`;
+      console.log(`\n   ${APP_NOMBRE} ya estaba abierto (puerto ${p}). Mostrando el panel…\n`);
+      avisarPadre({ tipo: 'ya-abierto', puerto: p, url: info.url || url, urlLocal: url });
+      if (ABRIR && !EN_ELECTRON) abrirNavegador(url);
+      setTimeout(() => process.exit(0), 200);
+      return;
+    }
+  }
+  const p = await primerPuertoLibre(server, [PORT_PREFERIDO, ...rango(PORT_PREFERIDO + 2, PORT_PREFERIDO + 111)]);
+  if (!p) {
+    const msg = `No se encontró un puerto libre entre ${PORT_PREFERIDO} y ${PORT_PREFERIDO + 111}.`;
+    console.error('\n  ' + msg + '\n');
+    avisarPadre({ tipo: 'error', codigo: 'SIN_PUERTO', mensaje: msg });
+    setTimeout(() => process.exit(2), 200);
+    return;
+  }
+  PORT = p;
+  if (PORT !== PORT_PREFERIDO) console.log(`   El puerto ${PORT_PREFERIDO} lo usa otro programa: PK-PENTECOSTAL usará el ${PORT}.`);
+  server.on('error', (e) => console.error('Servidor:', e));
+  const deseadoProy = Number(process.env.PORT_PROYECTOR) || PORT + 1;
+  PORT_PROY = await primerPuertoLibre(serverProy, [deseadoProy, ...rango(PORT + 112, PORT + 140)]);
+  if (!PORT_PROY) { PORT_PROY = PORT; console.error(`   Aviso: no se pudo abrir la dirección exclusiva del proyector; use ${urlPanel()}/proyector`); }
+  serverProy.on('error', (e) => console.error('Proyector:', e));
   await abrirPuertoWeb();
+  escribirPuerto();
+
   const en = String(config.idioma).startsWith('en');
   const T = (es, ing) => (en ? ing : es);
   const U = urlPanel();
@@ -1639,5 +1760,14 @@ server.listen(PORT, '0.0.0.0', async () => {
   console.log(T('   Hecho por Sebastian Lopez · IPUC Natania 6° Etapa', '   Made by Sebastian Lopez · IPUC Natania 6th Stage'));
   console.log(T('   Zona Especial Misionera – Archipiélago de San Andrés, Providencia y Santa Catalina', '   Special Missionary Zone – Archipelago of San Andrés, Providencia and Santa Catalina'));
   console.log(T('   «Por toda la tierra salió su voz, y hasta el extremo del mundo sus palabras.» Salmos 19:4\n', '   “Their line is gone out through all the earth, and their words to the end of the world.” Psalm 19:4\n'));
-  if (ABRIR) abrirNavegador(`http://localhost:${PORT}/`);
+  avisarPadre({ tipo: 'listo', puerto: PORT, proyector: PORT_PROY, url: urlPanel(), urlLocal: `http://localhost:${PORT}/` });
+  if (ABRIR && !EN_ELECTRON) abrirNavegador(`http://localhost:${PORT}/`);
+}
+// La app de escritorio pide cerrar con un mensaje (cierre ordenado: guarda y apaga el Wi-Fi propio)
+if (process.parentPort) process.parentPort.on('message', (e) => { if (e && e.data && e.data.tipo === 'apagar') apagar(0); });
+else if (process.send) process.on('message', (m) => { if (m && m.tipo === 'apagar') apagar(0); });
+iniciarServidor().catch((e) => {
+  console.error('No se pudo iniciar el servidor:', e);
+  avisarPadre({ tipo: 'error', codigo: 'INICIO', mensaje: e.message });
+  setTimeout(() => process.exit(1), 200);
 });

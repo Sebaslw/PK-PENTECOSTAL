@@ -32,3 +32,6 @@ desktop.ini
 
 # Página web: el .zip se genera con web/crear-zip.ps1 (pesa >100 MB, súbalo como Release)
 web/descargas/*.zip
+
+# App de escritorio: compilados (el instalador y el portable se publican como Release)
+dist/
