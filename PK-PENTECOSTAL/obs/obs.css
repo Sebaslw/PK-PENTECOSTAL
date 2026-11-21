@@ -186,3 +186,101 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 
 /* Miniaturas livianas de video (miniaturas.js) */
 .bth .im { position: relative; }
+
+/* ================= STINGERS ================= */
+.mod-view[data-view="stingers"] { grid-template-columns: 320px minmax(0, 1fr) 430px; }
+@media (max-width: 1400px) { .mod-view[data-view="stingers"] { grid-template-columns: 290px minmax(0, 1fr) 380px; } }
+@media (max-width: 1100px) { .mod-view[data-view="stingers"] { grid-template-columns: 1fr; flex: none; } }
+.stg-lista { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.stg-item { display: flex; align-items: center; gap: 10px; padding: 6px; border: 1px solid var(--line); border-radius: 10px; background: #061a36; cursor: pointer; transition: border-color .15s; }
+.stg-item:hover { border-color: var(--acc); }
+.stg-item.sel { border-color: var(--warn); box-shadow: inset 0 0 0 1px var(--warn); }
+.stg-sw { position: relative; width: 84px; height: 47px; flex: none; border-radius: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.stg-sw i { position: absolute; left: 0; bottom: 0; width: 100%; height: 4px; }
+.stg-sw img { position: relative; max-width: 72%; max-height: 72%; object-fit: contain; filter: drop-shadow(0 1px 3px rgba(0,0,0,.5)); }
+.stg-info { flex: 1; min-width: 0; }
+.stg-info b { display: block; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stg-info small { color: var(--muted); font-size: 11px; }
+.stg-item button.on { background: var(--ok); color: #04210f; border-color: transparent; font-weight: 700; }
+.stg-prev-ctrl { flex-wrap: wrap; }
+#stgFijo.on { background: var(--warn); color: #1a1300; border-color: transparent; }
+.stg-activo { font-size: 12px; color: var(--warn); font-weight: 600; }
+#stgEntrar.on { background: var(--cyan); color: #021a33; box-shadow: 0 0 18px rgba(79,179,232,.5); }
+#stgCompleto { border-color: var(--warn); color: var(--warn); background: rgba(248,184,0,.08); }
+#stgEditor .savebar { position: sticky; top: -14px; z-index: 3; margin: -14px -14px 10px; padding: 10px 14px; background: var(--panel); border-bottom: 1px solid var(--line); display: flex; gap: 6px; align-items: center; }
+#stgEditor .savebar .estado { flex: 1; font-size: 12px; }
+#stgEditor .savebar .estado.ok { color: var(--ok); } #stgEditor .savebar .estado.no { color: var(--warn); }
+#stgEditor input[type=number] { width: 100%; }
+.stg-el { border: 1px solid var(--line); border-radius: 8px; margin: 6px 0; background: rgba(255,255,255,.02); }
+.stg-el[open] { border-color: var(--acc); }
+.stg-el summary { display: flex; align-items: center; gap: 6px; padding: 5px 6px; cursor: pointer; list-style: none; }
+.stg-el summary::-webkit-details-marker { display: none; }
+.stg-el .ic { width: 20px; text-align: center; }
+.stg-el .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.stg-el .acc { display: flex; gap: 2px; }
+.stg-el .acc button { padding: 2px 6px; font-size: 11px; }
+.stg-el-body { padding: 0 8px 8px; }
+.stg-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; }
+.stg-grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 8px; }
+.stg-grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px 8px; align-items: end; font-size: 12px; }
+.stg-grid4 b { grid-column: 1 / -1; margin-top: 6px; }
+.stg-grid4 label { display: flex; flex-direction: column; gap: 2px; color: var(--muted); margin: 0 !important; }
+.stg-grid4 input { width: 100%; }
+.stg-fx-row, .stg-snd { border-top: 1px dashed var(--line); padding-top: 6px; margin-top: 6px; }
+.stg-fx-row .row input[type=color] { width: 38px; flex: none; }
+.stg-add { flex-wrap: wrap; gap: 4px; margin-bottom: 4px; }
+
+/* Cuenta regresiva */
+.cuenta-estado { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.cuenta-estado.on { color: var(--warn); font-weight: 700; }
+.cuenta-estado.fin { color: var(--ok); font-weight: 700; }
+.cuenta-rapida button { flex: 1; }
+#cuentaCard input[type=time] { width: 130px; }
+
+/* Diseños de overlay (galería) */
+.ovl-galeria { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 6px 0 8px; }
+.ovl-item { display: flex; flex-direction: column; gap: 3px; padding: 4px; text-align: left; border: 1px solid var(--line); border-radius: 8px; background: #04122a; position: relative; }
+.ovl-item:hover { border-color: var(--acc); }
+.ovl-item.sel { border-color: var(--warn); box-shadow: inset 0 0 0 1px var(--warn); }
+.ovl-mini { display: block; width: 100%; aspect-ratio: 16 / 4.2; border-radius: 5px; background-color: #1d2128; background-repeat: no-repeat; background-size: 100% auto;
+  background-image: none; box-shadow: inset 0 0 0 1px rgba(255,255,255,.05); }
+.ovl-item .ovl-mini { background-color: #2a2f38; }
+.ovl-nom { font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ovl-org { position: absolute; top: 6px; right: 6px; font-size: 9px; padding: 0 5px; border-radius: 4px; background: rgba(0,0,0,.55); color: var(--muted); }
+.ovl-org.PK { color: var(--warn); }
+.ovl-z { border-top: 1px dashed var(--line); padding-top: 6px; margin-top: 6px; }
+.ovl-z4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin: 4px 0; }
+.ovl-z4 label { display: flex; flex-direction: column; font-size: 11px; color: var(--muted); margin: 0 !important; }
+.ovl-z4 input { width: 100%; }
+.ovl-z .row { flex-wrap: wrap; }
+.ovl-z select { flex: 1 1 100px; min-width: 100px; }
+.ovl-z input[type=color] { width: 38px; flex: none; }
+
+/* Mover los textos del overlay sobre la vista previa (como ProyectoRP) */
+.zonas-capa { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
+.zona-caja { position: absolute; pointer-events: auto; cursor: move; border: 1.5px dashed rgba(255,255,255,.55); border-radius: 3px; touch-action: none; outline: none; }
+.zona-caja:hover { border-color: var(--cyan); background: rgba(79,179,232,.10); }
+.zona-caja.sel { border: 1.5px solid var(--warn); background: rgba(248,184,0,.10); box-shadow: 0 0 0 1px rgba(0,0,0,.4); }
+.zona-caja .zt { position: absolute; left: -1px; top: -15px; font-size: 9px; line-height: 13px; padding: 0 4px; border-radius: 3px 3px 0 0; background: rgba(0,0,0,.7); color: #fff; white-space: nowrap; pointer-events: none; }
+.zona-caja.sel .zt { background: var(--warn); color: #1a1300; font-weight: 700; }
+.zona-caja .zr { position: absolute; right: -5px; bottom: -5px; width: 10px; height: 10px; border-radius: 2px; background: var(--warn); cursor: nwse-resize; display: none; }
+.zona-caja.sel .zr { display: block; }
+.zonas-ayuda { font-size: 11px; color: var(--muted); margin: 4px 0 0; }
+
+/* Vista previa real de cada diseño (miniatura + lupa) */
+.ovl-mini { position: relative; overflow: hidden; }
+.checker, .ovl-mini.checker { background: repeating-conic-gradient(#2a2f38 0 25%, #1d2128 0 50%) 0 0 / 12px 12px; }
+.ovl-esc { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; pointer-events: none; }
+.ovl-esc img { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: contain; }
+.ovl-z-txt { position: absolute; display: flex; align-items: center; overflow: hidden; white-space: nowrap; }
+.ovl-z-txt span { display: inline-block; line-height: 1.12; text-shadow: 0 2px 6px rgba(0,0,0,.35); }
+.ovl-lupa { position: fixed; z-index: 60; background: var(--panel); border: 1px solid var(--warn); border-radius: 10px; padding: 8px; box-shadow: 0 12px 40px rgba(0,0,0,.55); pointer-events: none; }
+.ovl-lupa.hidden { display: none; }
+.ovl-lupa-h { font-size: 12px; font-weight: 700; color: var(--warn); margin: 0 2px 6px; }
+.ovl-lupa-pant { position: relative; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 6px; }
+.ovl-lupa-pie { font-size: 11px; color: var(--muted); margin: 6px 2px 0; }
+
+/* Botón de la ventana interactiva */
+.btn-interactiva { border-color: var(--warn); color: var(--warn); background: rgba(248,184,0,.07); font-weight: 700; }
+.btn-interactiva small { font-weight: 400; color: var(--muted); }
+.btn-interactiva:hover { background: rgba(248,184,0,.16); }

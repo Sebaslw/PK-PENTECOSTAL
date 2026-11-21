@@ -2,8 +2,9 @@
 'use strict';
 const path = require('path');
 (async () => {
-  const { pipeline, env } = await import('@huggingface/transformers');
-  env.cacheDir = path.join(__dirname, 'modelos');
+  const { MODELOS, transformers } = require('./rutas');
+  const { pipeline, env } = await transformers();
+  env.cacheDir = MODELOS;
   env.allowRemoteModels = process.argv.includes('--sin-internet') ? false : true;
   const t0 = Date.now();
   const traducir = await pipeline('translation', 'Xenova/opus-mt-es-en', { dtype: 'q8' });

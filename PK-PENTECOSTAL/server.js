@@ -15,6 +15,7 @@ const crypto = require('crypto');
 
 const APP_DIR = __dirname;
 const PUBLIC_DIR = path.join(APP_DIR, 'public');
+const OBS_DIR = path.join(APP_DIR, 'obs');           // módulo OBS: panel, capa, stingers y su biblioteca
 const DATA_ROOT = path.resolve(APP_DIR, '..');
 const DIRS = {
   biblias: path.join(DATA_ROOT, 'biblias'),
@@ -22,12 +23,80 @@ const DIRS = {
   fondos: path.join(DATA_ROOT, 'fondos'),
   fuentes: path.join(DATA_ROOT, 'css', 'font'),
 };
-const CONFIG_FILE = path.join(APP_DIR, 'config.json');
 const PORT = Number(process.env.PORT) || 8888;
+
+// ---------------------------------------------------------------- Carpeta BSPK (privada)
+// Todo lo propio de esta instalación (ajustes y claves, stingers, respaldos, fondos subidos, traductor)
+// vive en BSPK/, al lado de PK-PENTECOSTAL/. Esa carpeta no se sube a GitHub.
+const BSPK = path.join(DATA_ROOT, 'BSPK');
+const PRIV = {
+  config: path.join(BSPK, 'config.json'),
+  obs: path.join(BSPK, 'obs'),       // solo para mudar instalaciones anteriores
+  respaldos: path.join(BSPK, 'respaldos'),
+  fondos: path.join(BSPK, 'fondos'),
+};
+// ¿Ya hay otro PK-PENTECOSTAL abierto en este puerto? (entonces no se mueve nada)
+function puertoOcupado() {
+  try {
+    require('child_process').execFileSync(process.execPath, ['-e',
+      `const s=require('net').connect(${PORT},'127.0.0.1');s.on('connect',()=>process.exit(1));s.on('error',()=>process.exit(0));setTimeout(()=>process.exit(0),800)`], { stdio: 'ignore', timeout: 3000 });
+    return false;
+  } catch (_) { return true; }
+}
+// Mueve un archivo o carpeta; si el destino ya existe, mezcla lo que falte
+function mover(origen, destino) {
+  if (!fs.existsSync(origen)) return;
+  fs.mkdirSync(path.dirname(destino), { recursive: true });
+  if (!fs.existsSync(destino)) {
+    try { fs.renameSync(origen, destino); return; }
+    catch (e) { if (!fs.cpSync) throw e; fs.cpSync(origen, destino, { recursive: true }); fs.rmSync(origen, { recursive: true, force: true }); return; }
+  }
+  if (fs.statSync(origen).isDirectory()) {
+    for (const n of fs.readdirSync(origen)) mover(path.join(origen, n), path.join(destino, n));
+    try { fs.rmdirSync(origen); } catch (_) { /* quedó algo repetido */ }
+  }
+}
+function migrarABSPK() {
+  const TRAD = path.join(APP_DIR, 'traductor'), TRAD_B = path.join(BSPK, 'traductor');
+  const lista = [
+    [path.join(APP_DIR, 'config.json'), PRIV.config],
+    [path.join(APP_DIR, 'respaldos'), PRIV.respaldos],
+    [path.join(APP_DIR, 'respaldo-logo-anterior'), path.join(PRIV.respaldos, 'respaldo-logo-anterior')],
+    [path.join(DIRS.fondos, 'Subidos'), path.join(PRIV.fondos, 'Subidos')],
+    [path.join(TRAD, 'node_modules'), path.join(TRAD_B, 'node_modules')],
+    [path.join(TRAD, 'modelos'), path.join(TRAD_B, 'modelos')],
+  ];
+  try { for (const n of fs.readdirSync(DATA_ROOT)) if (/^Respaldo ajustes/i.test(n)) lista.push([path.join(DATA_ROOT, n), path.join(PRIV.respaldos, n)]); } catch (_) { /* nada */ }
+  try { for (const n of fs.readdirSync(TRAD)) if (n.endsWith('.log')) lista.push([path.join(TRAD, n), path.join(TRAD_B, n)]); } catch (_) { /* nada */ }
+  // Videos de fondo de más de 95 MB (GitHub no acepta archivos de más de 100 MB)
+  const walk = (dir) => { try { for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const f = path.join(dir, e.name);
+    if (e.isDirectory()) { if (e.name !== 'Subidos') walk(f); }
+    else if (fs.statSync(f).size > 95 * 1024 * 1024) lista.push([f, path.join(PRIV.fondos, path.relative(DIRS.fondos, f))]);
+  } } catch (_) { /* nada */ } };
+  walk(DIRS.fondos);
+  // Módulo OBS: la biblioteca de stingers vive en PK-PENTECOSTAL/obs/biblioteca (versiones anteriores la tenían
+  // en BSPK/obs o directamente en PK-PENTECOSTAL/obs)
+  const BIB = path.join(OBS_DIR, 'biblioteca');
+  for (const c of ['imagenes', 'logos', 'sonidos', 'animaciones', 'fondos']) {
+    lista.push([path.join(PRIV.obs, c), path.join(BIB, c)], [path.join(OBS_DIR, c), path.join(BIB, c)]);
+  }
+  if (!fs.existsSync(path.join(OBS_DIR, 'stingers.json'))) lista.push([path.join(PRIV.obs, 'stingers.json'), path.join(OBS_DIR, 'stingers.json')]);
+  const pend = lista.filter(([a]) => fs.existsSync(a));
+  if (!pend.length || puertoOcupado()) return;
+  for (const [a, b] of pend) {
+    try { mover(a, b); console.log('  BSPK ← ' + path.relative(DATA_ROOT, a)); }
+    catch (e) { console.log('  No se pudo mover a BSPK: ' + path.relative(DATA_ROOT, a) + ' (' + e.message + ')'); }
+  }
+}
+migrarABSPK();
+// Si otro PK-PENTECOSTAL abierto impidió mover config.json, se lee desde donde está
+const CONFIG_FILE = fs.existsSync(PRIV.config) || !fs.existsSync(path.join(APP_DIR, 'config.json')) ? PRIV.config : path.join(APP_DIR, 'config.json');
+
 // Dirección propia del proyector (distinta del panel): http://proyector.localhost:8889/
 const PORT_PROY = Number(process.env.PORT_PROYECTOR) || PORT + 1;
 const APP_NOMBRE = 'PK-PENTECOSTAL';
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.0.2';
 const ABRIR = process.argv.includes('--abrir');
 
 if (parseInt(process.versions.node, 10) < 16) {
@@ -41,7 +110,7 @@ const MIME = {
   '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
   '.gif': 'image/gif', '.webp': 'image/webp', '.mp4': 'video/mp4', '.webm': 'video/webm',
   '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf', '.otf': 'font/otf',
-  '.ico': 'image/x-icon',
+  '.ico': 'image/x-icon', '.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.ogg': 'audio/ogg', '.m4a': 'audio/mp4',
 };
 const IMG_EXT = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
 const VID_EXT = ['.mp4', '.webm'];
@@ -85,8 +154,21 @@ const DEFAULT_MODULO = {
     temporizador: { on: false, segundos: 10 },
     borde: { on: true, color: '#ffffff', ancho: 3, radio: 10 },
     stinger: { on: false, color1: '#00d4ff', color2: '#ff2d55', duracion: 0.9 },
+    // Plantilla "Imagen completa" (como el overlay de ProyectoRP): imagen 1920×1080 y textos en posiciones fijas
+    diseno: '',          // diseño de overlay elegido (id de la imagen en obs/biblioteca)
+    extra: '',           // texto adicional (evento, tema…) para los diseños con tercera línea
+    completa: {
+      fuente: 'Source Sans 3',
+      nombre: { x: 273, y: 932, tam: 60, color: '#ffffff', negrita: true },
+      sub: { x: 1080, y: 956, tam: 25, color: '#ffffff', negrita: false },
+    },
+  },
+  cuenta: {
+    texto: 'EMPEZAMOS EN', fuente: 'Montserrat', tam: 190, color: '#ffffff', colorTexto: '#f8b800', x: 960, y: 540,
+    fondo: true, alTerminar: 'mensaje', mensaje: '¡Bienvenidos!', minutos: 10,
   },
   banner: {
+    lateral: '',
     posicion: 'abajo', fuente: 'Lato', negrita: false, cursiva: false, tam: 46, alineacion: 'center',
     color: '#ffffff', colorCita: '#f5b301', opacidad: 100, espaciado: 0, interlineado: 125, subir: 0,
     alto: 260, margen: 40, colorFondo: '#0b1a33', difuminado: true, opacidadFondo: 75, oscurecer: 35, desenfoque: 4,
@@ -168,8 +250,10 @@ function apagarZonaAlSalir() {
 let saveTimer = null, savePendiente = false;
 function escribirConfig() {
   clearTimeout(saveTimer); savePendiente = false;
+  if (typeof guardadoBloqueado !== 'undefined' && guardadoBloqueado) return; // se importó un respaldo: manda el archivo
   try {
     const tmp = CONFIG_FILE + '.tmp';
+    fs.mkdirSync(path.dirname(CONFIG_FILE), { recursive: true });
     fs.writeFileSync(tmp, JSON.stringify(config, null, 2));
     fs.renameSync(tmp, CONFIG_FILE);
   } catch (e) { console.error('No se pudo guardar la configuración:', e.message); }
@@ -201,6 +285,9 @@ const state = {
   rotulos: config.rotulos,
   idioma: config.idioma,
   version: 0,
+  stinger: { accion: '', id: '', n: 0, t: 0, alAire: false, pausa: 0 }, // última orden de stinger
+  stingerRev: 0,
+  overlayRev: 0,                                                         // cambia cuando se edita un diseño de overlay                                                         // cambia cuando se edita la biblioteca
 };
 
 // Reglas de convivencia overlay / banner y temporizador del rótulo
@@ -248,9 +335,9 @@ function visor(n) {
   return visores.get(n);
 }
 function vista(n) {
-  if (n === 1) return { ...state, visor: 1 };
+  if (n === 1) return { ...state, visor: 1, ahora: Date.now() };
   const v = visor(n);
-  return { ...state, vivo: v.vivo, negro: v.negro, ocultarTexto: v.ocultarTexto, estilo: v.estilo, visor: n };
+  return { ...state, vivo: v.vivo, negro: v.negro, ocultarTexto: v.ocultarTexto, estilo: v.estilo, visor: n, ahora: Date.now() };
 }
 
 const clients = new Set();
@@ -319,7 +406,7 @@ function serveFile(req, res, file) {
       res.writeHead(206, { 'Content-Type': type, 'Content-Range': `bytes ${start}-${end}/${st.size}`, 'Accept-Ranges': 'bytes', 'Content-Length': end - start + 1 });
       return fs.createReadStream(file, { start, end }).pipe(res);
     }
-    const isApp = file.startsWith(PUBLIC_DIR);
+    const isApp = file.startsWith(PUBLIC_DIR) || (file.startsWith(OBS_DIR) && !file.startsWith(path.join(OBS_DIR, 'biblioteca')));
     res.writeHead(200, { 'Content-Type': type, 'Content-Length': st.size, 'Accept-Ranges': 'bytes', 'Cache-Control': isApp ? 'no-cache' : 'max-age=3600' });
     fs.createReadStream(file).pipe(res);
   });
@@ -484,7 +571,7 @@ function saveSongbook(name, songs) {
   const f = songbookPath(name);
   if (!f) throw new Error('Nombre inválido');
   if (fs.existsSync(f)) {
-    const bak = path.join(APP_DIR, 'respaldos');
+    const bak = PRIV.respaldos;
     fs.mkdirSync(bak, { recursive: true });
     fs.copyFileSync(f, path.join(bak, `${name}.${Date.now()}.js`));
   }
@@ -494,23 +581,39 @@ function saveSongbook(name, songs) {
 }
 
 // ---------------------------------------------------------------- Fondos
+// Un fondo puede estar en fondos/ (públicos) o en BSPK/fondos/ (subidos y videos pesados)
+function archivoFondo(rel) {
+  const priv = safeJoin(PRIV.fondos, rel);
+  if (priv && fs.existsSync(priv)) return priv;
+  return safeJoin(DIRS.fondos, rel);
+}
 function listBackgrounds() {
   const out = [];
-  let cats = [];
-  try { cats = fs.readdirSync(DIRS.fondos, { withFileTypes: true }); } catch (_) { return out; }
+  const vistos = new Set();
   const walk = (dir, rel) => {
     for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
       if (e.isDirectory()) walk(path.join(dir, e.name), rel + '/' + e.name);
       else {
         const ext = path.extname(e.name).toLowerCase();
-        if (IMG_EXT.includes(ext) || VID_EXT.includes(ext)) {
+        if ((IMG_EXT.includes(ext) || VID_EXT.includes(ext)) && !vistos.has(rel + '/' + e.name)) {
+          vistos.add(rel + '/' + e.name);
           out.push({ categoria: rel.split('/')[1] || 'General', nombre: e.name, url: '/fondos' + rel + '/' + encodeURIComponent(e.name), tipo: VID_EXT.includes(ext) ? 'video' : 'imagen' });
         }
       }
     }
   };
-  for (const c of cats) {
-    if (c.isDirectory()) walk(path.join(DIRS.fondos, c.name), '/' + encodeURIComponent(c.name));
+  for (const raiz of [DIRS.fondos, PRIV.fondos]) {
+    let cats = [];
+    try { cats = fs.readdirSync(raiz, { withFileTypes: true }); } catch (_) { continue; }
+    for (const c of cats) if (c.isDirectory()) walk(path.join(raiz, c.name), '/' + encodeURIComponent(c.name));
+  }
+  for (const [c, nombre] of [['fondos', null], ['pk', 'pk-franja-rotulo.svg']]) {
+    let lista = [];
+    try { lista = fs.readdirSync(path.join(OBS_LIB, c)); } catch (_) { continue; }
+    for (const f of lista) {
+      if (nombre ? f !== nombre : !IMG_EXT.includes(path.extname(f).toLowerCase())) continue;
+      out.push({ categoria: 'OBS · Rótulos', nombre: f, url: `/obs-lib/${c}/${encodeURIComponent(f)}`, tipo: 'imagen' });
+    }
   }
   return out.map((b) => ({ ...b, categoria: decodeURIComponent(b.categoria) }));
 }
@@ -539,12 +642,544 @@ function buildFontsCss() {
   } catch (_) { /* sin fuentes */ }
   return { css, families: [...families].sort() };
 }
-const FONTS = buildFontsCss();
+let FONTS = buildFontsCss();
+
+// ---------------------------------------------------------------- Stingers (OBS)
+// Biblioteca en PK-PENTECOSTAL/obs: stingers.json + biblioteca/ (imagenes, logos, sonidos, animaciones, fondos, fuentes, pk)
+// El formato de cada stinger es el mismo de ProyectoRP, así se pueden importar tal cual.
+const OBS_LIB = path.join(OBS_DIR, 'biblioteca');
+const STG_FILE = path.join(OBS_DIR, 'stingers.json');
+const STG_CARPETAS = {
+  imagenes: [...IMG_EXT, '.svg'], logos: [...IMG_EXT, '.svg'], fondos: [...IMG_EXT, '.svg'], pk: [...IMG_EXT, '.svg'],
+  sonidos: ['.mp3', '.wav', '.ogg', '.m4a'], animaciones: VID_EXT,
+};
+const DISENO_PK = require(path.join(OBS_DIR, 'diseno-pk.js'));
+const STG_AJUSTES = { espera: 300, pausa: 900, cambiarEscena: false };
+const STG_ACCIONES = ['entrar', 'salir', 'completo', 'cancelar'];
+
+function stingersDeFabrica() {
+  const txt = (id, text, y, size, color, anim) => ({ id, type: 'text', x: 50, y, opacity: 100, in: 'abajo', out: 'fade', text, font: 'Montserrat', size, color, bold: true, upper: true, shadow: true, textAnim: anim });
+  const logo = (y, w) => ({ id: 'logo', type: 'image', src: '/logo-ipuc.webp', x: 50, y, w, opacity: 100, in: 'zoom', out: 'zoom', role: 'logo' });
+  const base = (id, name, style, color1, color2, effects, inTime = 800, outTime = 700) => ({
+    id, name, mode: 'hold', style, color1, color2, inTime, outTime, logo: '/logo-ipuc.webp', soundIn: null, soundOut: null, effects,
+    elements: [logo(42, 22), txt('t1', 'IPUC NATANIA 6° ETAPA', 76, 54, '#ffffff', 'letras'), txt('t2', 'Zona Especial Misionera', 83, 30, '#f2dc9b', 'maquina')],
+  });
+  return [
+    base('pk-iris', 'PK · Iris básico', 'iris', '#0b1f45', '#f2b705', [{ id: 'f1', type: 'particulas', color: '#ffd666', amount: 45, speed: 30, size: 40, opacity: 35 }]),
+    base('pk-barrido', 'PK · Barrido básico', 'barrido', '#00427f', '#f2b705', [{ id: 'f2', type: 'brillo', color: '#ffffff', amount: 60, speed: 20, size: 80, opacity: 25 }]),
+    base('pk-cortina', 'PK · Cortina básica', 'cortina', '#061f45', '#d4a537', [{ id: 'f3', type: 'bokeh', color: '#3fa9dc', amount: 35, speed: 25, size: 60, opacity: 45 }], 600, 600),
+    base('pk-destello', 'PK · Destello básico', 'destello', '#071a3a', '#fde68a', [{ id: 'f4', type: 'estrellas', color: '#ffffff', amount: 60, speed: 30, size: 50, opacity: 70 }], 900, 700),
+  ];
+}
+function leerStingers() {
+  try {
+    const d = JSON.parse(fs.readFileSync(STG_FILE, 'utf8'));
+    if (Array.isArray(d.stingers) && d.stingers.length) return { activo: String(d.activo || d.stingers[0].id), ajustes: { ...STG_AJUSTES, ...(d.ajustes || {}) }, stingers: d.stingers };
+  } catch (_) { /* primera vez */ }
+  const stingers = stingersDeFabrica();
+  return { activo: stingers[0].id, ajustes: { ...STG_AJUSTES }, stingers };
+}
+let STG = leerStingers();
+function guardarStingers() {
+  fs.mkdirSync(OBS_LIB, { recursive: true });
+  const tmp = STG_FILE + '.tmp';
+  fs.writeFileSync(tmp, JSON.stringify(STG, null, 2));
+  fs.renameSync(tmp, STG_FILE);
+  state.stingerRev++;
+}
+function recursosStinger() {
+  const out = {};
+  for (const [c, exts] of Object.entries(STG_CARPETAS)) {
+    try { out[c] = fs.readdirSync(path.join(OBS_LIB, c)).filter((f) => exts.includes(path.extname(f).toLowerCase())).sort((a, b) => a.localeCompare(b, 'es')); } catch (_) { out[c] = []; }
+  }
+  return out;
+}
+// Limpia lo que llega del panel: solo datos simples y tamaños razonables
+function limpiarStinger(s) {
+  if (!s || typeof s !== 'object') return null;
+  const o = JSON.parse(JSON.stringify(s));
+  o.id = String(o.id || uid()).slice(0, 40);
+  o.name = String(o.name || 'Stinger').slice(0, 80);
+  o.mode = 'hold';
+  o.inTime = Math.max(100, Math.min(10000, +o.inTime || 800));
+  o.outTime = Math.max(100, Math.min(10000, +o.outTime || 700));
+  o.effects = (Array.isArray(o.effects) ? o.effects : []).slice(0, 6);
+  o.elements = (Array.isArray(o.elements) ? o.elements : []).slice(0, 40);
+  return JSON.stringify(o).length < 200000 ? o : null;
+}
+
+// ---- Importar desde ProyectoRP (misma computadora)
+function proyectoRPDir() {
+  const cands = [
+    process.env.APPDATA && path.join(process.env.APPDATA, 'ProyectoRP'),
+    path.join(os.homedir(), 'AppData', 'Roaming', 'ProyectoRP'),
+    path.join(os.homedir(), 'Library', 'Application Support', 'ProyectoRP'),
+    path.join(os.homedir(), '.config', 'ProyectoRP'),
+  ].filter(Boolean);
+  return cands.find((d) => { try { return fs.statSync(path.join(d, 'obs')).isDirectory(); } catch (_) { return false; } }) || null;
+}
+function copiarCarpeta(origen, destino, exts) {
+  let n = 0;
+  let lista = [];
+  try { lista = fs.readdirSync(origen, { withFileTypes: true }); } catch (_) { return 0; }
+  fs.mkdirSync(destino, { recursive: true });
+  for (const e of lista) {
+    if (!e.isFile() || (exts && !exts.includes(path.extname(e.name).toLowerCase()))) continue;
+    const a = path.join(origen, e.name), b = path.join(destino, e.name);
+    try { if (fs.existsSync(b) && fs.statSync(b).size === fs.statSync(a).size) continue; } catch (_) { /* se copia */ }
+    fs.copyFileSync(a, b); n++;
+  }
+  return n;
+}
+// "SourceSans3-SemiboldIt.otf" → familia "Source Sans 3", peso 600, cursiva
+function instalarFuentes(origen) {
+  let archivos = [];
+  try { archivos = fs.readdirSync(origen).filter((f) => /\.(otf|ttf|woff2?)$/i.test(f)); } catch (_) { return 0; }
+  const PESOS = { thin: 100, extralight: 200, light: 300, regular: 400, medium: 500, semibold: 600, bold: 700, extrabold: 800, black: 900 };
+  const grupos = {};
+  for (const f of archivos) {
+    const [fam, est = 'Regular'] = path.basename(f, path.extname(f)).split('-');
+    const familia = fam.replace(/([a-z])([A-Z0-9])/g, '$1 $2').replace(/([0-9])([A-Z])/g, '$1 $2');
+    const cursiva = /(It|Italic)$/.test(est);
+    const peso = PESOS[est.replace(/(It|Italic)$/, '').toLowerCase() || 'regular'] || 400;
+    (grupos[familia] ||= []).push({ f, peso, cursiva });
+  }
+  let n = 0;
+  for (const [familia, lista] of Object.entries(grupos)) {
+    const dir = path.join(DIRS.fuentes, familia.toLowerCase().replace(/[^a-z0-9]/g, ''));
+    fs.mkdirSync(dir, { recursive: true });
+    for (const x of lista) { if (!fs.existsSync(path.join(dir, x.f))) { fs.copyFileSync(path.join(origen, x.f), path.join(dir, x.f)); n++; } }
+    const cssTxt = lista.map((x) => `@font-face {\n  font-family: '${familia}';\n  font-weight: ${x.peso};\n  font-style: ${x.cursiva ? 'italic' : 'normal'};\n  src: url('${x.f}');\n}\n`).join('');
+    fs.writeFileSync(path.join(dir, familia.toLowerCase().replace(/[^a-z0-9]/g, '') + '.css'), cssTxt);
+    for (const lic of fs.readdirSync(origen).filter((f) => /licen/i.test(f))) fs.copyFileSync(path.join(origen, lic), path.join(dir, lic));
+  }
+  if (n) FONTS = buildFontsCss();
+  return n;
+}
+function importarProyectoRP() {
+  const dir = proyectoRPDir();
+  if (!dir) throw new Error('No se encontró ProyectoRP en este computador');
+  const obs = path.join(dir, 'obs');
+  const r = { archivos: 0, stingers: 0, fuentes: 0, rotulos: 0, overlay: false, obs: null };
+  for (const c of ['imagenes', 'logos', 'sonidos']) r.archivos += copiarCarpeta(path.join(obs, 'stingers', c), path.join(OBS_LIB, c), STG_CARPETAS[c]);
+  r.archivos += copiarCarpeta(path.join(dir, 'animaciones'), path.join(OBS_LIB, 'animaciones'), STG_CARPETAS.animaciones);
+  r.archivos += copiarCarpeta(path.join(obs, 'fondos'), path.join(OBS_LIB, 'fondos'), STG_CARPETAS.fondos);
+  r.fuentes = instalarFuentes(path.join(obs, 'fuentes'));
+  try { fs.mkdirSync(path.join(OBS_LIB, 'proyectorp'), { recursive: true }); fs.copyFileSync(path.join(dir, 'config', 'obs.json'), path.join(OBS_LIB, 'proyectorp', 'obs-banners.json')); } catch (_) { /* sin banners */ }
+  r.archivos += copiarFondosLaterales(dir);
+  r.archivos += copiarCarpeta(path.join(obs, 'fuentes'), path.join(OBS_LIB, 'fuentes'));
+  for (const [a, b] of [[path.join(obs, 'stingers.json'), 'stingers.json'], [path.join(obs, 'overlay.json'), 'overlay.json'], [path.join(dir, 'config', 'obs.json'), 'obs-banners.json']]) {
+    try { fs.mkdirSync(path.join(OBS_LIB, 'proyectorp'), { recursive: true }); fs.copyFileSync(a, path.join(OBS_LIB, 'proyectorp', b)); } catch (_) { /* no existe */ }
+  }
+
+  // Stingers: los de ProyectoRP reemplazan a los de igual id; los de fábrica de PK se conservan al final
+  try {
+    const d = JSON.parse(fs.readFileSync(path.join(obs, 'stingers.json'), 'utf8'));
+    const nuevos = (d.stingers || []).map(limpiarStinger).filter(Boolean);
+    const ids = new Set(nuevos.map((s) => s.id));
+    // Cada stinger de ProyectoRP llega tal cual y además con su versión "PK · …" (diseño PK-PENTECOSTAL)
+    STG.stingers = DISENO_PK.agregarVariantes([...nuevos, ...STG.stingers.filter((s) => !ids.has(s.id))], nuevos);
+    if (d.activo && ids.has(d.activo)) STG.activo = d.activo;
+    r.stingers = nuevos.length;
+  } catch (_) { /* sin stingers */ }
+  try {
+    const c = JSON.parse(fs.readFileSync(path.join(dir, 'config', 'obs_control.json'), 'utf8'));
+    if (Number.isFinite(+c.stinger_espera_ms)) STG.ajustes.espera = +c.stinger_espera_ms;
+    if (typeof c.stinger_al_cambiar === 'boolean') STG.ajustes.cambiarEscena = c.stinger_al_cambiar;
+    if (c.puerto) r.obs = { host: c.host || '', puerto: +c.puerto || 4455, clave: String(c.clave || '') };
+  } catch (_) { /* sin conexión guardada */ }
+  guardarStingers();
+
+  // Overlay de rótulos: fondo a pantalla completa, posiciones, luces y listas de nombres
+  try {
+    const ov = JSON.parse(fs.readFileSync(path.join(obs, 'overlay.json'), 'utf8'));
+    const m = state.modulo.overlay;
+    if (ov.background && fs.existsSync(path.join(OBS_LIB, 'fondos', ov.background))) {
+      m.fondo = { url: '/obs-lib/fondos/' + encodeURIComponent(ov.background), nombre: ov.background };
+      m.plantilla = 'Imagen-Completa';
+    }
+    const t1 = (ov.texts || {}).text1 || {}, t2 = (ov.texts || {}).text2 || {}, p = ov.positions || {};
+    m.completa = deepMerge(m.completa, {
+      fuente: t1.font || m.completa.fuente,
+      nombre: { x: +(p.text1 || {}).x || m.completa.nombre.x, y: +(p.text1 || {}).y || m.completa.nombre.y, tam: +t1.size || m.completa.nombre.tam, color: t1.color || '#ffffff' },
+      sub: { x: +(p.text2 || {}).x || m.completa.sub.x, y: +(p.text2 || {}).y || m.completa.sub.y, tam: +t2.size || m.completa.sub.tam, color: t2.color || '#ffffff' },
+    });
+    if (ov.lightEffect) m.luces = { ...m.luces, on: ov.lightEffect !== 'none', intensidad: Math.max(5, Math.min(100, +ov.lightsOpacity || m.luces.intensidad)) };
+    // Listas: "Pastor | Jesus Muñoz" → nombre "Pastor Jesus Muñoz"; se agregan solo los que falten
+    const inp = ov.inputs || {};
+    for (let i = 1; i <= 5; i++) {
+      const nombre = inp['desc_text' + i]; if (!nombre) continue;
+      let g = state.rotulos.find((x) => x.nombre.trim().toLowerCase() === String(nombre).trim().toLowerCase());
+      if (!g) { g = { id: uid(), nombre: String(nombre), subtitulo: '', reloj: false, items: [] }; state.rotulos.push(g); }
+      if (inp['default_text' + i]) g.subtitulo = String(inp['default_text' + i]);
+      const sinTildes = (t) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+      for (const linea of String(inp['db_text' + i] || '').split('\n')) {
+        const partes = linea.split('|').map((x) => x.trim()).filter(Boolean);
+        if (!partes.length) continue;
+        const nom = partes[partes.length - 1];
+        const texto = partes.length > 1 && !sinTildes(nom).startsWith(sinTildes(partes[0])) ? `${partes[0]} ${nom}` : nom;
+        if (g.items.some((it) => sinTildes(it.texto).endsWith(sinTildes(nom)))) continue;
+        g.items.push({ id: uid(), texto, sub: '', color: ['#00bcd4', '#e91e63', '#4caf50', '#ff9800', '#9c27b0', '#f44336', '#3f51b5'][g.items.length % 7] });
+        r.rotulos++;
+      }
+    }
+    config.rotulos = state.rotulos; saveConfig();
+    state.moduloGuardado = JSON.stringify(state.modulo) === JSON.stringify(config.modulo);
+    r.overlay = true;
+  } catch (_) { /* sin overlay */ }
+  return r;
+}
+
+let stgTimer = null;
+async function rutasStinger(req, res, p, url, equipo) {
+  if (p === '/api/stingers' && req.method === 'GET') {
+    return sendJSON(res, { ...STG, recursos: recursosStinger(), proyectoRP: !!proyectoRPDir() });
+  }
+  if (p === '/api/stingers' && req.method === 'PUT') {
+    const b = await readBody(req, 4 * 1024 * 1024);
+    const lista = (Array.isArray(b.stingers) ? b.stingers : []).map(limpiarStinger).filter(Boolean).slice(0, 200);
+    if (!lista.length) return sendJSON(res, { error: 'Debe quedar al menos un stinger' }, 400);
+    const aj = b.ajustes || {};
+    STG = {
+      activo: lista.some((s) => s.id === b.activo) ? String(b.activo) : lista[0].id,
+      ajustes: { espera: Math.max(0, Math.min(5000, +aj.espera || 0)), pausa: Math.max(0, Math.min(30000, +aj.pausa || 0)), cambiarEscena: !!aj.cambiarEscena },
+      stingers: lista,
+    };
+    guardarStingers(); broadcast();
+    return sendJSON(res, { ok: true });
+  }
+  if (p === '/api/stinger' && req.method === 'POST') {
+    const b = await readBody(req);
+    if (!STG_ACCIONES.includes(b.accion)) return sendJSON(res, { error: 'Acción inválida' }, 400);
+    const s = STG.stingers.find((x) => x.id === b.id) || STG.stingers.find((x) => x.id === STG.activo) || STG.stingers[0];
+    const pausa = b.pausa != null ? Math.max(0, Math.min(30000, +b.pausa || 0)) : STG.ajustes.pausa;
+    const t = Date.now();
+    state.stinger = { accion: b.accion, id: s ? s.id : '', n: Math.max(t, state.stinger.n + 1), t, alAire: b.accion === 'entrar' || b.accion === 'completo', pausa };
+    clearTimeout(stgTimer);
+    if (b.accion === 'completo' && s) stgTimer = setTimeout(() => { state.stinger.alAire = false; broadcast(); }, s.inTime + pausa + s.outTime);
+    broadcast();
+    return sendJSON(res, { ok: true, stinger: state.stinger, inTime: s ? s.inTime : 0, outTime: s ? s.outTime : 0 });
+  }
+  if (p === '/api/stingers/importar' && req.method === 'POST') {
+    if (!equipo) return sendJSON(res, { error: 'Solo desde el computador' }, 403);
+    try { const r = importarProyectoRP(); broadcast(); return sendJSON(res, { ok: true, ...r }); }
+    catch (e) { return sendJSON(res, { error: e.message }, 400); }
+  }
+  if (p === '/api/stingers/subir' && req.method === 'PUT') { // imágenes, logos, sonidos o animaciones para los stingers
+    const carpeta = url.searchParams.get('carpeta') || '';
+    const nombre = path.basename(url.searchParams.get('nombre') || '').replace(/[^\w.\- ()áéíóúñÁÉÍÓÚÑ]/g, '_');
+    const ext = path.extname(nombre).toLowerCase();
+    if (!STG_CARPETAS[carpeta] || !nombre || !STG_CARPETAS[carpeta].includes(ext)) return sendJSON(res, { error: 'Tipo de archivo no permitido aquí' }, 400);
+    const dir = path.join(OBS_LIB, carpeta);
+    fs.mkdirSync(dir, { recursive: true });
+    let dest = path.join(dir, nombre), n = 1;
+    while (fs.existsSync(dest)) dest = path.join(dir, `${path.basename(nombre, ext)} (${n++})${ext}`);
+    const ws = fs.createWriteStream(dest);
+    let size = 0;
+    req.on('data', (c) => { size += c.length; if (size > 300 * 1024 * 1024) { req.destroy(); ws.destroy(); fs.unlink(dest, () => {}); } });
+    req.pipe(ws);
+    ws.on('finish', () => { state.stingerRev++; sendJSON(res, { ok: true, src: `lib:${carpeta}/${path.basename(dest)}`, nombre: path.basename(dest) }); });
+    ws.on('error', (e) => sendJSON(res, { error: e.message }, 500));
+    return;
+  }
+  return false;
+}
+
+// ---------------------------------------------------------------- Banners laterales (diseños de ProyectoRP + versión PK)
+const LAT_FILE = path.join(OBS_DIR, 'laterales.json');
+function leerLaterales() {
+  let lista = null;
+  try { lista = JSON.parse(fs.readFileSync(LAT_FILE, 'utf8')); } catch (_) { /* aún no hay copia propia */ }
+  if (!Array.isArray(lista)) {
+    try { lista = JSON.parse(fs.readFileSync(path.join(OBS_LIB, 'proyectorp', 'obs-banners.json'), 'utf8')).laterales; } catch (_) { lista = []; }
+  }
+  const originales = (Array.isArray(lista) ? lista : []).filter((l) => l && l.id && !l.origen);
+  return [...originales.map(DISENO_PK.lateralPK), ...originales];
+}
+// Copia los fondos "fondo:x.jpg" que usan los laterales (ProyectoRP los guarda aparte)
+function copiarFondosLaterales(dirRP) {
+  let n = 0;
+  for (const l of leerLaterales()) for (const e of l.elements || []) {
+    const m = /^fondo:(.+)$/.exec(e.src || ''); if (!m) continue;
+    for (const sub of ['f_images', 'f_videos', '']) {
+      const a = path.join(dirRP, 'fondos', sub, m[1]), b = path.join(OBS_LIB, 'fondos', m[1]);
+      if (fs.existsSync(a) && !fs.existsSync(b)) { fs.mkdirSync(path.dirname(b), { recursive: true }); fs.copyFileSync(a, b); n++; break; }
+    }
+  }
+  return n;
+}
+
+// ---------------------------------------------------------------- Cuenta regresiva ("EMPEZAMOS EN…")
+// state.cuenta.fin = hora (ms) en que llega a cero. Cada pantalla calcula lo que falta con su reloj
+// corregido por la hora del servidor (st.ahora), así coinciden el proyector, OBS y los celulares.
+state.cuenta = { activa: false, fin: 0, id: 0 };
+function iniciarCuenta(b) {
+  const ahora = Date.now();
+  let fin = 0;
+  if (b.accion === 'iniciar') fin = ahora + Math.max(1, Math.min(24 * 3600, +b.segundos || 0)) * 1000;
+  else if (b.accion === 'hasta') {
+    const m = /^(\d{1,2}):(\d{2})$/.exec(String(b.hora || ''));
+    if (!m || +m[1] > 23 || +m[2] > 59) throw new Error('Hora inválida (use HH:MM, de 00:00 a 23:59)');
+    const d = new Date(); d.setHours(+m[1], +m[2], 0, 0);
+    if (d.getTime() <= ahora) d.setDate(d.getDate() + 1); // si la hora ya pasó, es mañana
+    fin = d.getTime();
+  } else if (b.accion === 'sumar') {
+    if (!state.cuenta.activa) throw new Error('No hay una cuenta regresiva activa');
+    fin = Math.max(ahora, state.cuenta.fin) + (+b.segundos || 0) * 1000;
+  }
+  if (b.accion === 'detener') state.cuenta = { activa: false, fin: 0, id: Date.now() };
+  else state.cuenta = { activa: true, fin, id: Date.now() };
+}
+
+// ---------------------------------------------------------------- Respaldo completo (exportar / importar BSPK)
+// Un .zip con todo lo propio de esta instalación: BSPK (ajustes, claves, respaldos, fondos subidos) y la
+// biblioteca de stingers. Sirve para pasar PK-PENTECOSTAL a otro computador con todo configurado.
+// El traductor no se incluye (se reinstala con instalar.js).
+const CRC_TABLA = (() => { const t = new Int32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c; } return t; })();
+function crc32(buf) { let c = -1; for (let i = 0; i < buf.length; i++) c = CRC_TABLA[(c ^ buf[i]) & 0xff] ^ (c >>> 8); return (c ^ -1) >>> 0; }
+function archivosRespaldo() {
+  const out = [];
+  const walk = (dir, prefijo, saltar) => {
+    let lista = [];
+    try { lista = fs.readdirSync(dir, { withFileTypes: true }); } catch (_) { return; }
+    for (const e of lista) {
+      const f = path.join(dir, e.name), rel = prefijo + '/' + e.name;
+      if (saltar && saltar(rel)) continue;
+      if (e.isDirectory()) walk(f, rel, saltar);
+      else if (e.isFile() && fs.statSync(f).size < 400 * 1024 * 1024) out.push([rel, f]);
+    }
+  };
+  walk(BSPK, 'BSPK', (r) => /^BSPK\/traductor\/(node_modules|modelos)$/.test(r) || /\.tmp$/.test(r));
+  for (const f of ['stingers.json', 'laterales.json']) if (fs.existsSync(path.join(OBS_DIR, f))) out.push(['obs/' + f, path.join(OBS_DIR, f)]);
+  walk(OBS_LIB, 'obs/biblioteca');
+  return out;
+}
+function crearZip(lista) {
+  const partes = [], central = [];
+  let offset = 0;
+  const d = new Date();
+  const hora = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+  const fecha = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+  for (const [nombre, archivo] of lista) {
+    const datos = fs.readFileSync(archivo);
+    const comprimir = /\.(json|js|txt|svg|css|html|md|bi)$/i.test(nombre);
+    const cuerpo = comprimir ? zlib.deflateRawSync(datos) : datos;
+    const n = Buffer.from(nombre, 'utf8'), crc = crc32(datos);
+    const loc = Buffer.alloc(30);
+    loc.writeUInt32LE(0x04034b50, 0); loc.writeUInt16LE(20, 4); loc.writeUInt16LE(0x0800, 6); loc.writeUInt16LE(comprimir ? 8 : 0, 8);
+    loc.writeUInt16LE(hora, 10); loc.writeUInt16LE(fecha, 12); loc.writeUInt32LE(crc, 14); loc.writeUInt32LE(cuerpo.length, 18);
+    loc.writeUInt32LE(datos.length, 22); loc.writeUInt16LE(n.length, 26); loc.writeUInt16LE(0, 28);
+    const cen = Buffer.alloc(46);
+    cen.writeUInt32LE(0x02014b50, 0); cen.writeUInt16LE(20, 4); cen.writeUInt16LE(20, 6); cen.writeUInt16LE(0x0800, 8); cen.writeUInt16LE(comprimir ? 8 : 0, 10);
+    cen.writeUInt16LE(hora, 12); cen.writeUInt16LE(fecha, 14); cen.writeUInt32LE(crc, 16); cen.writeUInt32LE(cuerpo.length, 20); cen.writeUInt32LE(datos.length, 24);
+    cen.writeUInt16LE(n.length, 28); cen.writeUInt32LE(offset, 42);
+    partes.push(loc, n, cuerpo); central.push(cen, n);
+    offset += 30 + n.length + cuerpo.length;
+  }
+  const cd = Buffer.concat(central), fin = Buffer.alloc(22);
+  fin.writeUInt32LE(0x06054b50, 0); fin.writeUInt16LE(lista.length, 8); fin.writeUInt16LE(lista.length, 10);
+  fin.writeUInt32LE(cd.length, 12); fin.writeUInt32LE(offset, 16);
+  return Buffer.concat([...partes, cd, fin]);
+}
+function leerZip(buf) {
+  let e = buf.length - 22;
+  while (e >= 0 && buf.readUInt32LE(e) !== 0x06054b50) e--;
+  if (e < 0) throw new Error('El archivo no es un .zip válido');
+  const total = buf.readUInt16LE(e + 10);
+  let p = buf.readUInt32LE(e + 16);
+  const out = [];
+  for (let i = 0; i < total; i++) {
+    if (buf.readUInt32LE(p) !== 0x02014b50) throw new Error('El .zip está dañado');
+    const metodo = buf.readUInt16LE(p + 10), csize = buf.readUInt32LE(p + 20), nl = buf.readUInt16LE(p + 28), xl = buf.readUInt16LE(p + 30), cl = buf.readUInt16LE(p + 32);
+    const local = buf.readUInt32LE(p + 42), nombre = buf.slice(p + 46, p + 46 + nl).toString('utf8');
+    const ini = local + 30 + buf.readUInt16LE(local + 26) + buf.readUInt16LE(local + 28);
+    const datos = buf.slice(ini, ini + csize);
+    if (!nombre.endsWith('/')) out.push([nombre, metodo === 8 ? zlib.inflateRawSync(datos) : datos]);
+    p += 46 + nl + xl + cl;
+  }
+  return out;
+}
+let guardadoBloqueado = false; // tras importar, la configuración en memoria ya no debe pisar la importada
+function importarRespaldo(buf) {
+  const entradas = leerZip(buf);
+  if (!entradas.some(([n]) => n.startsWith('BSPK/') || n.startsWith('obs/'))) throw new Error('Este .zip no es un respaldo de PK-PENTECOSTAL');
+  // Copia de seguridad de lo actual antes de reemplazar
+  const sello = new Date().toISOString().replace(/[:.]/g, '-');
+  const copia = path.join(PRIV.respaldos, 'antes-de-importar-' + sello);
+  for (const f of [PRIV.config, STG_FILE, LAT_FILE]) if (fs.existsSync(f)) { fs.mkdirSync(copia, { recursive: true }); fs.copyFileSync(f, path.join(copia, path.basename(f))); }
+  let n = 0;
+  for (const [nombre, datos] of entradas) {
+    const destino = nombre.startsWith('BSPK/') ? safeJoin(BSPK, nombre.slice(5)) : nombre.startsWith('obs/') ? safeJoin(OBS_DIR, nombre.slice(4)) : null;
+    if (!destino || /[\\/]traductor[\\/](node_modules|modelos)/.test(destino)) continue;
+    if (destino.startsWith(OBS_DIR) && !destino.startsWith(OBS_LIB) && !/[\\/](stingers|laterales)\.json$/.test(destino)) continue; // nunca reemplaza código
+    fs.mkdirSync(path.dirname(destino), { recursive: true });
+    fs.writeFileSync(destino, datos); n++;
+  }
+  guardadoBloqueado = true;
+  STG = leerStingers(); state.stingerRev++;
+  return { archivos: n, copia: path.relative(DATA_ROOT, copia) };
+}
+
+// ---------------------------------------------------------------- ¿Hay una versión nueva en GitHub?
+const REPO_GITHUB = process.env.PK_REPO || 'Sebaslw/PK-PENTECOSTAL';
+let actCache = null;
+const numVersion = (v) => String(v || '').replace(/^v/i, '').split('.').map((x) => parseInt(x, 10) || 0);
+function esMasNueva(a, b) { const x = numVersion(a), y = numVersion(b); for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); } return false; }
+function pedirGitHub(ruta) {
+  return new Promise((ok, mal) => {
+    require('https').get({ host: 'api.github.com', path: ruta, timeout: 8000, headers: { 'User-Agent': 'PK-PENTECOSTAL', Accept: 'application/vnd.github+json' } }, (r) => {
+      let d = ''; r.on('data', (c) => (d += c));
+      r.on('end', () => { if (r.statusCode === 404) return ok(null); if (r.statusCode !== 200) return mal(new Error('GitHub respondió ' + r.statusCode)); try { ok(JSON.parse(d)); } catch (e) { mal(e); } });
+    }).on('error', mal).on('timeout', function () { this.destroy(new Error('Sin respuesta de GitHub')); });
+  });
+}
+async function buscarActualizacion(forzar) {
+  if (!forzar && actCache && Date.now() - actCache.t < 6 * 3600 * 1000) return actCache.r;
+  let r = { actual: APP_VERSION, ultima: APP_VERSION, hay: false, url: `https://github.com/${REPO_GITHUB}`, notas: '' };
+  const rel = await pedirGitHub(`/repos/${REPO_GITHUB}/releases/latest`);
+  if (rel && rel.tag_name) r = { ...r, ultima: rel.tag_name.replace(/^v/i, ''), url: rel.html_url, notas: String(rel.body || '').slice(0, 1500), fecha: rel.published_at };
+  else {
+    const tags = await pedirGitHub(`/repos/${REPO_GITHUB}/tags?per_page=20`);
+    const mejor = (tags || []).map((t) => t.name).filter((t) => /^v?\d+\.\d+/.test(t)).sort((a, b) => (esMasNueva(a, b) ? -1 : 1))[0];
+    if (mejor) r = { ...r, ultima: mejor.replace(/^v/i, ''), url: `https://github.com/${REPO_GITHUB}/releases` };
+  }
+  r.hay = esMasNueva(r.ultima, APP_VERSION);
+  actCache = { t: Date.now(), r };
+  return r;
+}
+
+async function rutasIdeas(req, res, p, url, equipo) {
+  if (p === '/api/laterales' && req.method === 'GET') return sendJSON(res, leerLaterales());
+  if (p === '/api/cuenta' && req.method === 'POST') {
+    try { iniciarCuenta(await readBody(req)); } catch (e) { return sendJSON(res, { error: e.message }, 400); }
+    broadcast();
+    return sendJSON(res, { ok: true, cuenta: state.cuenta });
+  }
+  if (p === '/api/bspk/exportar' && req.method === 'GET') {
+    if (!equipo) return sendJSON(res, { error: 'Solo desde el computador' }, 403);
+    const zip = crearZip(archivosRespaldo());
+    const nombre = `PK-PENTECOSTAL respaldo ${new Date().toISOString().slice(0, 10)}.zip`;
+    res.writeHead(200, { 'Content-Type': 'application/zip', 'Content-Length': zip.length, 'Cache-Control': 'no-store', 'Content-Disposition': `attachment; filename="${nombre}"; filename*=UTF-8''${encodeURIComponent(nombre)}` });
+    return res.end(zip);
+  }
+  if (p === '/api/bspk/importar' && req.method === 'PUT') {
+    if (!equipo) return sendJSON(res, { error: 'Solo desde el computador' }, 403);
+    const trozos = []; let size = 0;
+    await new Promise((ok, mal) => {
+      req.on('data', (c) => { size += c.length; if (size > 1024 * 1024 * 1024) { req.destroy(); mal(new Error('Demasiado grande')); } else trozos.push(c); });
+      req.on('end', ok); req.on('error', mal);
+    });
+    try { const r = importarRespaldo(Buffer.concat(trozos)); broadcast(); return sendJSON(res, { ok: true, ...r, reiniciar: true }); }
+    catch (e) { return sendJSON(res, { error: e.message }, 400); }
+  }
+  if (p === '/api/actualizacion' && req.method === 'GET') {
+    try { return sendJSON(res, await buscarActualizacion(url.searchParams.get('forzar') === '1')); }
+    catch (e) { return sendJSON(res, { actual: APP_VERSION, hay: false, error: 'No se pudo consultar GitHub: ' + e.message }); }
+  }
+  return false;
+}
+
+// ---------------------------------------------------------------- Diseños de overlay (imagen de fondo + zonas de texto)
+// Cada diseño es una imagen 1920×1080 transparente (franja, logo, adornos) y su propia distribución de textos:
+// zonas { nombre, sub, extra } con x, y, w, h en píxeles. Los diseños PK traen sus zonas; para el resto
+// (ProyectoRP o imágenes subidas) el panel las detecta solo analizando la imagen y las guarda aquí.
+const OVL_FILE = path.join(OBS_DIR, 'overlays.json');
+const OVL_EXT = ['.png', '.webp', '.svg'];
+const z = (x, y, w, h, alinear = 'left', color = '#ffffff', negrita = true) => ({ x, y, w, h, alinear, color, negrita });
+const OVL_PK = {
+  'pk/pk-franja-rotulo.svg': { nombre: 'PK · Franja con logo', fuente: 'Montserrat', zonas: { nombre: z(275, 910, 930, 96), sub: z(1230, 928, 560, 60, 'right', '#fde68a', false) } },
+  'pk/pk-overlay-doble.svg': { nombre: 'PK · Doble barra', fuente: 'Montserrat', zonas: { nombre: z(250, 866, 860, 76, 'left', '#04162e'), sub: z(250, 952, 720, 50, 'left', '#ffffff', false) } },
+  'pk/pk-overlay-centro.svg': { nombre: 'PK · Cinta central', fuente: 'Montserrat', zonas: { nombre: z(430, 908, 1060, 84, 'center'), sub: z(790, 866, 340, 32, 'center', '#04162e') } },
+  'pk/pk-overlay-esquina.svg': { nombre: 'PK · Esquina (3 líneas)', fuente: 'Montserrat', zonas: { nombre: z(1140, 834, 700, 72), sub: z(1130, 920, 710, 44, 'left', '#ffffff', false), extra: z(1120, 966, 700, 34, 'left', '#f8b800') } },
+};
+function leerOverlaysCfg() { try { return JSON.parse(fs.readFileSync(OVL_FILE, 'utf8')); } catch (_) { return {}; } }
+function listarOverlays() {
+  const cfg = leerOverlaysCfg();
+  const ids = [];
+  for (const c of ['overlays', 'fondos']) {
+    try { for (const f of fs.readdirSync(path.join(OBS_LIB, c))) if (OVL_EXT.includes(path.extname(f).toLowerCase())) ids.push(c + '/' + f); } catch (_) { /* sin carpeta */ }
+  }
+  for (const id of Object.keys(OVL_PK)) if (fs.existsSync(path.join(OBS_LIB, id))) ids.push(id);
+  return ids.map((id) => {
+    const base = OVL_PK[id] || {}, propio = cfg[id] || {};
+    const nombre = propio.nombre || base.nombre || path.basename(id, path.extname(id)).replace(/[_-]+/g, ' ');
+    return { id, url: '/obs-lib/' + id.split('/').map(encodeURIComponent).join('/'), nombre, fuente: propio.fuente || base.fuente || 'Source Sans 3',
+      zonas: propio.zonas || base.zonas || null, pk: !!OVL_PK[id], origen: id.startsWith('fondos/') ? 'ProyectoRP' : id.startsWith('pk/') ? 'PK' : 'Propio' };
+  });
+}
+function limpiarZona(v) {
+  if (!v || typeof v !== 'object') return undefined;
+  const n = (x, d, a, b) => Math.max(a, Math.min(b, Number.isFinite(+x) ? Math.round(+x) : d));
+  return { x: n(v.x, 0, -200, 2120), y: n(v.y, 0, -200, 1280), w: n(v.w, 400, 10, 1920), h: n(v.h, 60, 8, 1080),
+    alinear: ['left', 'center', 'right'].includes(v.alinear) ? v.alinear : 'left', color: /^#[0-9a-f]{6}$/i.test(v.color) ? v.color : '#ffffff',
+    negrita: !!v.negrita, mayus: !!v.mayus };
+}
+
+async function rutasOverlays(req, res, p, url) {
+  if (p === '/api/overlays' && req.method === 'GET') return sendJSON(res, listarOverlays());
+  if (p === '/api/overlays' && req.method === 'PUT') { // guarda la distribución de un diseño
+    const b = await readBody(req);
+    const id = String(b.id || '');
+    if (!listarOverlays().some((o) => o.id === id)) return sendJSON(res, { error: 'Diseño no encontrado' }, 404);
+    const cfg = leerOverlaysCfg();
+    if (b.restaurar) delete cfg[id];
+    else {
+      const zonas = {};
+      for (const k of ['nombre', 'sub', 'extra']) { const v = limpiarZona(b.zonas && b.zonas[k]); if (v) zonas[k] = v; }
+      if (!zonas.nombre) return sendJSON(res, { error: 'Falta la zona del nombre' }, 400);
+      cfg[id] = { nombre: String(b.nombre || '').slice(0, 80) || undefined, fuente: String(b.fuente || '').slice(0, 60) || undefined, zonas, detectado: !!b.detectado };
+    }
+    fs.writeFileSync(OVL_FILE + '.tmp', JSON.stringify(cfg, null, 2)); fs.renameSync(OVL_FILE + '.tmp', OVL_FILE);
+    state.overlayRev++; broadcast();
+    return sendJSON(res, { ok: true });
+  }
+  if (p === '/api/overlays/subir' && req.method === 'PUT') { // nueva imagen de overlay (PNG transparente 1920×1080)
+    const nombre = path.basename(url.searchParams.get('nombre') || '').replace(/[^\w.\- ()áéíóúñÁÉÍÓÚÑ]/g, '_');
+    const ext = path.extname(nombre).toLowerCase();
+    if (!nombre || !OVL_EXT.includes(ext)) return sendJSON(res, { error: 'Use una imagen PNG, WEBP o SVG (con fondo transparente)' }, 400);
+    const dir = path.join(OBS_LIB, 'overlays');
+    fs.mkdirSync(dir, { recursive: true });
+    let dest = path.join(dir, nombre), n = 1;
+    while (fs.existsSync(dest)) dest = path.join(dir, `${path.basename(nombre, ext)} (${n++})${ext}`);
+    const ws = fs.createWriteStream(dest);
+    let size = 0;
+    req.on('data', (c) => { size += c.length; if (size > 40 * 1024 * 1024) { req.destroy(); ws.destroy(); fs.unlink(dest, () => {}); } });
+    req.pipe(ws);
+    ws.on('finish', () => { state.overlayRev++; broadcast(); sendJSON(res, { ok: true, id: 'overlays/' + path.basename(dest) }); });
+    ws.on('error', (e) => sendJSON(res, { error: e.message }, 500));
+    return;
+  }
+  return false;
+}
 
 // ---------------------------------------------------------------- Rutas
+// ¿El nombre con que se llamó al programa es de este equipo o de la red local? (evita "DNS rebinding":
+// una página de internet que se hace pasar por localhost para leer la clave de los celulares)
+function hostPermitido(req) {
+  const h = String(req.headers.host || '').toLowerCase().replace(/:\d+$/, '').replace(/^\[|\]$/g, '');
+  if (!h) return true;
+  return h === 'localhost' || h.endsWith('.localhost') || h.endsWith('.local') || h === os.hostname().toLowerCase()
+    || /^\d{1,3}(\.\d{1,3}){3}$/.test(h) || h.includes(':');
+}
+// Las órdenes (POST/PUT/DELETE) solo se aceptan desde las páginas del propio programa: el navegador
+// marca el origen de cada petición y una página ajena no puede falsificarlo.
+function origenPropio(req) {
+  const o = req.headers.origin;
+  if (!o || o === 'null') {
+    const sitio = req.headers['sec-fetch-site'];
+    return !o && (!sitio || sitio === 'same-origin' || sitio === 'none');
+  }
+  try { return new URL(o).host === String(req.headers.host || ''); } catch (_) { return false; }
+}
+
 async function handle(req, res) {
   const url = new URL(req.url, 'http://localhost');
-  const p = decodeURIComponent(url.pathname);
+  let p;
+  try { p = decodeURIComponent(url.pathname); } catch (_) { return send(res, 400, 'Dirección inválida', 'text/plain'); }
+  if (!hostPermitido(req)) return send(res, 403, 'Prohibido', 'text/plain');
+  if (p.startsWith('/api/') && !['GET', 'HEAD'].includes(req.method) && !origenPropio(req)) {
+    return sendJSON(res, { error: 'Orden rechazada: no viene del panel de PK-PENTECOSTAL' }, 403);
+  }
 
   // --- Celular: vinculación por QR
   const equipo = esEquipo(req);
@@ -672,6 +1307,11 @@ async function handle(req, res) {
       id: s(g.id, 20) || uid(), nombre: s(g.nombre, 80), subtitulo: s(g.subtitulo, 120), reloj: !!g.reloj,
       items: (Array.isArray(g.items) ? g.items : []).map((i) => ({ id: s(i.id, 20) || uid(), texto: s(i.texto), sub: s(i.sub), color: col(i.color) })),
     }));
+    const it = state.overlay.item;
+    if (it && it.itemId) {
+      const g = state.rotulos.find((x) => x.id === it.grupo), i = g && g.items.find((x) => x.id === it.itemId);
+      if (i) Object.assign(it, { texto: i.texto, sub: i.sub || g.subtitulo || '', color: i.color });
+    }
     saveConfig(); broadcast();
     return sendJSON(res, { ok: true, rotulos: state.rotulos });
   }
@@ -679,7 +1319,7 @@ async function handle(req, res) {
     const nombre = path.basename(url.searchParams.get('nombre') || '').replace(/[^\w.\- ()áéíóúñÁÉÍÓÚÑ]/g, '_');
     const ext = path.extname(nombre).toLowerCase();
     if (!nombre || ![...IMG_EXT, ...VID_EXT].includes(ext)) return sendJSON(res, { error: 'Solo imágenes (.jpg .png .webp .gif) o videos (.mp4 .webm)' }, 400);
-    const dir = path.join(DIRS.fondos, 'Subidos');
+    const dir = path.join(PRIV.fondos, 'Subidos');
     fs.mkdirSync(dir, { recursive: true });
     let dest = path.join(dir, nombre), n = 1;
     while (fs.existsSync(dest)) dest = path.join(dir, `${path.basename(nombre, ext)} (${n++})${ext}`);
@@ -693,7 +1333,7 @@ async function handle(req, res) {
   }
   if (p === '/api/fondo' && req.method === 'DELETE') {
     const u = url.searchParams.get('url') || '';
-    const f = u.startsWith('/fondos/') ? safeJoin(DIRS.fondos, decodeURIComponent(u.slice(8))) : null;
+    const f = u.startsWith('/fondos/') ? archivoFondo(decodeURIComponent(u.slice(8))) : null;
     if (!f || !fs.existsSync(f) || !fs.statSync(f).isFile()) return sendJSON(res, { error: 'Archivo no encontrado' }, 404);
     fs.unlinkSync(f);
     return sendJSON(res, { ok: true });
@@ -751,6 +1391,9 @@ async function handle(req, res) {
     }
   }
   if (p === '/api/fondos') return sendJSON(res, listBackgrounds());
+  if (/^\/api\/(laterales|cuenta|bspk\/|actualizacion)/.test(p)) { const r = await rutasIdeas(req, res, p, url, equipo); if (r !== false) return; }
+  if (p.startsWith('/api/overlays')) { const r = await rutasOverlays(req, res, p, url); if (r !== false) return; }
+  if (p.startsWith('/api/stinger')) { const r = await rutasStinger(req, res, p, url, equipo); if (r !== false) return; }
   if (p === '/api/fuentes') return sendJSON(res, FONTS.families);
   if (p === '/api/pantallas' && req.method === 'POST') {
     // Extender = el proyector muestra solo la salida · Duplicar = muestra lo mismo que el computador
@@ -778,11 +1421,17 @@ async function handle(req, res) {
   if (p === '/fuentes.css') return send(res, 200, FONTS.css, 'text/css; charset=utf-8');
 
   // --- Archivos
-  if (p.startsWith('/fondos/')) { const f = safeJoin(DIRS.fondos, p.slice(8)); return f ? serveFile(req, res, f) : send(res, 403, 'Prohibido', 'text/plain'); }
+  if (p.startsWith('/fondos/')) { const f = archivoFondo(p.slice(8)); return f ? serveFile(req, res, f) : send(res, 403, 'Prohibido', 'text/plain'); }
   if (p.startsWith('/fuentes/')) { const f = safeJoin(DIRS.fuentes, p.slice(9)); return f ? serveFile(req, res, f) : send(res, 403, 'Prohibido', 'text/plain'); }
   if (p === '/' || p === '/control') return serveFile(req, res, path.join(PUBLIC_DIR, 'control.html'));
   if (p === '/salida' || p === '/proyector' || /^\/(visor|proyector)\/[1-9]$/.test(p) || p === '/obs' || p === '/pantalla' || p === '/chroma') return serveFile(req, res, path.join(PUBLIC_DIR, 'salida.html'));
-  if (p === '/capa' || p === '/overlay' || p === '/banner') return serveFile(req, res, path.join(PUBLIC_DIR, 'capa.html'));
+  if (p === '/stinger') return serveFile(req, res, path.join(OBS_DIR, 'stinger.html'));
+  if (p.startsWith('/obs/')) { // código del módulo OBS (no sus datos)
+    const f = safeJoin(OBS_DIR, p.slice(5));
+    return f && /\.(js|css|html)$/i.test(f) && !f.startsWith(OBS_LIB) ? serveFile(req, res, f) : send(res, 404, 'No encontrado', 'text/plain');
+  }
+  if (p.startsWith('/obs-lib/')) { const f = safeJoin(OBS_LIB, p.slice(9)); return f ? serveFile(req, res, f) : send(res, 403, 'Prohibido', 'text/plain'); }
+  if (p === '/capa' || p === '/overlay' || p === '/banner' || p === '/cuenta') return serveFile(req, res, path.join(OBS_DIR, 'capa.html'));
   const f = safeJoin(PUBLIC_DIR, p);
   return f ? serveFile(req, res, f) : send(res, 403, 'Prohibido', 'text/plain');
 }

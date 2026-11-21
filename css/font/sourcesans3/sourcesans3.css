@@ -1,0 +1,36 @@
+@font-face {
+  font-family: 'Source Sans 3';
+  font-weight: 700;
+  font-style: normal;
+  src: url('SourceSans3-Bold.otf');
+}
+@font-face {
+  font-family: 'Source Sans 3';
+  font-weight: 700;
+  font-style: italic;
+  src: url('SourceSans3-BoldIt.otf');
+}
+@font-face {
+  font-family: 'Source Sans 3';
+  font-weight: 400;
+  font-style: italic;
+  src: url('SourceSans3-It.otf');
+}
+@font-face {
+  font-family: 'Source Sans 3';
+  font-weight: 400;
+  font-style: normal;
+  src: url('SourceSans3-Regular.otf');
+}
+@font-face {
+  font-family: 'Source Sans 3';
+  font-weight: 600;
+  font-style: normal;
+  src: url('SourceSans3-Semibold.otf');
+}
+@font-face {
+  font-family: 'Source Sans 3';
+  font-weight: 600;
+  font-style: italic;
+  src: url('SourceSans3-SemiboldIt.otf');
+}

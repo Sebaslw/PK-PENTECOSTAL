@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080"><defs><linearGradient id="fb" x1="0" x2="1"><stop offset="0" stop-color="#0a2142"/><stop offset=".55" stop-color="#0f3f78"/><stop offset="1" stop-color="#04162e"/></linearGradient><linearGradient id="fg" x1="0" x2="1"><stop offset="0" stop-color="#f8b800"/><stop offset=".7" stop-color="#f8b800"/><stop offset="1" stop-color="#f8b800" stop-opacity="0"/></linearGradient></defs><path d="M150 900H1800Q1868 900 1880 958Q1868 1016 1800 1016H150Z" fill="url(#fb)"/><path d="M150 900H1800Q1850 900 1868 930H150Z" fill="#ffffff" opacity=".08"/><rect x="150" y="896" width="1650" height="4" fill="url(#fg)"/><rect x="150" y="1016" width="1500" height="3" fill="#3088c0" opacity=".8"/><circle cx="150" cy="956" r="100" fill="#04162e" stroke="#f8b800" stroke-width="8"/><circle cx="150" cy="956" r="88" fill="none" stroke="#3088c0" stroke-width="3"/><svg x="62" y="868" width="176" height="176" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="PK-PENTECOSTAL">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1d4ed8"/>
+      <stop offset=".55" stop-color="#4c1d95"/>
+      <stop offset="1" stop-color="#0b1022"/>
+    </linearGradient>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#d7dcea"/>
+    </linearGradient>
+    <radialGradient id="lens" cx=".4" cy=".35" r=".75">
+      <stop offset="0" stop-color="#3b4b72"/>
+      <stop offset=".6" stop-color="#151b2e"/>
+      <stop offset="1" stop-color="#05070d"/>
+    </radialGradient>
+    <linearGradient id="flame" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#f97316"/>
+      <stop offset="1" stop-color="#fde047"/>
+    </linearGradient>
+  </defs>
+  <!-- Fondo -->
+  <rect x="8" y="8" width="496" height="496" rx="112" fill="url(#bg)"/>
+  <!-- Ondas de transmisión -->
+  <g fill="none" stroke="#7dd3fc" stroke-linecap="round" stroke-width="18" opacity=".9">
+    <path d="M378 118a78 78 0 0 1 46 46"/>
+    <path d="M384 70a126 126 0 0 1 88 88" opacity=".55"/>
+  </g>
+  <!-- Visor de la cámara -->
+  <path d="M138 156h70l18-30h76l18 30h18v20H138z" fill="#e6eaf5"/>
+  <!-- Cuerpo -->
+  <rect x="64" y="166" width="300" height="214" rx="38" fill="url(#body)"/>
+  <!-- Objetivo lateral (cámara de video) -->
+  <path d="M364 222l84-46v206l-84-46z" fill="#e6eaf5"/>
+  <!-- Lente con anillo de transmisión -->
+  <circle cx="214" cy="273" r="86" fill="#0b1022"/>
+  <circle cx="214" cy="273" r="70" fill="url(#lens)"/>
+  <g fill="#ffffff">
+    <circle cx="214" cy="226" r="17"/>
+    <circle cx="173.3" cy="296.5" r="17"/>
+    <circle cx="254.7" cy="296.5" r="17"/>
+  </g>
+  <circle cx="214" cy="273" r="47" fill="none" stroke="#ffffff" stroke-width="8" stroke-dasharray="46 28" opacity=".85"/>
+  <!-- Llama (Pentecostés) -->
+  <path d="M214 288c-14-12-6-28 0-38 4 10 16 16 10 30-2 5-6 8-10 8z" fill="url(#flame)"/>
+  <!-- Luz REC -->
+  <circle cx="110" cy="206" r="15" fill="#ef4444"/>
+  <circle cx="110" cy="206" r="24" fill="none" stroke="#ef4444" stroke-width="4" opacity=".45"/>
+  <!-- Texto -->
+  
+</svg>
+</svg>

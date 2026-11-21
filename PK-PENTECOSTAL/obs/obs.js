@@ -25,6 +25,7 @@
     clearTimeout(modT);
     modT = setTimeout(() => { const b = modPend; modPend = {}; api('/api/modulo', { method: 'POST', body: b }).catch((e) => toast('Error: ' + e.message)); }, inmediato ? 0 : 90);
   }
+  PP.setModulo = setModulo;
   const capa = (body) => api('/api/capa', { method: 'POST', body }).catch((e) => toast('Error: ' + e.message));
 
   // Diálogo genérico: devuelve el valor del botón pulsado
@@ -57,7 +58,7 @@
   // ================================================================ Controles enlazados a st.modulo (data-m / data-tog)
   mod.addEventListener('input', (e) => {
     const el = e.target; if (!el.dataset.m) return;
-    const v = el.type === 'checkbox' ? el.checked : el.type === 'range' ? +el.value : el.value;
+    const v = el.type === 'checkbox' ? el.checked : el.type === 'range' || el.type === 'number' ? +el.value : el.value;
     const o = el.closest('.f')?.querySelector('output'); if (o) o.textContent = fmtOut(el);
     setModulo(setK(el.dataset.m, v), el.type !== 'range');
     if (el.dataset.m === 'banner.tamPreview') tamPreview(v);
@@ -86,6 +87,7 @@
     $('[data-estado="luces"]').textContent = ov.luces.on ? `Encendidas · barrido al ${ov.luces.intensidad}%` : 'Apagadas';
     $('#ovFondoNombre').textContent = ov.fondo.url ? 'Archivo: ' + ov.fondo.nombre : 'Sin fondo (color de plantilla)';
     $('#posTxt').textContent = `Posición X ${ov.x} · Y ${ov.y} px`;
+    $('#ovCompletaCard').classList.toggle('hidden', ov.plantilla !== 'Imagen-Completa' || !!ov.diseno);
     const b = st.modulo.banner;
     $('#bActivo').textContent = b.fondo.url ? `Fondo: ${b.fondo.nombre}` : 'Fondo: ninguno';
     const nombres = { progresivo: 'progresivamente', deslizamiento: 'con deslizamiento', instantaneo: 'de forma instantánea' };
@@ -270,7 +272,7 @@
 
   (() => {
     const layer = $('#ovDrag'); let ini = null;
-    layer.addEventListener('pointerdown', (e) => { if (!st) return; ini = { x: e.clientX, y: e.clientY, ox: st.modulo.overlay.x, oy: st.modulo.overlay.y, k: 1920 / layer.clientWidth }; layer.setPointerCapture(e.pointerId); });
+    layer.addEventListener('pointerdown', (e) => { if (!st || PP.zonasActivas?.()) return; ini = { x: e.clientX, y: e.clientY, ox: st.modulo.overlay.x, oy: st.modulo.overlay.y, k: 1920 / layer.clientWidth }; layer.setPointerCapture(e.pointerId); });
     layer.addEventListener('pointermove', (e) => {
       if (!ini) return;
       const x = Math.round(ini.ox + (e.clientX - ini.x) * ini.k), y = Math.round(ini.oy + (e.clientY - ini.y) * ini.k);
@@ -280,6 +282,7 @@
   })();
   $('.pad').addEventListener('click', (e) => {
     const mv = e.target.dataset.mv; if (!mv || !st) return;
+    if (PP.moverZona?.(mv)) return;
     if (mv === 'reset') return setModulo({ overlay: { x: 0, y: 0, escala: 100 } }, true);
     const [dx, dy] = mv.split(',').map(Number);
     setModulo({ overlay: { x: st.modulo.overlay.x + dx, y: st.modulo.overlay.y + dy } }, true);
@@ -381,6 +384,7 @@
 
   // ================================================================ OBS WebSocket
   const obs = new OBSWS();
+  PP.obs = obs;
   const cfg = () => Object.assign({ host: location.hostname || 'localhost', puerto: 4455, clave: '', auto: true }, store.get('obs', {}));
   let reintento = null, escenaActual = '', escenas = [], transiciones = [], plataforma = 'windows', streamPoll = null, miniT = null, timerT = null;
 
@@ -391,6 +395,7 @@
     $('#obsConectar').textContent = modo === 'ok' ? 'Desconectar' : 'Conectar';
     const on = modo === 'ok';
     $('#btnStream').disabled = !on; $('#btnAddCapa').disabled = !on;
+    const ao = $('#stgAddObs'); if (ao) ao.disabled = !on;
     if (!on) {
       $('#streamTxt').textContent = 'Transmisión: —'; $('#streamTxt').className = 'stream-txt';
       $('#btnStream').className = 'stream-btn'; $('#btnStream').textContent = '● TRANSMITIR';
@@ -443,6 +448,7 @@
     store.set('obs', { host: $('#ocH').value.trim() || 'localhost', puerto: +$('#ocP').value || 4455, clave: $('#ocC').value, auto: $('#ocA').checked });
     conectar(true);
   }
+  PP.conectarOBS = conectar;
   $('#obsCfg').addEventListener('click', configurarOBS);
   $('#btnObsCfg2').addEventListener('click', configurarOBS);
 
@@ -500,6 +506,8 @@
   $('#escenas').addEventListener('click', (e) => { const s = e.target.closest('.scene'); if (s) cambiarEscena(s.dataset.s); });
   async function cambiarEscena(nombre) {
     try {
+      // Stinger propio de PK-PENTECOSTAL (pestaña STINGERS): cubre, cambia la escena y descubre
+      if (PP.stingerEscena && nombre !== escenaActual && await PP.stingerEscena(nombre)) return;
       if ($('#swStinger').checked) {
         const sting = transiciones.find((t) => /stinger/i.test(t.transitionKind));
         if (sting) await obs.call('SetCurrentSceneTransition', { transitionName: sting.transitionName });

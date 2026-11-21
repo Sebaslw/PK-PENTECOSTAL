@@ -1,22 +1,22 @@
 // PK-PENTECOSTAL · Traductor automático español → inglés SIN internet
-// Usa el modelo abierto Helsinki-NLP opus-mt-es-en (copia local en traductor/modelos).
+// Usa el modelo abierto Helsinki-NLP opus-mt-es-en (copia local en BSPK/traductor/modelos).
 // Conserva la estructura de las canciones: estrofas, //repeticiones//, etiquetas (CORO, I, II…).
 'use strict';
 const path = require('path');
 const fs = require('fs');
 
-const MODELOS = path.join(__dirname, 'modelos');
+const { MODELOS, base, transformers } = require('./rutas');
 let tubo = null, cargando = null;
 
 function disponible() {
-  try { return fs.existsSync(path.join(__dirname, 'node_modules', '@huggingface', 'transformers')) && fs.existsSync(MODELOS); } catch (_) { return false; }
+  try { return !!base() && fs.existsSync(MODELOS); } catch (_) { return false; }
 }
 
 async function cargar() {
   if (tubo) return tubo;
   if (cargando) return cargando;
   cargando = (async () => {
-    const { pipeline, env } = await import('@huggingface/transformers');
+    const { pipeline, env } = await transformers();
     env.cacheDir = MODELOS;
     env.allowRemoteModels = false; // nunca usar internet: solo el modelo guardado
     tubo = await pipeline('translation', 'Xenova/opus-mt-es-en', { dtype: 'q8' });

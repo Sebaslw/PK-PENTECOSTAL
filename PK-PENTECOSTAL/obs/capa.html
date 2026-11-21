@@ -60,6 +60,14 @@
   .rotulo.ap-instantaneo { opacity: 0; transition: none; }
   .rotulo.on { clip-path: inset(0 0 0 0); transform: none; opacity: 1; }
 
+  /* Plantilla "Imagen completa" (overlay estilo ProyectoRP): imagen 1920×1080 + textos en posiciones fijas */
+  .rotulo.completa { position: absolute; inset: 0; display: block; }
+  .completa .cbg { position: absolute; inset: 0; width: 1920px; height: 1080px; object-fit: contain; }
+  .completa .ctx { position: absolute; white-space: nowrap; line-height: 1.1; text-shadow: 0 2px 8px rgba(0,0,0,.45); }
+  .completa .ctx:empty { display: none; }
+  .completa .czona { position: absolute; display: flex; align-items: center; overflow: hidden; white-space: nowrap; z-index: 2; }
+  .completa .czona span { display: inline-block; line-height: 1.12; letter-spacing: .01em; text-shadow: 0 2px 6px rgba(0,0,0,.35); }
+  .completa .shine { inset: 0; -webkit-mask-size: 1920px 1080px; mask-size: 1920px 1080px; }
   .stinger { position: absolute; inset: -40px -200px; pointer-events: none; z-index: 5; overflow: hidden; }
   .stinger i { position: absolute; top: 0; bottom: 0; width: 55%; transform: skewX(-20deg) translateX(-160%); }
   .stinger.run i { animation: sting var(--sd, .9s) cubic-bezier(.7,0,.3,1) forwards; }
@@ -87,6 +95,21 @@
   .btxt { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 22px 56px; box-sizing: border-box; }
   .btxt .inner { max-height: 100%; width: 100%; overflow: hidden; transition: opacity .35s; text-shadow: 0 2px 8px rgba(0,0,0,.45); }
   .btxt .cita { display: block; font-size: .58em; margin-top: .45em; font-weight: 700; font-style: normal; letter-spacing: .04em; }
+  /* ============ BANNER LATERAL (diseños de ProyectoRP / PK) ============ */
+  #lateral .lzona { position: absolute; display: flex; align-items: center; justify-content: center; overflow: hidden; z-index: 5; }
+  #lateral .lzona .inner { width: 100%; max-height: 100%; overflow: hidden; transition: opacity .3s; }
+  #lateral .lzona .cita { display: block; font-size: .6em; margin-top: .5em; font-weight: 700; font-style: normal; letter-spacing: .04em; }
+
+  /* ============ CUENTA REGRESIVA ============ */
+  #cuenta { position: absolute; transform: translate(-50%, -50%); text-align: center; white-space: nowrap; z-index: 8;
+    transition: opacity .6s ease, transform .6s cubic-bezier(.2,.8,.2,1); }
+  #cuenta.oculto { opacity: 0; transform: translate(-50%, -50%) scale(.9); pointer-events: none; }
+  #cuenta.caja { padding: .18em .5em .22em; border-radius: .12em; background: linear-gradient(180deg, rgba(10,33,66,.88), rgba(4,22,46,.92)); border: .02em solid rgba(248,184,0,.7); box-shadow: 0 .08em .3em rgba(0,0,0,.45); }
+  #cuenta .ct { font-weight: 800; letter-spacing: .18em; font-size: .24em; margin-bottom: .1em; }
+  #cuenta .cn { font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; text-shadow: 0 .03em .12em rgba(0,0,0,.5); }
+  #cuenta .cn.fin { animation: latir 1.2s ease-in-out infinite; }
+  #cuenta .cn.ultimos { color: #ffd666 !important; }
+  @keyframes latir { 50% { transform: scale(1.05); } }
   sup { font-size: .55em; vertical-align: .55em; line-height: 0; margin: 0 .12em 0 .25em; opacity: .85; font-weight: 700; }
 </style>
 </head>
@@ -97,15 +120,21 @@
     <canvas id="bfx"></canvas>
     <div class="btxt"><div class="inner"></div></div>
   </div>
+  <div id="lateral"></div>
+  <div id="ovFull"></div>
   <div id="ovWrap"></div>
+  <div id="cuenta" class="oculto"><div class="ct"></div><div class="cn"></div></div>
 </div>
 <script src="/efectos.js"></script>
+<script src="/obs/stinger-motor.js"></script>
 <script>
 (() => {
   const qs = new URLSearchParams(location.search);
   const ruta = location.pathname.replace('/', '');
-  const SOLO = qs.get('solo') || (ruta === 'overlay' || ruta === 'banner' ? ruta : '');
+  const SOLO = qs.get('solo') || (['overlay', 'banner', 'cuenta'].includes(ruta) ? ruta : '');
   const PREVIEW = qs.get('preview') === '1';
+  // Ventana interactiva: rótulo + cuenta regresiva de ejemplo, sin banner
+  const EDITOR = PREVIEW && qs.get('editor') === '1';
   const EJEMPLO = { texto: 'Y sabemos que a los que aman a Dios, todas las cosas les ayudan a bien, esto es, a los que conforme a su propósito son llamados.', ref: 'Romanos 8:28 (RV1960)' };
   const root = document.getElementById('root');
   const ovWrap = document.getElementById('ovWrap');
@@ -133,10 +162,13 @@
   // ---------------- Rótulo ----------------
   function renderOverlay() {
     const o = st.modulo.overlay;
-    const item = PREVIEW && previewItem !== undefined ? previewItem : st.overlay.item;
+    let item = PREVIEW && previewItem !== undefined ? previewItem : st.overlay.item;
+    // Vista previa de un diseño sin nada al aire: se usa el primer nombre de los rótulos como ejemplo
+    if (!item && PREVIEW && (o.plantilla === 'Imagen-Completa' || EDITOR)) item = ejemploRotulo();
     const visible = SOLO !== 'banner' && !!item && (PREVIEW ? true : st.overlay.visible);
     ovWrap.style.transform = `translate(${o.x}px, ${o.y}px) scale(${o.escala / 100})`;
-    const key = JSON.stringify([item, o.plantilla, o.borde, o.fondo, o.luces, o.aparicion, PREVIEW ? 0 : st.overlay.id]);
+    const dis = o.plantilla === 'Imagen-Completa' ? OVL.find((d) => d.id === o.diseno) : null;
+    const key = JSON.stringify([item, o.plantilla, o.borde, o.fondo, o.luces, o.aparicion, o.completa, o.diseno, o.extra, dis, PREVIEW ? 0 : st.overlay.id]);
     if (!visible) { ocultarOverlay(); ovKey = ''; return; }
     if (key === ovKey && ovEl) return;
     const nuevo = ovKey === '' || !ovEl || JSON.stringify(item) !== JSON.stringify(ovEl._item);
@@ -144,6 +176,7 @@
     ocultarOverlay(nuevo ? 0.25 : 0);
     const el = document.createElement('div');
     el._item = item;
+    if (o.plantilla === 'Imagen-Completa') return renderCompleta(o, item, nuevo);
     el.className = `rotulo tpl-${o.plantilla} ap-${o.aparicion}`;
     el.style.setProperty('--c', item.color);
     el.style.setProperty('--t', o.aparicion === 'instantaneo' || !nuevo ? '0s' : '.7s');
@@ -162,6 +195,68 @@
     if (sting) requestAnimationFrame(() => el.querySelector('.stinger').classList.add('run'));
     setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('on'))), delay);
   }
+  // ---------------- Diseños de overlay (imagen + zonas de texto propias de cada diseño) ----------------
+  let OVL = [], ovlRev = -1;
+  async function cargarOverlays() {
+    try { OVL = await (await fetch('/api/overlays', { cache: 'no-store' })).json(); } catch (_) { OVL = []; }
+    ovKey = ''; render();
+  }
+  function ejemploRotulo() {
+    const g = (st.rotulos || []).find((x) => x.items && x.items.length);
+    if (!g) return { texto: 'Pastor Juan Pérez', sub: 'Predicador invitado', color: '#00bcd4', grupo: '', itemId: 'ejemplo' };
+    const it = g.items[0];
+    return { texto: it.texto, sub: it.sub || g.subtitulo || '', color: it.color, grupo: g.id, itemId: 'ejemplo' };
+  }
+  // Ajusta un texto de una sola línea a su zona: el tamaño más grande que cabe a lo ancho y a lo alto
+  function encajar(caja) {
+    const t = caja.firstChild; if (!t) return;
+    const w = caja.clientWidth, h = caja.clientHeight;
+    let lo = 8, hi = Math.max(8, h * 0.9), best = lo;
+    for (let i = 0; i < 11; i++) { const m = (lo + hi) / 2; t.style.fontSize = m + 'px'; if (t.scrollWidth <= w && t.offsetHeight <= h) { best = m; lo = m; } else hi = m; }
+    t.style.fontSize = best + 'px';
+  }
+  function renderDiseno(o, item, nuevo, dis) {
+    const fam = `'${String(dis.fuente || 'Montserrat').replace(/'/g, '')}', 'Montserrat', 'Source Sans 3', 'Segoe UI', sans-serif`;
+    const textos = { nombre: item.texto, sub: item.sub || '', extra: o.extra || '' };
+    const el = document.createElement('div');
+    el._item = item;
+    el.className = `rotulo completa ap-${o.aparicion}`;
+    el.style.setProperty('--t', o.aparicion === 'instantaneo' || !nuevo ? '0s' : '.7s');
+    const url = urlSegura(dis.url);
+    let html = `<img class="cbg" src="${url}" alt="">`;
+    for (const k of ['nombre', 'sub', 'extra']) {
+      const zn = dis.zonas[k], t = textos[k];
+      if (!zn || !t) continue;
+      const just = { left: 'flex-start', center: 'center', right: 'flex-end' }[zn.alinear] || 'flex-start';
+      html += `<div class="czona" style="left:${zn.x}px;top:${zn.y}px;width:${zn.w}px;height:${zn.h}px;justify-content:${just}">` +
+        `<span style="font-family:${esc(fam)};color:${esc(zn.color || '#fff')};font-weight:${zn.negrita ? 800 : 500};text-transform:${zn.mayus ? 'uppercase' : 'none'}">${esc(t)}</span></div>`;
+    }
+    if (o.luces.on) html += `<div class="shine" style="opacity:${o.luces.intensidad / 100};--vel:${Math.max(1, 7 - o.luces.velocidad)}s;-webkit-mask-image:url('${url}');mask-image:url('${url}')"></div>`;
+    el.innerHTML = html;
+    document.getElementById('ovFull').appendChild(el);
+    ovEl = el;
+    const ajustarTodo = () => el.querySelectorAll('.czona').forEach(encajar);
+    ajustarTodo();
+    document.fonts?.load(`40px '${dis.fuente || 'Montserrat'}'`).then(ajustarTodo).catch(() => {});
+    setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('on'))), 0);
+  }
+  function renderCompleta(o, item, nuevo) {
+    const dis = OVL.find((d) => d.id === o.diseno);
+    if (dis && dis.zonas && dis.zonas.nombre) return renderDiseno(o, item, nuevo, dis);
+    const c = o.completa || {}, n = c.nombre || {}, sb = c.sub || {};
+    const fam = `'${String(c.fuente || 'Source Sans 3').replace(/'/g, '')}', 'Source Sans 3', 'Lato', 'Segoe UI', sans-serif`;
+    const txt = (t, p) => `<div class="ctx" style="left:${+p.x || 0}px;top:${+p.y || 0}px;font-size:${+p.tam || 40}px;color:${esc(p.color || '#fff')};font-weight:${p.negrita ? 700 : 400};font-family:${esc(fam)}">${esc(t)}</div>`;
+    const el = document.createElement('div');
+    el._item = item;
+    el.className = `rotulo completa ap-${o.aparicion}`;
+    el.style.setProperty('--t', o.aparicion === 'instantaneo' || !nuevo ? '0s' : '.7s');
+    const url = o.fondo.url ? urlSegura(o.fondo.url) : '';
+    el.innerHTML = (url ? `<img class="cbg" src="${url}" alt="">` : '') + txt(item.texto, n) + txt(item.sub || '', sb) +
+      (o.luces.on && url ? `<div class="shine" style="opacity:${o.luces.intensidad / 100};--vel:${Math.max(1, 7 - o.luces.velocidad)}s;-webkit-mask-image:url('${url}');mask-image:url('${url}')"></div>` : '');
+    document.getElementById('ovFull').appendChild(el);
+    ovEl = el;
+    setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('on'))), 0);
+  }
   function ocultarOverlay(t = 0.5) {
     if (!ovEl) return;
     const old = ovEl; ovEl = null;
@@ -172,9 +267,16 @@
   }
 
   // ---------------- Banner ----------------
+  // Busca el tamaño de letra más grande con el que el texto cabe completo (alto y ancho) dentro de "cont".
+  // Se mide el contenido del texto (el.scrollHeight), no la caja: la caja tiene max-height y nunca "se desborda".
   function ajustar(el, cont, maxPx) {
-    let lo = 14, hi = maxPx, best = lo;
-    for (let i = 0; i < 12; i++) { const m = (lo + hi) / 2; el.style.fontSize = m + 'px'; if (cont.scrollHeight <= cont.clientHeight + 1) { best = m; lo = m; } else hi = m; }
+    const cs = getComputedStyle(cont);
+    const alto = cont.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    let lo = 14, hi = Math.max(14, maxPx), best = lo;
+    for (let i = 0; i < 12; i++) {
+      const m = (lo + hi) / 2; el.style.fontSize = m + 'px';
+      if (el.scrollHeight <= alto + 1 && el.scrollWidth <= el.clientWidth + 1) { best = m; lo = m; } else hi = m;
+    }
     el.style.fontSize = best + 'px';
   }
   function renderBanner() {
@@ -182,7 +284,11 @@
     let vivo = st.vivo && st.vivo.texto ? st.vivo : null;
     if (!vivo && PREVIEW && b.ejemplo) vivo = EJEMPLO;
     const quiere = PREVIEW ? (previewBanner ?? SOLO !== 'overlay') : st.banner.visible;
-    const visible = SOLO !== 'overlay' && quiere && !!vivo && !st.negro;
+    const visibleTodo = !EDITOR && SOLO !== 'overlay' && SOLO !== 'cuenta' && quiere && !!vivo && !st.negro;
+    // Diseño lateral (ProyectoRP / PK): reemplaza la caja clásica del banner
+    const dis = b.lateral ? LAT.find((l) => l.id === b.lateral) : null;
+    renderLateral(dis, vivo, visibleTodo);
+    const visible = visibleTodo && !dis;
     banner.classList.remove('hidden');
     banner.className = `${b.posicion} ap-${b.aparicion}` + (visible ? ' on' : '');
     banner.style.setProperty('--m', b.margen + 'px');
@@ -230,14 +336,104 @@
     bVisible = visible;
   }
 
+  // ---------------------------------------------------------------- Banner lateral
+  let LAT = [], latRev = -1, latDib = null, latZona = null, latId = '', latOut = 500, latTxt = '';
+  const latEl = document.getElementById('lateral');
+  async function cargarLaterales() {
+    try { LAT = await (await fetch('/api/laterales', { cache: 'no-store' })).json(); } catch (_) { LAT = []; }
+    bTextoKey = ''; render();
+  }
+  function renderLateral(dis, vivo, visible) {
+    const quiere = !!dis && visible;
+    if (latDib && (!quiere || latId !== dis.id)) {
+      const d = latDib, z = latZona;
+      latDib = null; latZona = null; latTxt = '';
+      z.style.transition = 'opacity .25s'; z.style.opacity = 0;
+      d.salir(latOut).then(() => { d.limpiar(); z.remove(); });
+    }
+    if (!quiere) return;
+    const zt = (dis.zona && dis.zona.texto) || {};
+    if (!latDib) {
+      latId = dis.id; latOut = +dis.outTime || 500;
+      latDib = StingerMotor.dibujar(latEl, dis.elements || []);
+      latDib.entrar(+dis.inTime || 600);
+      const z = dis.zona || { x: 70, y: 10, w: 28, h: 80 };
+      latZona = document.createElement('div');
+      latZona.className = 'lzona';
+      Object.assign(latZona.style, { left: z.x + '%', top: z.y + '%', width: z.w + '%', height: z.h + '%', opacity: 0, transition: 'opacity .5s' });
+      latZona.innerHTML = '<div class="inner"></div>';
+      latEl.appendChild(latZona);
+      setTimeout(() => { if (latZona) latZona.style.opacity = 1; }, Math.min(900, (+dis.inTime || 600) * 0.6));
+    }
+    const inner = latZona.querySelector('.inner');
+    const alin = { centro: 'center', izquierda: 'left', derecha: 'right', justificado: 'justify' }[(dis.zona || {}).alinear] || 'center';
+    Object.assign(inner.style, {
+      fontFamily: `'${String(zt.fuente || 'Montserrat').replace(/'/g, '')}', 'Montserrat', 'Segoe UI', sans-serif`, color: zt.color || '#fff',
+      fontWeight: zt.negrita ? 700 : 500, fontStyle: zt.cursiva ? 'italic' : 'normal', textTransform: zt.mayusculas ? 'uppercase' : 'none',
+      textShadow: zt.sombra ? '0 2px 10px rgba(0,0,0,.6)' : 'none', textAlign: alin, lineHeight: 1.22,
+      opacity: st.ocultarTexto ? 0 : (zt.opacidad ?? 100) / 100,
+    });
+    const k = JSON.stringify([vivo.texto, vivo.ref, latId]);
+    if (k === latTxt) return;
+    const cambio = latTxt !== '';
+    latTxt = k;
+    const pintar = () => {
+      inner.innerHTML = fmt(vivo.texto) + (vivo.ref ? `<span class="cita" style="color:${esc(zt.cita || '#f8b800')}">${esc(vivo.ref)}</span>` : '');
+      const max = Math.max(24, +zt.tamano || 90);
+      ajustar(inner, latZona, max);
+      document.fonts?.load(`40px '${zt.fuente || 'Montserrat'}'`).then(() => latZona && ajustar(inner, latZona, max)).catch(() => {});
+    };
+    if (cambio) { inner.style.opacity = 0; setTimeout(() => { pintar(); inner.style.opacity = st.ocultarTexto ? 0 : (zt.opacidad ?? 100) / 100; }, 300); }
+    else pintar();
+  }
+
+  // ---------------------------------------------------------------- Cuenta regresiva
+  const cuentaEl = document.getElementById('cuenta');
+  let desfase = 0, cuentaT = 0;
+  function dosDig(n) { return String(n).padStart(2, '0'); }
+  function renderCuenta() {
+    clearTimeout(cuentaT);
+    if (!st) return;
+    const c = st.cuenta || {}, m = st.modulo.cuenta || {};
+    const ejemplo = PREVIEW && (SOLO === 'cuenta' || EDITOR) && !c.activa;
+    const mostrar = (c.activa || ejemplo) && (SOLO === '' || SOLO === 'cuenta' || EDITOR);
+    const restante = ejemplo ? (m.minutos || 10) * 60000 : c.fin - (Date.now() + desfase);
+    let txt, fin = false;
+    if (restante > 0) {
+      const s = Math.ceil(restante / 1000), h = Math.floor(s / 3600);
+      txt = h ? `${h}:${dosDig(Math.floor(s / 60) % 60)}:${dosDig(s % 60)}` : `${dosDig(Math.floor(s / 60))}:${dosDig(s % 60)}`;
+    } else { fin = true; txt = m.mensaje || ''; }
+    const ver = mostrar && !(fin && (m.alTerminar === 'ocultar' || !txt));
+    cuentaEl.classList.toggle('oculto', !ver);
+    cuentaEl.classList.toggle('caja', !!m.fondo);
+    Object.assign(cuentaEl.style, { left: (m.x ?? 960) + 'px', top: (m.y ?? 540) + 'px', fontSize: (m.tam || 190) + 'px',
+      fontFamily: `'${String(m.fuente || 'Montserrat').replace(/'/g, '')}', 'Montserrat', 'Segoe UI', sans-serif` });
+    const ct = cuentaEl.querySelector('.ct'), cn = cuentaEl.querySelector('.cn');
+    ct.textContent = fin ? '' : (m.texto || ''); ct.style.color = m.colorTexto || '#f8b800'; ct.style.display = ct.textContent ? '' : 'none';
+    cn.textContent = txt; cn.style.color = m.color || '#fff';
+    cn.style.fontSize = fin ? '.42em' : '';
+    cn.classList.toggle('fin', fin); cn.classList.toggle('ultimos', !fin && restante <= 10000);
+    if (mostrar && !fin) cuentaT = setTimeout(renderCuenta, 250 - ((Date.now() + desfase) % 250));
+  }
+
   function render() {
     if (!st) return;
-    renderOverlay();
-    renderBanner();
+    // Reloj del servidor (las vistas previas dentro del panel están en el mismo equipo: sin corrección)
+    if (!EMBEBIDO && typeof st.ahora === 'number' && st._recibido) desfase = st.ahora - st._recibido;
+    if (st.stingerRev !== latRev) { latRev = st.stingerRev; cargarLaterales(); }
+    if (st.overlayRev !== ovlRev) { ovlRev = st.overlayRev; cargarOverlays(); }
+    if (SOLO !== 'cuenta') { renderOverlay(); renderBanner(); }
+    renderCuenta();
   }
 
   // La vista previa del panel envía el rótulo/banner que se quiere ver antes de salir al aire
   addEventListener('message', (e) => {
+    // Mientras se arrastran los textos de un diseño en el panel: se redibuja al instante (sin esperar a guardar)
+    if (e.origin === location.origin && e.data && e.data.tipo === 'ovlZonas') {
+      const d = OVL.find((x) => x.id === e.data.id);
+      if (d) { d.zonas = e.data.zonas; if (e.data.fuente) d.fuente = e.data.fuente; ovKey = ''; if (st) renderOverlay(); }
+      return;
+    }
     if (e.origin !== location.origin || !e.data || e.data.tipo !== 'preview') return;
     if ('item' in e.data) previewItem = e.data.item;
     if ('banner' in e.data) previewBanner = e.data.banner;
@@ -249,12 +445,12 @@
   const EMBEBIDO = PREVIEW && window.parent !== window;
   function conectar() {
     if (EMBEBIDO) {
-      addEventListener('message', (e) => { if (e.origin === location.origin && e.data && e.data.tipo === 'estado') { st = e.data.st; render(); } });
+      addEventListener('message', (e) => { if (e.origin === location.origin && e.data && e.data.tipo === 'estado') { st = e.data.st; st._recibido = Date.now(); render(); } });
       window.parent.postMessage({ tipo: 'pedirEstado' }, location.origin);
       return;
     }
     const es = new EventSource('/api/eventos');
-    es.addEventListener('estado', (e) => { st = JSON.parse(e.data); render(); });
+    es.addEventListener('estado', (e) => { st = JSON.parse(e.data); st._recibido = Date.now(); render(); });
   }
   (document.fonts ? document.fonts.ready : Promise.resolve()).then(conectar);
 })();

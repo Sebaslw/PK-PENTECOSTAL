@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="author" content="Sebastian Lopez - IPUC Natania 6° Etapa">
+<!-- PK-PENTECOSTAL · Hecho por Sebastian Lopez · IPUC Natania 6° Etapa · Zona Especial Misionera – Archipiélago de San Andrés, Providencia y Santa Catalina · «Por toda la tierra salió su voz, y hasta el extremo del mundo sus palabras.» Salmos 19:4 -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PK-PENTECOSTAL · Ventana interactiva</title>
+<link rel="icon" type="image/png" href="/icono-192.png">
+<link rel="stylesheet" href="/fuentes.css">
+<style>
+  :root { --bg: #04162e; --panel: #0a2142; --line: #1b3f6e; --txt: #eaf2fb; --muted: #93abc9; --acc: #3088c0; --cyan: #4fb3e8; --oro: #f8b800; --ok: #22c55e; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--txt); font: 14px 'Segoe UI', system-ui, sans-serif; overflow: hidden; }
+  body { display: flex; flex-direction: column; }
+  header { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--panel); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  header h1 { margin: 0; font-size: 15px; font-weight: 800; letter-spacing: .02em; white-space: nowrap; }
+  header h1 b { color: var(--oro); }
+  .grow { flex: 1; }
+  button { font: inherit; font-size: 13px; color: var(--txt); background: #0f2c54; border: 1px solid var(--line); border-radius: 8px; padding: 6px 11px; cursor: pointer; }
+  button:hover { border-color: var(--acc); }
+  button.primary { background: var(--acc); border-color: transparent; font-weight: 700; }
+  button:disabled { opacity: .45; cursor: default; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { font-size: 12px; padding: 4px 10px; border-radius: 999px; }
+  .chip.sel { background: var(--oro); color: #1a1300; border-color: transparent; font-weight: 700; }
+  label.chk { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); cursor: pointer; white-space: nowrap; }
+  .vivo { font-size: 12px; color: var(--ok); font-weight: 700; white-space: nowrap; }
+  .vivo.off { color: #fca5a5; }
+  .guardado { font-size: 12px; white-space: nowrap; }
+  .guardado.ok { color: var(--ok); } .guardado.no { color: var(--oro); }
+  main { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; padding: 14px; }
+  #pantalla { position: relative; background: repeating-conic-gradient(#2a2f38 0 25%, #1d2128 0 50%) 0 0 / 24px 24px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,.5); }
+  #pantalla iframe { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; border: 0; transform-origin: 0 0; pointer-events: none; }
+  #guias, #cajas { position: absolute; inset: 0; }
+  #guias { pointer-events: none; }
+  #guias i { position: absolute; background: #ff3ea5; opacity: .9; display: none; }
+  #guias i.v { top: 0; bottom: 0; width: 1px; } #guias i.h { left: 0; right: 0; height: 1px; }
+  #guias.rejilla { background-image: linear-gradient(rgba(255,255,255,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.07) 1px, transparent 1px); background-size: calc(100% / 16) calc(100% / 9); }
+  #guias .seguro { position: absolute; left: 5%; top: 5%; right: 5%; bottom: 5%; border: 1px dashed rgba(255,255,255,.18); display: none; }
+  #guias.rejilla .seguro { display: block; }
+  .caja { position: absolute; cursor: move; border: 2px dashed rgba(255,255,255,.6); border-radius: 4px; touch-action: none; outline: none; transition: background .12s; }
+  .caja:hover { border-color: var(--cyan); background: rgba(79,179,232,.12); }
+  .caja.sel { border: 2px solid var(--oro); background: rgba(248,184,0,.12); }
+  .caja .et { position: absolute; left: -2px; top: -22px; font-size: 12px; line-height: 20px; padding: 0 7px; border-radius: 5px 5px 0 0; background: rgba(0,0,0,.75); white-space: nowrap; pointer-events: none; }
+  .caja.sel .et { background: var(--oro); color: #1a1300; font-weight: 700; }
+  .caja .rz { position: absolute; right: -7px; bottom: -7px; width: 14px; height: 14px; border-radius: 3px; background: var(--oro); cursor: nwse-resize; display: none; }
+  .caja.sel .rz.si { display: block; }
+  footer { display: flex; gap: 16px; align-items: center; padding: 6px 12px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--line); background: var(--panel); flex-wrap: wrap; }
+  footer b { color: var(--txt); }
+  #coords { font-variant-numeric: tabular-nums; color: var(--oro); }
+</style>
+</head>
+<body>
+<header>
+  <h1>PK-<b>PENTECOSTAL</b> · Ventana interactiva</h1>
+  <div class="chips" id="chips"></div>
+  <span class="grow"></span>
+  <label class="chk"><input type="checkbox" id="swRejilla" checked> Guías</label>
+  <label class="chk" title="Pega los módulos al centro y a los bordes de los otros"><input type="checkbox" id="swIman" checked> Imán</label>
+  <button id="btnDeshacer" title="Deshacer (Ctrl+Z)" disabled>↶ Deshacer</button>
+  <span class="guardado" id="guardado"></span>
+  <button class="primary" id="btnGuardar" title="Guardar la posición del rótulo y de la cuenta regresiva (Ctrl+S)">GUARDAR</button>
+  <span class="vivo" id="vivo">● Conectando…</span>
+</header>
+<main id="area">
+  <div id="pantalla">
+    <iframe id="capa" src="/capa?preview=1&editor=1" tabindex="-1"></iframe>
+    <div id="guias"><div class="seguro"></div><i class="v" id="gv"></i><i class="h" id="gh"></i></div>
+    <div id="cajas"></div>
+  </div>
+</main>
+<footer>
+  <span>🖱 <b>Arrastre</b> cada módulo hasta su sitio · esquina dorada = tamaño · <b>flechas</b> = 1 px (Shift = 10 px) · <b>Ctrl+Z</b> deshacer</span>
+  <span class="grow"></span>
+  <span id="coords"></span>
+  <span>OBS lo ve al momento</span>
+</footer>
+<script>
+(() => {
+  'use strict';
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const W = 1920, H = 1080;
+  const capa = $('#capa'), pantalla = $('#pantalla'), cajas = $('#cajas');
+  let st = null, OVL = [], ovlRev = -1, k = 1, sel = '', arr = null;
+  const deshacer = [];
+  const NOM = { nombre: 'Nombre', sub: 'Cargo / grupo', extra: 'Texto adicional', rotulo: 'Rótulo', cuenta: 'Cuenta regresiva' };
+
+  // ---------------------------------------------------------------- Tamaño de la pantalla (16:9 que quepa en la ventana)
+  function escalar() {
+    const a = $('#area'), w = a.clientWidth - 28, h = a.clientHeight - 28;
+    const ancho = Math.max(320, Math.min(w, h * 16 / 9));
+    pantalla.style.width = ancho + 'px'; pantalla.style.height = ancho * 9 / 16 + 'px';
+    k = ancho / W;
+    capa.style.transform = `scale(${k})`;
+  }
+  addEventListener('resize', escalar); escalar();
+
+  // ---------------------------------------------------------------- Estado en vivo (la vista de la capa lo recibe de esta ventana)
+  const aCapa = () => { try { capa.contentWindow.postMessage({ tipo: 'estado', st }, location.origin); } catch (_) { /* cargando */ } };
+  addEventListener('message', (e) => { if (e.origin === location.origin && e.data && e.data.tipo === 'pedirEstado' && st) aCapa(); });
+  function conectar() {
+    const es = new EventSource('/api/eventos');
+    es.addEventListener('estado', (e) => {
+      const nuevo = JSON.parse(e.data);
+      // Mientras se arrastra, se conserva lo que se está moviendo (evita saltos por la ida y vuelta al servidor)
+      if (arr && st) { nuevo.modulo.overlay.x = st.modulo.overlay.x; nuevo.modulo.overlay.y = st.modulo.overlay.y; nuevo.modulo.cuenta = st.modulo.cuenta; }
+      st = nuevo;
+      if (st.overlayRev !== ovlRev) { ovlRev = st.overlayRev; cargarDisenos(); }
+      aCapa(); pintarChips(); pintarGuardado();
+      $('#vivo').textContent = '● OBS en vivo'; $('#vivo').className = 'vivo';
+    });
+    es.onerror = () => { $('#vivo').textContent = '● Sin conexión'; $('#vivo').className = 'vivo off'; };
+  }
+  async function cargarDisenos() {
+    try { OVL = await (await fetch('/api/overlays', { cache: 'no-store' })).json(); } catch (_) { OVL = []; }
+    pintarChips();
+  }
+  const diseno = () => st && st.modulo.overlay.plantilla === 'Imagen-Completa' ? OVL.find((d) => d.id === st.modulo.overlay.diseno && d.zonas) : null;
+
+  // ---------------------------------------------------------------- Módulos que se pueden mover
+  // Textos de un diseño de overlay (zonas) · rótulo clásico · cuenta regresiva
+  function modulos() {
+    const out = [];
+    const d = diseno();
+    if (d) for (const z of ['nombre', 'sub', 'extra']) { if (d.zonas[z]) out.push({ id: z, ...d.zonas[z], tam: true }); }
+    const doc = capa.contentDocument;
+    if (!d && doc) {
+      const r = doc.querySelector('#ovWrap .rotulo');
+      if (r) { const b = r.getBoundingClientRect(); if (b.width) out.push({ id: 'rotulo', x: b.left, y: b.top, w: b.width, h: b.height }); }
+    }
+    const c = doc && doc.querySelector('#cuenta:not(.oculto)');
+    if (c) { const b = c.getBoundingClientRect(); if (b.width) out.push({ id: 'cuenta', x: b.left, y: b.top, w: b.width, h: b.height }); }
+    return out;
+  }
+  // Se dibujan los recuadros siguiendo a cada módulo (también si cambia por otra vía, p. ej. desde el panel)
+  let ultimo = '';
+  function bucle() {
+    const ms = modulos();
+    const clave = JSON.stringify(ms.map((m) => [m.id, Math.round(m.x), Math.round(m.y), Math.round(m.w), Math.round(m.h)])) + sel + k;
+    if (clave !== ultimo) {
+      ultimo = clave;
+      const ids = ms.map((m) => m.id).join();
+      if (cajas.dataset.ids !== ids) {
+        cajas.dataset.ids = ids;
+        cajas.innerHTML = ms.map((m) => `<div class="caja" data-m="${m.id}" tabindex="0"><span class="et">${NOM[m.id]}</span><i class="rz ${m.tam ? 'si' : ''}"></i></div>`).join('');
+        if (sel && !ms.some((m) => m.id === sel)) sel = '';
+        pintarChips();
+      }
+      for (const m of ms) {
+        const c = cajas.querySelector(`[data-m="${m.id}"]`); if (!c) continue;
+        Object.assign(c.style, { left: m.x * k + 'px', top: m.y * k + 'px', width: m.w * k + 'px', height: m.h * k + 'px' });
+        c.classList.toggle('sel', m.id === sel);
+      }
+      const m = ms.find((x) => x.id === sel);
+      $('#coords').textContent = m ? `${NOM[m.id]}: X ${Math.round(m.x)} · Y ${Math.round(m.y)} · ${Math.round(m.w)}×${Math.round(m.h)} px` : '';
+    }
+    requestAnimationFrame(bucle);
+  }
+  function pintarChips() {
+    const ms = modulos();
+    $('#chips').innerHTML = ms.map((m) => `<button class="chip ${m.id === sel ? 'sel' : ''}" data-chip="${m.id}">${NOM[m.id]}</button>`).join('') ||
+      '<span style="font-size:12px;color:var(--muted)">Ponga un rótulo, un diseño de overlay o la cuenta regresiva para moverlos aquí.</span>';
+  }
+  $('#chips').addEventListener('click', (e) => { const b = e.target.closest('[data-chip]'); if (b) { sel = b.dataset.chip; pintarChips(); cajas.querySelector(`[data-m="${sel}"]`)?.focus(); } });
+
+  // ---------------------------------------------------------------- Aplicar cambios (vista de esta ventana al instante + OBS)
+  const enviar = (u, metodo, body) => fetch(u, { method: metodo, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).catch(() => {});
+  let tZ = 0, tM = 0, pendM = null;
+  function guardarZonasLuego(d) {
+    clearTimeout(tZ);
+    tZ = setTimeout(() => enviar('/api/overlays', 'PUT', { id: d.id, zonas: d.zonas, fuente: d.fuente }), 90);
+  }
+  function moduloLuego(parcial) {
+    pendM = Object.assign(pendM || {}, parcial);
+    if (tM) return;
+    tM = setTimeout(() => { const b = pendM; pendM = null; tM = 0; enviar('/api/modulo', 'POST', b); }, 50);
+  }
+  // valores actuales de un módulo, para mover y deshacer
+  function leer(id) {
+    const d = diseno();
+    if (d && d.zonas[id]) return { ...d.zonas[id] };
+    if (id === 'rotulo') return { x: st.modulo.overlay.x, y: st.modulo.overlay.y };
+    if (id === 'cuenta') return { x: st.modulo.cuenta.x, y: st.modulo.cuenta.y };
+    return null;
+  }
+  function escribir(id, v) {
+    const d = diseno();
+    if (d && d.zonas[id]) {
+      Object.assign(d.zonas[id], v);
+      try { capa.contentWindow.postMessage({ tipo: 'ovlZonas', id: d.id, zonas: d.zonas, fuente: d.fuente }, location.origin); } catch (_) { /* cargando */ }
+      guardarZonasLuego(d);
+    } else if (id === 'rotulo') {
+      st.modulo.overlay.x = Math.round(v.x); st.modulo.overlay.y = Math.round(v.y);
+      aCapa(); moduloLuego({ overlay: { x: st.modulo.overlay.x, y: st.modulo.overlay.y } });
+    } else if (id === 'cuenta') {
+      st.modulo.cuenta.x = Math.round(v.x); st.modulo.cuenta.y = Math.round(v.y);
+      aCapa(); moduloLuego({ cuenta: { x: st.modulo.cuenta.x, y: st.modulo.cuenta.y } });
+    }
+  }
+  function recordar(id) { const v = leer(id); if (v) { deshacer.push({ id, v }); if (deshacer.length > 60) deshacer.shift(); $('#btnDeshacer').disabled = false; } }
+  function hacerDeshacer() {
+    const u = deshacer.pop(); if (!u) return;
+    escribir(u.id, u.v); sel = u.id;
+    $('#btnDeshacer').disabled = !deshacer.length;
+  }
+  $('#btnDeshacer').addEventListener('click', hacerDeshacer);
+
+  // ---------------------------------------------------------------- Arrastrar (con imán al centro y a los otros módulos)
+  const IMAN = 10;
+  function iman(m, ms) {
+    if (!$('#swIman').checked) return { gx: null, gy: null };
+    let gx = null, gy = null;
+    const xs = [[0, 0], [W / 2, null], [W, null]], ys = [[0, 0], [H / 2, null], [H, null]];
+    for (const o of ms) if (o.id !== m.id) { xs.push([o.x], [o.x + o.w / 2], [o.x + o.w]); ys.push([o.y], [o.y + o.h / 2], [o.y + o.h]); }
+    // borde izquierdo, centro o borde derecho del módulo contra las líneas
+    for (const [lx] of xs) for (const [off, ref] of [[0, 'l'], [m.w / 2, 'c'], [m.w, 'r']]) {
+      if (gx === null && Math.abs(m.x + off - lx) < IMAN) { m.x = lx - off; gx = lx; }
+    }
+    for (const [ly] of ys) for (const [off] of [[0], [m.h / 2], [m.h]]) {
+      if (gy === null && Math.abs(m.y + off - ly) < IMAN) { m.y = ly - off; gy = ly; }
+    }
+    return { gx, gy };
+  }
+  function guias(gx, gy) {
+    const v = $('#gv'), h = $('#gh');
+    v.style.display = gx === null ? 'none' : 'block'; v.style.left = gx * k + 'px';
+    h.style.display = gy === null ? 'none' : 'block'; h.style.top = gy * k + 'px';
+  }
+  cajas.addEventListener('pointerdown', (e) => {
+    const c = e.target.closest('.caja'); if (!c || !st) return;
+    const id = c.dataset.m; sel = id; pintarChips();
+    const m = modulos().find((x) => x.id === id); if (!m) return;
+    recordar(id);
+    const base = leer(id);
+    arr = { id, modo: e.target.classList.contains('rz') ? 'tam' : 'mover', x: e.clientX, y: e.clientY, m0: { ...m }, base };
+    try { c.setPointerCapture(e.pointerId); } catch (_) { /* sin captura */ }
+    c.focus({ preventScroll: true }); e.preventDefault();
+  });
+  cajas.addEventListener('pointermove', (e) => {
+    if (!arr) return;
+    const dx = (e.clientX - arr.x) / k, dy = (e.clientY - arr.y) / k;
+    if (arr.modo === 'tam') {
+      escribir(arr.id, { w: Math.max(40, Math.round(arr.base.w + dx)), h: Math.max(16, Math.round(arr.base.h + dy)) });
+      return;
+    }
+    // Se calcula dónde queda el recuadro y se aplica el imán sobre él
+    const m = { ...arr.m0, x: arr.m0.x + dx, y: arr.m0.y + dy };
+    const { gx, gy } = iman(m, modulos());
+    guias(gx, gy);
+    const mx = m.x - arr.m0.x, my = m.y - arr.m0.y;
+    escribir(arr.id, { x: Math.round(arr.base.x + mx), y: Math.round(arr.base.y + my) });
+  });
+  const soltar = () => { if (!arr) return; arr = null; guias(null, null); };
+  cajas.addEventListener('pointerup', soltar);
+  cajas.addEventListener('pointercancel', soltar);
+
+  // ---------------------------------------------------------------- Teclado
+  let tecla = 0;
+  addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); return hacerDeshacer(); }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); return guardar(); }
+    const mv = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
+    if (!mv || !sel || !st) return;
+    e.preventDefault();
+    const v = leer(sel); if (!v) return;
+    if (Date.now() - tecla > 800) recordar(sel); // un paso de deshacer por cada serie de flechas
+    tecla = Date.now();
+    const p = e.shiftKey ? 10 : 1;
+    escribir(sel, { x: v.x + mv[0] * p, y: v.y + mv[1] * p });
+  });
+
+  // ---------------------------------------------------------------- Guardar (rótulo y cuenta; los textos de los diseños se guardan solos)
+  function pintarGuardado() {
+    const g = $('#guardado');
+    g.textContent = st.moduloGuardado ? '✓ Guardado' : '● Sin guardar';
+    g.className = 'guardado ' + (st.moduloGuardado ? 'ok' : 'no');
+  }
+  async function guardar() { await enviar('/api/modulo/guardar', 'POST', {}); }
+  $('#btnGuardar').addEventListener('click', guardar);
+  $('#swRejilla').addEventListener('change', (e) => $('#guias').classList.toggle('rejilla', e.target.checked));
+  $('#guias').classList.add('rejilla');
+
+  capa.addEventListener('load', aCapa);
+  conectar();
+  requestAnimationFrame(bucle);
+})();
+</script>
+</body>
+</html>

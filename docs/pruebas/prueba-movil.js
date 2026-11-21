@@ -7,7 +7,7 @@ const fs = require('fs');
 const assert = require('assert');
 
 const APP = path.resolve(__dirname, '..', '..', 'PK-PENTECOSTAL');
-const CFG = path.join(APP, 'config.json');
+const CFG = path.join(APP, '..', 'BSPK', 'config.json');
 const copia = fs.readFileSync(CFG);
 const BASE = 'http://127.0.0.1:7788';
 

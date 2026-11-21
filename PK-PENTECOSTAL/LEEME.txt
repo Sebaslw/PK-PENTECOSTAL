@@ -118,8 +118,61 @@ DATOS
   Usa las carpetas del Proyektor original: biblias, cancioneros, fondos
   y css/font. Agregue imágenes o videos a "fondos"; los que suba desde
   el panel quedan en fondos/Subidos.
-  Al editar canciones se guarda copia en PK-PENTECOSTAL/respaldos.
-  Ajustes y rótulos: PK-PENTECOSTAL/config.json.
+  CARPETA PRIVADA BSPK (al lado de PK-PENTECOSTAL; no se sube a GitHub):
+    config.json (ajustes, rótulos, claves de celulares), obs/ (stingers,
+    logos, sonidos, videos), respaldos/ (copias al editar canciones),
+    fondos/ (fondos subidos y videos pesados) y traductor/.
+  Si viene de una versión anterior, el programa mueve todo ahí solo al abrirse.
+  Para copiar el programa a otro computador con sus ajustes, copie también BSPK.
+
+DISEÑOS DE OVERLAY (pestaña OBS > OVERLAY > "Diseños de overlay")
+  Toque un diseño y se aplica al instante: su imagen (sin modificarla) y
+  los textos acomodados en su lugar, del tamaño justo para que quepan.
+  Nombre = el rótulo al aire · Cargo = su cargo o el texto del grupo ·
+  Texto adicional = evento o tema (los diseños de 3 líneas lo muestran).
+  Si edita un nombre o grupo que está al aire, se actualiza solo.
+  "+ Agregar": suba su propia imagen PNG 1920x1080 con fondo transparente;
+  el programa detecta solo dónde van los textos. "Ajustar los textos de este
+  diseño" permite moverlos o cambiar color, alineación y fuente.
+  MOVER LOS TEXTOS (como en ProyectoRP): en "Vista previa · Overlay" cada
+  texto aparece en un recuadro. Arrástrelo para moverlo; la esquina dorada
+  cambia su tamaño; con el recuadro elegido, las flechas lo mueven 1 px
+  (Shift = 10 px) y los botones ▲◀▶▼ 10 px. ⟲ = distribución original.
+  Se ve al instante y al soltar queda guardado (OBS se actualiza solo).
+  VENTANA INTERACTIVA: botón "⧉ Abrir ventana interactiva" (debajo de la vista
+  previa). Pantalla grande donde se arrastra cada módulo hasta su sitio: textos
+  del diseño, rótulo clásico y cuenta regresiva. OBS lo ve al momento.
+  Guías (centro y zona segura), imán, flechas (Shift = 10 px), Ctrl+Z deshacer.
+  GUARDAR conserva la posición del rótulo y de la cuenta (los textos de los
+  diseños se guardan solos).
+
+CUENTA REGRESIVA (pestaña OBS > OVERLAY > "Cuenta regresiva")
+  "EMPEZAMOS EN 10:00" sobre la transmisión. Botones 5/10/15/30 min, minutos
+  a mano o "hasta las HH:MM"; +1 / -1 min y Detener. Al llegar a cero muestra
+  un mensaje ("¡Bienvenidos!") o se oculta. Sale en /capa o en una fuente
+  aparte: http://localhost:8888/cuenta
+
+BANNERS LATERALES (pestaña OBS > BANNER > Ajustes > Diseño)
+  Diseños de ProyectoRP tal cual y su versión PK-PENTECOSTAL: franja lateral
+  con logo y el versículo o la letra dentro.
+
+ATAJOS DE STINGER: S = stinger completo · Shift+S = cubrir / descubrir.
+
+RESPALDO (botón 💾 Respaldo, abajo en el pie de página)
+  Exportar: un .zip con ajustes, rótulos, claves, stingers, laterales y
+  respaldos (carpeta BSPK + obs). Importar: lo restaura en otro computador
+  (antes guarda una copia de lo actual). Luego cierre y abra el programa.
+
+VERSIÓN NUEVA: el botón con el número de versión (pie de página) consulta
+  GitHub. Una vez al día avisa solo si hay una versión nueva.
+
+STINGERS (pestaña OBS > STINGERS)
+  Transiciones a pantalla completa con logo, sonido y efectos.
+  En OBS agregue la fuente de navegador http://localhost:8888/stinger
+  (o pulse "Añadir el stinger a todas las escenas").
+  "Cambio de escena con stinger": al tocar una escena, el stinger cubre,
+  OBS cambia y el stinger se retira. "Importar desde ProyectoRP" trae sus
+  stingers, logos, sonidos, fuentes y el overlay tal cual.
 
 ---------------------------------------------------------------------
 CONTROL DESDE EL CELULAR (Android / iPhone)
@@ -172,5 +225,7 @@ IDIOMAS (Español latino · English UK · English US)
   Las canciones nuevas se traducen solas al guardarlas.
   Cancioneros en inglés como archivo (EE. UU. y Reino Unido):
   cancionerosCANCIONES<nombre> (English US).txt / (English UK).txt
+  Instalar el traductor (una vez, con internet):
+    node PK-PENTECOSTAL/traductor/instalar.js
   Para volver a generarlos: en la carpeta PK-PENTECOSTAL	raductor
   ejecute  node exportar.js

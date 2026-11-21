@@ -219,3 +219,9 @@ html[data-visor="9"] { --visor: #c9a227; }
 .mon-head .visor-sel { margin-left: auto; padding: 2px 6px; border-radius: 6px; border: 2px solid var(--visor); background: var(--visor); color: #fff; font-size: 12px; font-weight: 800; cursor: pointer; }
 .visor-sel option { color: #000; background: #fff; }
 .mon-head .visor-sel + .btn-proy { margin-left: 0; }
+
+/* Herramientas del pie: respaldo y versión */
+.creditos .cr-herr { display: inline-flex; gap: 6px; }
+.creditos .cr-herr button { font-size: 11px; padding: 2px 8px; background: transparent; }
+.creditos .cr-herr button.nueva { background: var(--warn); color: #1a1300; border-color: transparent; font-weight: 700; animation: pkLatido 2s ease-in-out infinite; }
+@keyframes pkLatido { 50% { box-shadow: 0 0 12px rgba(248,184,0,.7); } }

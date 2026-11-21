@@ -247,11 +247,10 @@ El panel se abre en el navegador en **http://localhost:8888**.
 ### 4. (Opcional) Traductor automático sin internet
 
 ```bash
-cd PK-PENTECOSTAL/traductor
-npm install
+node PK-PENTECOSTAL/traductor/instalar.js
 ```
 
-Instala la librería y descarga **una sola vez** el modelo abierto *Helsinki-NLP opus-mt-es-en* (~115 MB). Después traduce canciones al inglés sin conexión.
+Instala la librería en la carpeta privada `BSPK/` y descarga **una sola vez** el modelo abierto *Helsinki-NLP opus-mt-es-en* (~115 MB). Después traduce canciones al inglés sin conexión.
 
 ---
 
@@ -268,6 +267,12 @@ Instala la librería y descarga **una sola vez** el modelo abierto *Helsinki-NLP
 | `http://localhost:8888/salida?modo=pantalla` | Pantalla completa con fondo |
 | `http://localhost:8888/salida?modo=pantalla&fondo=0` | Pantalla completa transparente |
 | `http://localhost:8888/salida?modo=chroma` | Fondo verde (ATEM, vMix) |
+| `http://localhost:8888/stinger` | Stinger (transición a pantalla completa) |
+| `http://localhost:8888/cuenta` | Solo la cuenta regresiva |
+
+> ⚡ **Stingers:** pestaña **OBS → STINGERS**. Transiciones a pantalla completa con logo, sonido, efectos y textos animados (iris, persianas, barrido, rombo, giro 3D, mosaico, cortina, zoom y destello). Agregue `http://localhost:8888/stinger` a sus escenas (o use *“Añadir el stinger a todas las escenas”*) y active *“Cambio de escena con stinger”* para cambiar de escena sin cortes. Si tiene ProyectoRP, *“Importar desde ProyectoRP”* trae sus stingers, logos, sonidos, fuentes y overlay tal cual.
+
+> ⏳ **Cuenta regresiva** "EMPEZAMOS EN…" (OBS → Overlay) · 🎞 **Banners laterales** de ProyectoRP y versión PK (OBS → Banner → Diseño) · ⌨️ **S** = stinger · 💾 **Respaldo** completo en un .zip · ⬆ **Aviso de versión nueva** (pie de página).
 
 > 💡 **Control de OBS desde el panel (OBS 28+):** en OBS vaya a *Herramientas → Ajustes del servidor WebSocket → Habilitar*. En el panel: pestaña **OBS → ⚙ → contraseña → Conectar**. También puede pulsar *"Añadir la capa…"* para que se cree sola.
 
@@ -315,6 +320,8 @@ Las citas salen en inglés (*John 3:16*) y se puede buscar `juan 3:16` o `jn 3:1
 | `H` | Ocultar texto (deja el fondo) |
 | `Ctrl` + `K` | Buscar referencia (`jn 3 16`, `sal 23`, `1 co 13:4-7`) |
 | `Ctrl` + `S` | Guardar ajustes del módulo OBS |
+| `S` | Stinger completo (entra y sale) |
+| `Shift` + `S` | Stinger: cubrir / descubrir |
 
 ---
 
@@ -326,6 +333,7 @@ PK-PENTECOSTAL/
 ├── iniciar-mac.command            ← Abrir en macOS
 ├── iniciar-linux.sh               ← Abrir en Linux
 ├── Manual PK-PENTECOSTAL.pdf      ← Manual de usuario completo
+├── BSPK/                          ← Privado: ajustes, claves, stingers, respaldos (no se sube)
 ├── PK-PENTECOSTAL/
 │   ├── server.js                  ← Servidor local (Node.js, sin dependencias)
 │   ├── public/                    ← Panel, proyector, capas OBS y vista móvil
@@ -339,7 +347,7 @@ PK-PENTECOSTAL/
 └── docs/                          ← Manual (HTML → PDF) y documentos de diseño
 ```
 
-Sus ajustes y rótulos se guardan en `PK-PENTECOSTAL/config.json`, que se crea solo la primera vez (no se sube al repositorio porque contiene las claves de los celulares vinculados).
+Todo lo privado de cada instalación vive en la carpeta **`BSPK/`** (al lado de `PK-PENTECOSTAL/`): ajustes y claves de los celulares (`config.json`), stingers y su biblioteca, respaldos, fondos subidos, videos muy pesados y el traductor. Se crea sola la primera vez y **no se sube al repositorio**. Si actualiza desde una versión anterior, el programa mueve ahí sus archivos automáticamente al abrirse.
 
 ---
 

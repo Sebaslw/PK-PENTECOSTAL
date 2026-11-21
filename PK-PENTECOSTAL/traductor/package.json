@@ -7,6 +7,7 @@
     "@huggingface/transformers": "^3.8.1"
   },
   "scripts": {
+    "instalar": "node instalar.js",
     "postinstall": "node descargar-modelo.js",
     "modelo": "node descargar-modelo.js",
     "exportar": "node exportar.js"
