@@ -268,7 +268,8 @@ if (!config.movil) { config.movil = { clave: nuevaClave() }; claveNueva = true; 
 // ---------------------------------------------------------------- Wi-Fi propio (zona móvil de Windows)
 // Para lugares donde la red no deja que el celular vea al computador (hoteles, redes de invitados)
 // o donde no hay Wi-Fi: el computador crea su propia red y el celular se une con un QR.
-const ZONA_PS = path.join(APP_DIR, 'zona-wifi.ps1');
+// PowerShell no puede leer dentro del paquete .asar de la app de escritorio: se usa la copia desempaquetada
+const ZONA_PS = path.join(APP_DIR, 'zona-wifi.ps1').replace(/app\.asar([\\/])/, 'app.asar.unpacked$1');
 const ZONA_IP = '192.168.137.';
 function claveWifi() {
   const abc = 'abcdefghjkmnpqrstuvwxyz23456789';
@@ -708,6 +709,7 @@ let FONTS = buildFontsCss();
 // Biblioteca en PK-PENTECOSTAL/obs: stingers.json + biblioteca/ (imagenes, logos, sonidos, animaciones, fondos, fuentes, pk)
 // El formato de cada stinger es el mismo de ProyectoRP, así se pueden importar tal cual.
 const OBS_LIB = path.join(OBS_DATA, 'biblioteca');
+const PK_MARCA = path.join(OBS_DIR, 'biblioteca', 'pk'); // logo y diseños PK de fábrica (protegidos, solo lectura)
 const STG_FILE = path.join(OBS_DATA, 'stingers.json');
 const STG_CARPETAS = {
   imagenes: [...IMG_EXT, '.svg'], logos: [...IMG_EXT, '.svg'], fondos: [...IMG_EXT, '.svg'], pk: [...IMG_EXT, '.svg'],
@@ -929,6 +931,7 @@ async function rutasStinger(req, res, p, url, equipo) {
     const carpeta = url.searchParams.get('carpeta') || '';
     const nombre = path.basename(url.searchParams.get('nombre') || '').replace(/[^\w.\- ()áéíóúñÁÉÍÓÚÑ]/g, '_');
     const ext = path.extname(nombre).toLowerCase();
+    if (carpeta === 'pk') return sendJSON(res, { error: 'Los diseños y el logo de PK-PENTECOSTAL están protegidos y no se pueden cambiar' }, 403);
     if (!STG_CARPETAS[carpeta] || !nombre || !STG_CARPETAS[carpeta].includes(ext)) return sendJSON(res, { error: 'Tipo de archivo no permitido aquí' }, 400);
     const dir = path.join(OBS_LIB, carpeta);
     fs.mkdirSync(dir, { recursive: true });
@@ -1073,6 +1076,7 @@ function importarRespaldo(buf) {
     const destino = nombre.startsWith('BSPK/') ? safeJoin(BSPK, nombre.slice(5)) : nombre.startsWith('obs/') ? safeJoin(OBS_DATA, nombre.slice(4)) : nombre.startsWith('cancioneros/') ? safeJoin(DIRS.cancioneros, nombre.slice(12)) : null;
     if (!destino || /[\\/]traductor[\\/](node_modules|modelos)/.test(destino)) continue;
     if (destino.startsWith(OBS_DATA) && !destino.startsWith(OBS_LIB) && !/[\\/](stingers|laterales)\.json$/.test(destino)) continue; // nunca reemplaza código
+    if (destino.startsWith(path.join(OBS_LIB, 'pk') + path.sep)) continue; // marca protegida: el logo y los diseños PK no se reemplazan
     fs.mkdirSync(path.dirname(destino), { recursive: true });
     if (destino.startsWith(DIRS.cancioneros) && fs.existsSync(destino)) { // copia del cancionero actual antes de reemplazarlo
       const c = path.join(copia, 'cancioneros', path.relative(DIRS.cancioneros, destino));
@@ -1517,6 +1521,8 @@ async function handle(req, res) {
     const f = safeJoin(OBS_DIR, p.slice(5));
     return f && /\.(js|css|html)$/i.test(f) && !f.startsWith(OBS_LIB) ? serveFile(req, res, f) : send(res, 404, 'No encontrado', 'text/plain');
   }
+  // Marca protegida: el logo y los diseños PK siempre salen de los archivos del programa, nunca de la carpeta de datos
+  if (p.startsWith('/obs-lib/pk/')) { const f = safeJoin(PK_MARCA, p.slice(12)); return f ? serveFile(req, res, f) : send(res, 403, 'Prohibido', 'text/plain'); }
   if (p.startsWith('/obs-lib/')) { const f = safeJoin(OBS_LIB, p.slice(9)); return f ? serveFile(req, res, f) : send(res, 403, 'Prohibido', 'text/plain'); }
   if (p === '/capa' || p === '/overlay' || p === '/banner' || p === '/cuenta') return serveFile(req, res, path.join(OBS_DIR, 'capa.html'));
   const f = safeJoin(PUBLIC_DIR, p);

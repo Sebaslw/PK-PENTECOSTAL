@@ -22,7 +22,10 @@
     "appId": "co.ipuc.natania.pkpentecostal",
     "productName": "PK-PENTECOSTAL",
     "copyright": "Hecho por Sebastian Lopez · IPUC Natania 6° Etapa",
-    "asar": false,
+    "asar": true,
+    "asarUnpack": [
+      "PK-PENTECOSTAL/zona-wifi.ps1"
+    ],
     "compression": "normal",
     "directories": {
       "output": "dist",
@@ -50,6 +53,13 @@
       "css/**/*",
       "Manual PK-PENTECOSTAL.pdf"
     ],
+    "electronFuses": {
+      "runAsNode": false,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "enableEmbeddedAsarIntegrityValidation": true,
+      "onlyLoadAppFromAsar": true
+    },
     "win": {
       "icon": "PK-PENTECOSTAL/pk-pentecostal.ico",
       "target": [

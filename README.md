@@ -251,6 +251,8 @@ Descargue desde la **[página web](https://sebaslw.github.io/pk-pentecostal.io/)
 
 > 🖱️ Menú del programa: pulse **Alt** → *Archivo* (abrir en el navegador, carpeta de datos, importar una versión anterior, registro de eventos), *Ver* (pantalla completa, zoom) y *Ayuda* (manual PDF). **F11** = pantalla completa.
 
+> 🔒 **Marca protegida:** el logo y los archivos del programa van en un paquete verificado. Si se alteran, PK-PENTECOSTAL no los muestra y pide reinstalar (sus datos se conservan).
+
 #### ¿Dónde quedan mis datos?
 
 | Versión | Carpeta de datos |

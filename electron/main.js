@@ -16,6 +16,8 @@ const fs = require('fs');
 const NOMBRE = 'PK-PENTECOSTAL';
 const RAIZ_APP = path.resolve(__dirname, '..');                 // biblias, fondos, css, PK-PENTECOSTAL/…
 const SERVER_JS = path.join(RAIZ_APP, 'PK-PENTECOSTAL', 'server.js');
+// Marca protegida: el logo, los iconos y el manual se leen desde el paquete .asar del programa, que Electron
+// verifica (integridad). Si alguien altera esos archivos, el programa no los muestra y pide reinstalar.
 const ICONO = path.join(RAIZ_APP, 'PK-PENTECOSTAL', 'pk-pentecostal.ico');
 
 // ---------------------------------------------------------------- Carpeta de datos del usuario
@@ -80,12 +82,18 @@ function iniciarServidor() {
   if (!fs.existsSync(SERVER_JS)) return fallo('Faltan archivos del programa', `No se encontró:\n${SERVER_JS}\n\nVuelva a instalar PK-PENTECOSTAL.`);
   const env = { ...process.env, PK_DATA_ROOT: DATOS, PK_ELECTRON: '1', PK_VERSION: app.getVersion() };
   delete env.ELECTRON_RUN_AS_NODE;
-  servidor = utilityProcess.fork(SERVER_JS, [], { env, cwd: path.dirname(SERVER_JS), stdio: 'pipe', serviceName: 'PK-PENTECOSTAL servidor' });
+  // cwd = carpeta de datos: la del programa está dentro del paquete .asar (no es una carpeta real del disco)
+  servidor = utilityProcess.fork(SERVER_JS, [], { env, cwd: DATOS, stdio: 'pipe', serviceName: 'PK-PENTECOSTAL servidor' });
   const proc = servidor;
   let listo = false;
   const t0 = Date.now();
   proc.stdout && proc.stdout.on('data', (d) => log('[servidor]', String(d).trim()));
-  proc.stderr && proc.stderr.on('data', (d) => log('[servidor:error]', String(d).trim()));
+  let alterado = false;
+  proc.stderr && proc.stderr.on('data', (d) => {
+    const t = String(d).trim();
+    log('[servidor:error]', t);
+    if (/ASAR Integrity Violation/i.test(t)) alterado = true;
+  });
   const espera = setTimeout(() => { if (!listo) fallo('PK-PENTECOSTAL no respondió', 'El servidor interno tardó demasiado en iniciar.\n\nCierre el programa y ábralo de nuevo. Si se repite, reinicie el computador.'); }, 45000);
   proc.on('message', (m) => {
     if (!m || typeof m !== 'object') return;
@@ -110,6 +118,11 @@ function iniciarServidor() {
     if (externo && codigo === 0) return;              // otra copia sirve el panel: no hace falta servidor propio
     if (codigo === 0) { setTimeout(salir, 1800); return; } // se cerró desde el botón "Apagar" del panel (se ve el mensaje de despedida)
     // Cierre inesperado: se reinicia solo (hasta 3 veces seguidas)
+    if (alterado) {
+      clearTimeout(espera);
+      fallo('Los archivos de PK-PENTECOSTAL fueron modificados', 'Por seguridad, el programa no abre si sus archivos (por ejemplo, el logo) fueron cambiados.\n\nVuelva a instalar PK-PENTECOSTAL desde https://sebaslw.github.io/pk-pentecostal.io/\nSus datos y ajustes se conservan.');
+      return;
+    }
     if (listo && reinicios < 3) { reinicios++; log('[servidor] reinicio automático', reinicios); iniciarServidor(); return; }
     clearTimeout(espera);
     fallo('PK-PENTECOSTAL se detuvo', `El servidor interno se cerró inesperadamente (código ${codigo}).\n\nRegistro de eventos:\n${LOG.replace('escritorio.log', '')}`);
@@ -243,6 +256,15 @@ async function importarVersionAnterior() {
   app.relaunch(); app.exit(0);
 }
 
+// El manual vive dentro del paquete protegido: se copia (verificado) a una carpeta temporal y se abre desde ahí
+function abrirManual() {
+  try {
+    const destino = path.join(app.getPath('temp'), 'Manual PK-PENTECOSTAL.pdf');
+    fs.copyFileSync(path.join(RAIZ_APP, 'Manual PK-PENTECOSTAL.pdf'), destino);
+    shell.openPath(destino);
+  } catch (e) { log('[manual]', e); shell.openExternal('https://sebaslw.github.io/pk-pentecostal.io/'); }
+}
+
 // ---------------------------------------------------------------- Menú (se muestra con la tecla Alt)
 function menu() {
   const ir = (ruta) => () => { if (urlPanel) shell.openExternal(urlPanel.replace(/\/$/, '') + ruta); };
@@ -264,7 +286,7 @@ function menu() {
       { role: 'zoomIn', label: 'Acercar' }, { role: 'zoomOut', label: 'Alejar' }, { role: 'resetZoom', label: 'Tamaño normal' },
     ] },
     { label: 'Ayuda', submenu: [
-      { label: 'Manual de PK-PENTECOSTAL', click: () => { const m = path.join(RAIZ_APP, 'Manual PK-PENTECOSTAL.pdf'); if (fs.existsSync(m)) shell.openPath(m); else shell.openExternal('https://sebaslw.github.io/pk-pentecostal.io/'); } },
+      { label: 'Manual de PK-PENTECOSTAL', click: abrirManual },
       { label: 'Página web', click: () => shell.openExternal('https://sebaslw.github.io/pk-pentecostal.io/') },
       { type: 'separator' },
       { label: 'Acerca de PK-PENTECOSTAL', click: () => dialog.showMessageBox(ventana, { type: 'info', title: NOMBRE, icon: ICONO, message: `${NOMBRE} ${app.getVersion()}`, detail: 'Biblia y canciones en vivo para proyector, OBS y celulares.\n\nHecho por Sebastian Lopez · IPUC Natania 6° Etapa\nZona Especial Misionera – Archipiélago de San Andrés, Providencia y Santa Catalina\n\n«Por toda la tierra salió su voz, y hasta el extremo del mundo sus palabras.» Salmos 19:4\n\nDatos: ' + DATOS } ) },
