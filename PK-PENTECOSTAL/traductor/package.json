@@ -1,0 +1,14 @@
+{
+  "name": "pk-traductor",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Traductor automático español→inglés sin internet para PK-PENTECOSTAL",
+  "dependencies": {
+    "@huggingface/transformers": "^3.8.1"
+  },
+  "scripts": {
+    "postinstall": "node descargar-modelo.js",
+    "modelo": "node descargar-modelo.js",
+    "exportar": "node exportar.js"
+  }
+}

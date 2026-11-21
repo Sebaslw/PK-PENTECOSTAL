@@ -1,0 +1,25 @@
+# ---- Dependencias y modelos (se instalan con: cd PK-PENTECOSTAL/traductor && npm install) ----
+node_modules/
+PK-PENTECOSTAL/traductor/modelos/
+PK-PENTECOSTAL/traductor/*.log
+
+# ---- Datos personales de cada instalación ----
+# config.json guarda la clave de los celulares vinculados y la del Wi-Fi propio.
+# Si no existe, el programa lo crea solo la primera vez.
+PK-PENTECOSTAL/config.json
+PK-PENTECOSTAL/config.json.tmp
+
+# ---- Respaldos locales ----
+PK-PENTECOSTAL/respaldos/
+PK-PENTECOSTAL/respaldo-logo-anterior/
+Respaldo ajustes*/
+fondos/Subidos/
+
+# ---- Archivos que superan el límite de 100 MB de GitHub ----
+fondos/VIDEOS ANIMADOS/Particles Blue Bokeh Dust Abstract light motion titles cinematic background.mp4
+
+# ---- Sistema ----
+Thumbs.db
+desktop.ini
+.DS_Store
+*.tmp

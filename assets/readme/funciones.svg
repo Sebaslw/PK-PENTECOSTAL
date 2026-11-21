@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 520" width="1280" height="520" role="img" aria-label="Funciones de PK-PENTECOSTAL">
+  <defs>
+    <linearGradient id="f" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#06122b"/><stop offset="1" stop-color="#1a0f3d"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#14254d"/><stop offset="1" stop-color="#0c1733"/>
+    </linearGradient>
+    <linearGradient id="oro" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#f97316"/><stop offset="1" stop-color="#fde047"/>
+    </linearGradient>
+    <style>
+      text { font-family: 'Segoe UI', 'Montserrat', 'Helvetica Neue', Arial, sans-serif; }
+      .t { font-size: 25px; font-weight: 800; fill: #ffffff; }
+      .d { font-size: 16px; fill: #b6c3e6; }
+      .c { animation: entrar .7s ease-out backwards; }
+      @keyframes entrar { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+      .ic { animation: pulso 3s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+      @keyframes pulso { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+      .linea { stroke-dasharray: 340; animation: trazar 1.2s ease-out .4s backwards; }
+      @keyframes trazar { from { stroke-dashoffset: 340; } to { stroke-dashoffset: 0; } }
+    </style>
+  </defs>
+  <rect width="1280" height="520" rx="28" fill="url(#f)"/>
+  <rect width="1280" height="520" rx="28" fill="none" stroke="#fde68a" stroke-opacity=".18" stroke-width="2"/>
+
+  <!-- Fila 1 -->
+  <g class="c" style="animation-delay:.05s">
+    <rect x="40" y="40" width="380" height="200" rx="20" fill="url(#card)" stroke="#3b82f6" stroke-opacity=".45"/>
+    <g class="ic"><circle cx="95" cy="95" r="30" fill="#1d4ed8"/><text x="95" y="106" text-anchor="middle" font-size="30">📖</text></g>
+    <text class="t" x="140" y="104">Biblia</text>
+    <text class="d" x="68" y="160">9 versiones (RV1960, NVI, NTV, DHH,</text>
+    <text class="d" x="68" y="184">TLA, PDT, KJV, WEB, BBE). Búsqueda</text>
+    <text class="d" x="68" y="208">rápida: «jn 3 16», «sal 23».</text>
+    <line class="linea" x1="68" y1="126" x2="392" y2="126" stroke="#f59e0b" stroke-opacity=".7" stroke-width="2"/>
+  </g>
+  <g class="c" style="animation-delay:.2s">
+    <rect x="450" y="40" width="380" height="200" rx="20" fill="url(#card)" stroke="#a855f7" stroke-opacity=".45"/>
+    <g class="ic" style="animation-delay:.5s"><circle cx="505" cy="95" r="30" fill="#7e22ce"/><text x="505" y="106" text-anchor="middle" font-size="30">🎵</text></g>
+    <text class="t" x="550" y="104">Canciones</text>
+    <text class="d" x="478" y="160">6 cancioneros: Corario IPUC, Himnario</text>
+    <text class="d" x="478" y="184">Lluvias de Bendición y más. Editor,</text>
+    <text class="d" x="478" y="208">estrofas 1..9 y respaldos automáticos.</text>
+    <line class="linea" x1="478" y1="126" x2="802" y2="126" stroke="#f59e0b" stroke-opacity=".7" stroke-width="2"/>
+  </g>
+  <g class="c" style="animation-delay:.35s">
+    <rect x="860" y="40" width="380" height="200" rx="20" fill="url(#card)" stroke="#ef4444" stroke-opacity=".45"/>
+    <g class="ic" style="animation-delay:1s"><circle cx="915" cy="95" r="30" fill="#b91c1c"/><text x="915" y="106" text-anchor="middle" font-size="30">🎬</text></g>
+    <text class="t" x="960" y="104">OBS Studio</text>
+    <text class="d" x="888" y="160">Capas transparentes, rótulos, banner,</text>
+    <text class="d" x="888" y="184">escenas, Stinger y audio controlados</text>
+    <text class="d" x="888" y="208">desde el panel por WebSocket.</text>
+    <line class="linea" x1="888" y1="126" x2="1212" y2="126" stroke="#f59e0b" stroke-opacity=".7" stroke-width="2"/>
+  </g>
+
+  <!-- Fila 2 -->
+  <g class="c" style="animation-delay:.5s">
+    <rect x="40" y="280" width="380" height="200" rx="20" fill="url(#card)" stroke="#f59e0b" stroke-opacity=".45"/>
+    <g class="ic" style="animation-delay:1.5s"><circle cx="95" cy="335" r="30" fill="#b45309"/><text x="95" y="346" text-anchor="middle" font-size="30">📽️</text></g>
+    <text class="t" x="140" y="344">Proyector / TV</text>
+    <text class="d" x="68" y="400">Se abre sola en la 2ª pantalla a</text>
+    <text class="d" x="68" y="424">pantalla completa. Fondos de imagen</text>
+    <text class="d" x="68" y="448">o video y efectos animados.</text>
+    <line class="linea" x1="68" y1="366" x2="392" y2="366" stroke="#f59e0b" stroke-opacity=".7" stroke-width="2"/>
+  </g>
+  <g class="c" style="animation-delay:.65s">
+    <rect x="450" y="280" width="380" height="200" rx="20" fill="url(#card)" stroke="#22c55e" stroke-opacity=".45"/>
+    <g class="ic" style="animation-delay:2s"><circle cx="505" cy="335" r="30" fill="#15803d"/><text x="505" y="346" text-anchor="middle" font-size="30">📱</text></g>
+    <text class="t" x="550" y="344">Control móvil</text>
+    <text class="d" x="478" y="400">Escanee el QR y maneje todo desde</text>
+    <text class="d" x="478" y="424">Android o iPhone. Sin instalar nada.</text>
+    <text class="d" x="478" y="448">Incluso crea su propio Wi-Fi.</text>
+    <line class="linea" x1="478" y1="366" x2="802" y2="366" stroke="#f59e0b" stroke-opacity=".7" stroke-width="2"/>
+  </g>
+  <g class="c" style="animation-delay:.8s">
+    <rect x="860" y="280" width="380" height="200" rx="20" fill="url(#card)" stroke="#06b6d4" stroke-opacity=".45"/>
+    <g class="ic" style="animation-delay:2.5s"><circle cx="915" cy="335" r="30" fill="#0e7490"/><text x="915" y="346" text-anchor="middle" font-size="30">🌐</text></g>
+    <text class="t" x="960" y="344">Bilingüe</text>
+    <text class="d" x="888" y="400">Español latino · English US · UK.</text>
+    <text class="d" x="888" y="424">Traductor de canciones con IA que</text>
+    <text class="d" x="888" y="448">funciona sin internet.</text>
+    <line class="linea" x1="888" y1="366" x2="1212" y2="366" stroke="#f59e0b" stroke-opacity=".7" stroke-width="2"/>
+  </g>
+</svg>

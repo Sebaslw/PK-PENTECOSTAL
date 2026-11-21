@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="author" content="Sebastian Lopez - IPUC Natania 6° Etapa">
+<!-- PK-PENTECOSTAL · Hecho por Sebastian Lopez · IPUC Natania 6° Etapa · Zona Especial Misionera – Archipiélago de San Andrés, Providencia y Santa Catalina · «Por toda la tierra salió su voz, y hasta el extremo del mundo sus palabras.» Salmos 19:4 -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PK-PENTECOSTAL - Salida</title>
+<link rel="icon" type="image/png" href="/icono-192.png">
+<link rel="stylesheet" href="/fuentes.css">
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; }
+  body { cursor: none; -webkit-font-smoothing: antialiased; }
+  body.monitor { cursor: default; }
+  body.pantalla { background: #000; }
+  body.chroma { background: #00b140; }
+  /* Lienzo: en el proyector tiene la resolución elegida (p. ej. 3200×1440 LED) y se escala a la pantalla */
+  #lienzo { position: fixed; left: 0; top: 0; width: 100vw; height: 100vh; overflow: hidden; container-type: size; transform-origin: 0 0; }
+  #bg, #dim, #stage, #negro { position: absolute; inset: 0; }
+  #bg > * { position: absolute; inset: 0; width: 100%; height: 100%; transition: opacity .8s ease; }
+  #bg .capa > * { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  #bg .ajuste-llenar > * { object-fit: cover; }
+  #bg .ajuste-estirar > * { object-fit: fill; }
+  #bg .ajuste-completa > * { object-fit: contain; }
+  #bg .ajuste-completa > .relleno { object-fit: cover; filter: blur(48px) brightness(.55) saturate(1.2); transform: scale(1.15); }
+  #bg .color { }
+  #dim { background: #000; opacity: 0; transition: opacity .6s; pointer-events: none; }
+  #negro { background: #000; opacity: 0; transition: opacity .5s; pointer-events: none; z-index: 10; }
+  body.negro #negro { opacity: 1; }
+  body.obs.negro #negro, body.chroma.negro #negro { opacity: 0; }
+  body.obs.negro #stage, body.chroma.negro #stage { opacity: 0; }
+  #stage { transition: opacity .4s; }
+  body.oculto #stage { opacity: 0; }
+
+  .slide { position: absolute; opacity: 0; transition-property: opacity, transform; transition-timing-function: ease; }
+  .slide.in { opacity: 1; transform: none !important; }
+  .slide.out { opacity: 0; }
+
+  /* ---------- Pantalla completa ---------- */
+  .full { inset: 0; display: flex; align-items: center; justify-content: center; transform: scale(.985); }
+  .full .box { display: flex; flex-direction: column; justify-content: center; box-sizing: border-box; }
+  .full .txt { word-wrap: break-word; text-wrap: balance; letter-spacing: .005em; }
+  .full .ref { margin-top: .7em; font-size: .5em; font-weight: 700; letter-spacing: .08em; opacity: .85; }
+
+  /* ---------- Tercio inferior (OBS / chroma) ---------- */
+  .lower { left: 0; right: 0; display: flex; justify-content: center; transform: translateY(18px); }
+  .lower.abajo { bottom: 4.5cqh; }
+  .lower.arriba { top: 4.5cqh; transform: translateY(-18px); }
+  .lower.centro { top: 50%; transform: translateY(-50%) scale(.97); }
+  .lower.centro.in { transform: translateY(-50%) !important; }
+  .lower .card { position: relative; box-sizing: border-box; padding: 1.1cqh 2.2cqw 1.4cqh; display: flex; flex-direction: column; justify-content: center; }
+  .lower .card.barra::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: .45cqw; min-width: 4px; background: var(--acento); border-radius: inherit; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+  .lower .tab { align-self: flex-start; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; margin-bottom: .45cqh; font-size: 1.9cqh; }
+  .lower .txt { line-height: 1.22; word-wrap: break-word; }
+  sup { font-size: .55em; vertical-align: .55em; line-height: 0; margin: 0 .12em 0 .25em; opacity: .85; font-weight: 700; }
+  .txt .estrofa-l { display: block; }
+  .txt .l { display: block; }
+  .txt .l.vacia { height: .5em; }
+  .txt .ng { white-space: nowrap; }
+  .txt.cancion .l { white-space: nowrap; }
+</style>
+</head>
+<body>
+<div id="lienzo">
+<div id="bg"></div>
+<div id="dim"></div>
+<div id="stage"></div>
+<div id="negro"></div>
+</div>
+<script>
+(() => {
+  const qs = new URLSearchParams(location.search);
+  const pathMode = location.pathname.replace('/', '');
+  // /proyector = dirección propia del proyector (puerto aparte, distinta del panel)
+  // /visor/2, /visor/3… = visores independientes (cada pestaña del panel controla el suyo)
+  const mVisor = pathMode.match(/^(?:visor|proyector)\/([1-9])$/);
+  const VISOR = mVisor ? +mVisor[1] : Math.min(9, Math.max(1, parseInt(qs.get('canal'), 10) || 1));
+  const ES_PROY = pathMode === 'proyector' || !!mVisor || qs.get('proyector') === '1';
+  if (ES_PROY) document.title = 'PK-PENTECOSTAL';
+  const MODO = qs.get('modo') || (['obs', 'pantalla', 'chroma'].includes(pathMode) ? pathMode : 'pantalla');
+  const SIN_FONDO = qs.get('fondo') === '0';
+  document.body.classList.add(MODO);
+  if (qs.get('monitor') === '1') document.body.classList.add('monitor');
+
+  const bg = document.getElementById('bg');
+  const dim = document.getElementById('dim');
+  const stage = document.getElementById('stage');
+  const lienzo = document.getElementById('lienzo');
+
+  // ---------- Resolución fija (pantalla LED 3200×1440, 1920×1080…) ----------
+  // El contenido se dibuja siempre a esa resolución y se escala para llenar la pantalla:
+  // lo que se ve en el monitor del panel es exactamente lo que sale en el LED.
+  let resKey = '';
+  function dimensionar(est) {
+    const m = String((est && est.pantalla) || 'auto').match(/^(\d{3,5})x(\d{3,5})$/);
+    const usar = m && MODO === 'pantalla' && (ES_PROY || qs.get('monitor') === '1');
+    const key = usar ? m[0] + '|' + innerWidth + 'x' + innerHeight : 'auto';
+    if (key === resKey) return false;
+    resKey = key;
+    if (!usar) { Object.assign(lienzo.style, { width: '100vw', height: '100vh', transform: '' }); return true; }
+    const W = +m[1], H = +m[2];
+    const k = Math.min(innerWidth / W, innerHeight / H);
+    const x = (innerWidth - W * k) / 2, y = (innerHeight - H * k) / 2;
+    Object.assign(lienzo.style, { width: W + 'px', height: H + 'px', transform: `translate(${x}px, ${y}px) scale(${k})` });
+    document.body.style.background = '#000';
+    return true;
+  }
+  let ultimoId = null, ultimoEstiloKey = '', fondoKey = '', current = null, last = null;
+
+  const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  function formatear(texto, mayus) {
+    let h = esc(texto.trim());
+    // Palabras con guion (ieh-eh-eh) nunca se parten entre dos líneas
+    h = h.replace(/[^\s<>]+(?:-[^\s<>]+)+/g, (w) => `<span class="ng">${w}</span>`);
+    h = h.replace(/\[\[(\d+)\]\]\s*/g, '<sup>$1</sup>');
+    // Cada línea en su propio bloque (en canciones la frase queda completa en una sola línea)
+    h = h.split('\n').map((l) => l.trim()).map((l) => l ? `<span class="l">${l}</span>` : '<span class="l vacia"></span>').join('');
+    return h;
+  }
+
+  function sombraCss(on, contorno) {
+    const parts = [];
+    if (on) parts.push('0 .03em .1em rgba(0,0,0,.45)');
+    if (contorno) parts.push('-1px -1px 0 #000', '1px -1px 0 #000', '-1px 1px 0 #000', '1px 1px 0 #000');
+    return parts.join(',') || 'none';
+  }
+  function hexA(hex, a) {
+    const n = parseInt(hex.replace('#', ''), 16);
+    return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+  }
+
+  // ---------- Fondo (solo pantalla) ----------
+  function aplicarFondo(est) {
+    if (MODO !== 'pantalla' || SIN_FONDO) { bg.innerHTML = ''; dim.style.opacity = 0; return; }
+    const f = est.fondo || { tipo: 'color', valor: '#000' };
+    const ajuste = ['llenar', 'estirar', 'completa'].includes(est.ajusteFondo) ? est.ajusteFondo : 'completa';
+    const key = f.tipo + '|' + f.valor + '|' + ajuste;
+    dim.style.opacity = f.tipo === 'color' ? 0 : (est.oscurecerFondo || 0) / 100;
+    if (key === fondoKey) return;
+    fondoKey = key;
+    // "completa" = la imagen entera, sin recortar; los bordes se rellenan con la misma imagen difuminada
+    const el = document.createElement('div');
+    el.className = 'capa ajuste-' + ajuste;
+    let media = null;
+    if (f.tipo === 'video') {
+      media = document.createElement('video');
+      Object.assign(media, { src: f.valor, loop: true, muted: true, playsInline: true, preload: 'auto' });
+      media.addEventListener('canplay', () => videoFondo(), { once: true });
+    } else if (f.tipo === 'imagen') {
+      if (ajuste === 'completa') { const r = document.createElement('img'); r.className = 'relleno'; r.src = f.valor; r.alt = ''; el.appendChild(r); }
+      media = document.createElement('img'); media.src = f.valor; media.alt = '';
+    } else {
+      el.style.background = f.valor;
+    }
+    if (media) el.appendChild(media);
+    el.style.opacity = 0;
+    bg.appendChild(el);
+    const show = () => requestAnimationFrame(() => {
+      el.style.opacity = 1;
+      const viejos = [...bg.children].filter((c) => c !== el);
+      // El video viejo se libera del todo (si no, sigue ocupando el decodificador)
+      setTimeout(() => viejos.forEach((c) => { c.querySelectorAll('video').forEach((v) => { v.pause(); v.removeAttribute('src'); v.load(); }); c.remove(); }), 900);
+    });
+    videoFondo();
+    if (f.tipo === 'imagen') { media.onload = show; media.onerror = show; } else show();
+  }
+
+  // Reproduce el video de fondo solo cuando se ve: en el monitor del panel se pausa si la
+  // vista queda fuera de pantalla o la pestaña está oculta. El proyector y OBS nunca se pausan.
+  let enPantalla = true;
+  const ES_MONITOR = qs.get('monitor') === '1';
+  function videoFondo() {
+    const play = !ES_MONITOR || (enPantalla && !document.hidden);
+    bg.querySelectorAll('video').forEach((v) => { if (play) { if (v.paused) v.play().catch(() => {}); } else if (!v.paused) v.pause(); });
+  }
+  if (ES_MONITOR) {
+    document.addEventListener('visibilitychange', videoFondo);
+    if ('IntersectionObserver' in window) new IntersectionObserver((e) => { enPantalla = e[e.length - 1].isIntersecting; videoFondo(); }).observe(document.documentElement);
+  }
+
+  // ---------- Ajuste automático del tamaño de letra ----------
+  function ajustar(txtEl, contenedor, maxPx, minPx = 14) {
+    let lo = minPx, hi = Math.max(minPx, maxPx), best = lo;
+    for (let i = 0; i < 14; i++) {
+      const mid = (lo + hi) / 2;
+      txtEl.style.fontSize = mid + 'px';
+      if (contenedor.scrollHeight <= contenedor.clientHeight + 1 && contenedor.scrollWidth <= contenedor.clientWidth + 1) { best = mid; lo = mid; } else hi = mid;
+    }
+    txtEl.style.fontSize = best + 'px';
+  }
+
+  function construir(vivo, est) {
+    const slide = document.createElement('div');
+    const escala = (lienzo.clientHeight || innerHeight) / 1080;
+    if (MODO === 'pantalla') {
+      slide.className = 'slide full';
+      const box = document.createElement('div');
+      box.className = 'box';
+      const m = est.margen ?? 6;
+      // Posición vertical: positivo = sube, negativo = baja. El cuadro se reduce para no salirse de la pantalla.
+      const pv = Math.max(-30, Math.min(30, +est.posicionV || 0));
+      slide.style.top = -pv + 'cqh'; slide.style.bottom = pv + 'cqh';
+      Object.assign(box.style, { width: (100 - m * 2) + 'cqw', height: Math.max(10, 100 - m * 2 - Math.abs(pv) * 2) + 'cqh', textAlign: est.alineacion, color: est.color,
+        fontFamily: `'${est.fuente}', 'Arial Black', Arial, sans-serif`, fontWeight: est.peso || (est.negrita ? 700 : 400), lineHeight: est.interlineado || 1.18,
+        textShadow: sombraCss(est.sombra, est.contorno), textTransform: est.mayusculas ? 'uppercase' : 'none' });
+      const txt = document.createElement('div');
+      txt.className = 'txt' + (vivo.tipo === 'cancion' ? ' cancion' : '');
+      txt.innerHTML = formatear(vivo.texto);
+      if (est.mostrarRef && vivo.ref) {
+        const ref = document.createElement('div');
+        ref.className = 'ref'; ref.style.color = est.refColor; ref.textContent = vivo.ref;
+        txt.appendChild(ref);
+      }
+      box.appendChild(txt); slide.appendChild(box); stage.appendChild(slide);
+      slide._fit = () => ajustar(txt, box, (est.tamMax || 90) * escala); slide._fam = est.fuente; slide._fit();
+    } else {
+      const o = est.obs || {};
+      slide.className = 'slide lower ' + (o.posicion || 'abajo');
+      const card = document.createElement('div');
+      card.className = 'card' + (o.barra ? ' barra' : '');
+      card.style.setProperty('--acento', o.acento);
+      Object.assign(card.style, { width: (o.ancho || 90) + 'cqw', maxHeight: (o.altoMax || 30) + 'cqh', height: (o.altoMax || 30) + 'cqh',
+        borderRadius: (o.redondeo || 0) + 'px', color: o.color, fontFamily: `'${o.fuente}', 'Segoe UI', sans-serif`,
+        textShadow: o.sombra ? sombraCss(true, false) : 'none', textTransform: o.mayusculas ? 'uppercase' : 'none',
+        background: o.barra ? `linear-gradient(90deg, ${hexA(o.barraColor, (o.barraOpacidad ?? 80) / 100)}, ${hexA(o.barraColor, Math.max(0, (o.barraOpacidad ?? 80) / 100 - .12))})` : 'transparent',
+        boxShadow: o.barra ? '0 10px 40px rgba(0,0,0,.35)' : 'none', textAlign: 'center' });
+      if (o.mostrarRef && vivo.ref) {
+        const tab = document.createElement('div');
+        tab.className = 'tab'; tab.style.color = o.refColor; tab.textContent = vivo.ref;
+        tab.style.alignSelf = 'center';
+        card.appendChild(tab);
+      }
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden';
+      const txt = document.createElement('div');
+      txt.className = 'txt';
+      txt.innerHTML = formatear(vivo.texto);
+      wrap.appendChild(txt); card.appendChild(wrap); slide.appendChild(card); stage.appendChild(slide);
+      slide._fit = () => ajustar(txt, wrap, (o.tamMax || 54) * escala, 12); slide._fam = o.fuente; slide._fit();
+    }
+    return slide;
+  }
+
+  function mostrar(vivo, est, forzar) {
+    const dur = est.transicion ?? 400;
+    if (current) {
+      const old = current;
+      old.style.transitionDuration = dur + 'ms';
+      old.classList.remove('in'); old.classList.add('out');
+      setTimeout(() => old.remove(), dur + 50);
+      current = null;
+    }
+    if (!vivo || !vivo.texto) return;
+    const s = construir(vivo, est);
+    s.style.transitionDuration = dur + 'ms';
+    current = s;
+    if (document.fonts && s._fam) document.fonts.load(`${est.peso || 400} 40px '${s._fam}'`).then(() => { if (s.isConnected) s._fit(); }).catch(() => {});
+    requestAnimationFrame(() => requestAnimationFrame(() => s.classList.add('in')));
+  }
+
+  function aplicar(st) {
+    document.body.classList.toggle('negro', !!st.negro);
+    document.body.classList.toggle('oculto', !!st.ocultarTexto);
+    if (dimensionar(st.estilo)) ultimoId = Symbol(); // cambió la resolución: se vuelve a ajustar el texto
+    aplicarFondo(st.estilo);
+    const id = st.vivo ? st.vivo.id : null;
+    const estKey = JSON.stringify(st.estilo);
+    if (id !== ultimoId || estKey !== ultimoEstiloKey) {
+      const soloEstilo = id === ultimoId;
+      ultimoId = id; ultimoEstiloKey = estKey;
+      const est = soloEstilo ? { ...st.estilo, transicion: 0 } : st.estilo;
+      mostrar(st.vivo, est);
+    }
+    last = st;
+  }
+
+  let rt;
+  addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { if (last) { ultimoId = Symbol(); aplicar(last); } }, 150); });
+
+  // Monitor dentro del panel: recibe el estado del panel (ahorra conexiones al servidor)
+  const EMBEBIDO = qs.get('monitor') === '1' && window.parent !== window;
+  function conectar() {
+    if (EMBEBIDO) {
+      addEventListener('message', (e) => { if (e.origin === location.origin && e.data && e.data.tipo === 'estado') aplicar(e.data.st); });
+      window.parent.postMessage({ tipo: 'pedirEstado' }, location.origin);
+      return;
+    }
+    const es = new EventSource('/api/eventos?canal=' + VISOR);
+    es.addEventListener('estado', (e) => aplicar(JSON.parse(e.data)));
+    es.onerror = () => { /* EventSource reconecta solo */ };
+  }
+  (document.fonts ? document.fonts.ready : Promise.resolve()).then(conectar);
+
+  // ---------- Ventana de proyector: pantalla completa y atajos ----------
+  if (!EMBEBIDO && MODO === 'pantalla') {
+    const alternarPC = () => {
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+      else document.documentElement.requestFullscreen().catch(() => {});
+    };
+    addEventListener('dblclick', alternarPC);
+    // Aviso temporal (solo si no está ya en pantalla completa)
+    if (ES_PROY) {
+      const aviso = document.createElement('div');
+      aviso.textContent = /^en/.test((last && last.idioma) || '') ? 'Double-click or F key = full screen' : 'Doble clic o tecla F = pantalla completa';
+      aviso.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:20;padding:10px 18px;border-radius:8px;background:rgba(0,0,0,.75);color:#fff;font:600 16px Segoe UI,sans-serif;transition:opacity .6s;pointer-events:none';
+      const mostrar = () => {
+        if (document.fullscreenElement || innerHeight >= screen.height - 2) return;
+        document.body.style.cursor = 'default';
+        aviso.style.opacity = 1; document.body.appendChild(aviso);
+        clearTimeout(aviso._t);
+        aviso._t = setTimeout(() => { aviso.style.opacity = 0; document.body.style.cursor = ''; }, 4000);
+      };
+      setTimeout(mostrar, 600);
+      addEventListener('mousemove', mostrar);
+    }
+    // Reenvía los atajos al panel para seguir controlando desde aquí
+    const REENVIAR = /^(ArrowLeft|ArrowRight|ArrowUp|ArrowDown|PageUp|PageDown| |b|B|h|H|[1-9])$/;
+    addEventListener('keydown', (e) => {
+      if (e.key === 'f' || e.key === 'F') { e.preventDefault(); alternarPC(); return; }
+      if (!REENVIAR.test(e.key) || !window.opener || window.opener.closed) return;
+      e.preventDefault();
+      // El panel está en otra dirección (localhost:8888): se envía por mensaje
+      try { window.opener.postMessage({ tipo: 'pk-tecla', key: e.key, code: e.code, shiftKey: e.shiftKey }, '*'); } catch (_) { /* panel cerrado */ }
+    });
+  }
+})();
+</script>
+</body>
+</html>

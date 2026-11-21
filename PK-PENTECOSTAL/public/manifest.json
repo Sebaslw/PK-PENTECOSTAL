@@ -1,0 +1,15 @@
+{
+  "name": "PK-PENTECOSTAL",
+  "short_name": "PK-PENTECOSTAL",
+  "description": "Proyección de Biblia, canciones y rótulos para OBS y proyector. Hecho por Sebastian Lopez · IPUC Natania 6° Etapa - Zona Especial Misionera – Archipiélago de San Andrés, Providencia y Santa Catalina",
+  "author": "Sebastian Lopez - IPUC Natania 6° Etapa",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#04162e",
+  "theme_color": "#04162e",
+  "lang": "es",
+  "icons": [
+    { "src": "/icono-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icono-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

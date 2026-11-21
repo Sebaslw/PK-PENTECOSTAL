@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="author" content="Sebastian Lopez - IPUC Natania 6° Etapa">
+<!-- PK-PENTECOSTAL · Hecho por Sebastian Lopez · IPUC Natania 6° Etapa · Zona Especial Misionera – Archipiélago de San Andrés, Providencia y Santa Catalina · «Por toda la tierra salió su voz, y hasta el extremo del mundo sus palabras.» Salmos 19:4 -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PK-PENTECOSTAL - Capa OBS</title>
+<link rel="icon" type="image/png" href="/icono-192.png">
+<link rel="stylesheet" href="/fuentes.css">
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; }
+  body { -webkit-font-smoothing: antialiased; font-family: 'Lato', 'Segoe UI', sans-serif; }
+  #root { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; }
+  .hidden { display: none !important; }
+
+  /* ============ RÓTULO (overlay) ============ */
+  #ovWrap { position: absolute; left: 110px; bottom: 120px; transform-origin: 0 100%; }
+  .rotulo { position: relative; display: inline-flex; }
+  .rotulo .card { position: relative; overflow: hidden; display: flex; align-items: stretch; min-width: 420px; max-width: 1300px; }
+  .rotulo .accent { width: 12px; flex: none; background: var(--c); }
+  .rotulo .txt { position: relative; z-index: 2; padding: 18px 40px 20px 28px; display: flex; flex-direction: column; justify-content: center; }
+  .rotulo .nombre { font-size: 54px; font-weight: 700; line-height: 1.05; white-space: nowrap; }
+  .rotulo .sub { font-size: 28px; margin-top: 6px; font-weight: 400; letter-spacing: .03em; white-space: nowrap; }
+  .rotulo .sub:empty { display: none; }
+  .rotulo .bgimg { position: absolute; inset: 0; background-size: cover; background-position: center; z-index: 0; }
+  .rotulo .tint { position: absolute; inset: 0; z-index: 1; }
+  .rotulo .shine { position: absolute; inset: -20% 0; z-index: 3; pointer-events: none; background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,.85) 50%, transparent 65%); background-size: 250% 100%; animation: shine var(--vel, 3s) ease-in-out infinite; mix-blend-mode: overlay; }
+  @keyframes shine { 0% { background-position: 150% 0; } 60%, 100% { background-position: -100% 0; } }
+
+  /* Plantillas */
+  .tpl-IPUC-Blanco .tint { background: rgba(255,255,255,.96); }
+  .tpl-IPUC-Blanco .nombre { color: #0d2a5c; }
+  .tpl-IPUC-Blanco .sub { color: var(--c); font-weight: 700; text-transform: uppercase; font-size: 24px; }
+  .tpl-Azul-Noche .tint { background: linear-gradient(90deg, rgba(8,26,64,.95), rgba(18,52,120,.9)); }
+  .tpl-Azul-Noche .nombre { color: #fff; }
+  .tpl-Azul-Noche .sub { color: #9fc3ff; }
+  .tpl-Oscuro-Minimal .tint { background: rgba(0,0,0,.72); }
+  .tpl-Oscuro-Minimal .accent { width: 0; }
+  .tpl-Oscuro-Minimal .txt { border-bottom: 6px solid var(--c); }
+  .tpl-Oscuro-Minimal .nombre { color: #fff; font-weight: 300; letter-spacing: .02em; }
+  .tpl-Oscuro-Minimal .sub { color: var(--c); }
+  .tpl-Rojo-Moderno .card { transform: skewX(-10deg); }
+  .tpl-Rojo-Moderno .txt { transform: skewX(10deg); }
+  .tpl-Rojo-Moderno .tint { background: linear-gradient(90deg, #b3001b, #e3123a); }
+  .tpl-Rojo-Moderno .accent { background: #fff; }
+  .tpl-Rojo-Moderno .nombre { color: #fff; text-transform: uppercase; }
+  .tpl-Rojo-Moderno .sub { color: #ffe1e6; }
+  .tpl-Cristal .tint { background: rgba(255,255,255,.14); backdrop-filter: blur(14px); }
+  .tpl-Cristal .nombre { color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,.5); }
+  .tpl-Cristal .sub { color: #fff; opacity: .85; }
+  .tpl-Color-Pleno .tint { background: var(--c); }
+  .tpl-Color-Pleno .accent { background: rgba(255,255,255,.85); }
+  .tpl-Color-Pleno .nombre, .tpl-Color-Pleno .sub { color: #fff; }
+
+  /* Entradas / salidas */
+  .rotulo { transition: opacity var(--t, .6s) ease, transform var(--t, .6s) cubic-bezier(.2,.8,.2,1), clip-path var(--t, .6s) cubic-bezier(.6,0,.2,1); }
+  .rotulo.ap-progresivo { clip-path: inset(0 100% 0 0); opacity: 0; }
+  .rotulo.ap-deslizamiento { transform: translateX(-140%); opacity: 0; }
+  .rotulo.ap-instantaneo { opacity: 0; transition: none; }
+  .rotulo.on { clip-path: inset(0 0 0 0); transform: none; opacity: 1; }
+
+  .stinger { position: absolute; inset: -40px -200px; pointer-events: none; z-index: 5; overflow: hidden; }
+  .stinger i { position: absolute; top: 0; bottom: 0; width: 55%; transform: skewX(-20deg) translateX(-160%); }
+  .stinger.run i { animation: sting var(--sd, .9s) cubic-bezier(.7,0,.3,1) forwards; }
+  .stinger.run i:nth-child(2) { animation-delay: calc(var(--sd, .9s) * .12); }
+  @keyframes sting { to { transform: skewX(-20deg) translateX(320%); } }
+
+  /* ============ BANNER ============ */
+  #banner { position: absolute; overflow: hidden; transition: opacity var(--t, .6s) ease, transform var(--t, .6s) cubic-bezier(.2,.8,.2,1); }
+  #banner.abajo { left: var(--m); right: var(--m); bottom: var(--m); height: var(--alto); }
+  #banner.lateral { right: var(--m); top: var(--m); bottom: var(--m); width: 620px; }
+  #banner.ap-progresivo { opacity: 0; transform: translateY(20px); }
+  #banner.lateral.ap-progresivo { transform: translateX(20px); }
+  #banner.ap-deslizamiento { opacity: 1; transform: translateY(calc(100% + var(--m) + 20px)); }
+  #banner.lateral.ap-deslizamiento { transform: translateX(calc(100% + var(--m) + 20px)); }
+  #banner.ap-instantaneo { opacity: 0; transition: none; }
+  #banner.on { opacity: 1; transform: none; }
+  .bbg { position: absolute; inset: 0; border-radius: 14px; overflow: hidden; }
+  .bbg.difuso { -webkit-mask-image: linear-gradient(to top, #000 55%, transparent); mask-image: linear-gradient(to top, #000 55%, transparent); border-radius: 0; }
+  #banner.lateral .bbg.difuso { -webkit-mask-image: linear-gradient(to left, #000 60%, transparent); mask-image: linear-gradient(to left, #000 60%, transparent); }
+  .bmedia, .bmedia > * { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .bmedia > * { transform: scale(1.08); }
+  .bdim, .bcolor { position: absolute; inset: 0; }
+  .bdim { background: #000; }
+  #bfx { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .btxt { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 22px 56px; box-sizing: border-box; }
+  .btxt .inner { max-height: 100%; width: 100%; overflow: hidden; transition: opacity .35s; text-shadow: 0 2px 8px rgba(0,0,0,.45); }
+  .btxt .cita { display: block; font-size: .58em; margin-top: .45em; font-weight: 700; font-style: normal; letter-spacing: .04em; }
+  sup { font-size: .55em; vertical-align: .55em; line-height: 0; margin: 0 .12em 0 .25em; opacity: .85; font-weight: 700; }
+</style>
+</head>
+<body>
+<div id="root">
+  <div id="banner" class="hidden">
+    <div class="bbg"><div class="bmedia"></div><div class="bdim"></div><div class="bcolor"></div></div>
+    <canvas id="bfx"></canvas>
+    <div class="btxt"><div class="inner"></div></div>
+  </div>
+  <div id="ovWrap"></div>
+</div>
+<script src="/efectos.js"></script>
+<script>
+(() => {
+  const qs = new URLSearchParams(location.search);
+  const ruta = location.pathname.replace('/', '');
+  const SOLO = qs.get('solo') || (ruta === 'overlay' || ruta === 'banner' ? ruta : '');
+  const PREVIEW = qs.get('preview') === '1';
+  const EJEMPLO = { texto: 'Y sabemos que a los que aman a Dios, todas las cosas les ayudan a bien, esto es, a los que conforme a su propósito son llamados.', ref: 'Romanos 8:28 (RV1960)' };
+  const root = document.getElementById('root');
+  const ovWrap = document.getElementById('ovWrap');
+  const banner = document.getElementById('banner');
+  const bInner = banner.querySelector('.inner');
+  const fx = Efectos.animar(document.getElementById('bfx'), { on: false });
+  let st = null, previewItem = undefined, previewBanner = null;
+  let ovKey = '', ovEl = null, bTextoKey = '', bMediaKey = '', bVisible = false, apagarT = 0, enPantalla = true, quiereMedios = false;
+  // Pausa los videos del banner cuando no se ven (banner oculto, pestaña oculta o vista previa fuera de pantalla)
+  function medios(on) {
+    if (on !== undefined) quiereMedios = on;
+    const play = quiereMedios && enPantalla && !document.hidden;
+    banner.querySelectorAll('.bmedia video').forEach((v) => { if (play) { if (v.paused) v.play().catch(() => {}); } else if (!v.paused) v.pause(); });
+  }
+  document.addEventListener('visibilitychange', () => medios());
+  if ('IntersectionObserver' in window) new IntersectionObserver((e) => { enPantalla = e[e.length - 1].isIntersecting; medios(); }).observe(root);
+
+  function escalar() { root.style.transform = `scale(${Math.min(innerWidth / 1920, innerHeight / 1080)})`; }
+  addEventListener('resize', escalar); escalar();
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const fmt = (t) => esc(t.trim()).replace(/\[\[(\d+)\]\]\s*/g, '<sup>$1</sup>').split('\n').map((l) => l.trim()).join('<br>');
+  const urlSegura = (u) => String(u).replace(/'/g, '%27').replace(/"/g, '%22').replace(/</g, '%3C').replace(/>/g, '%3E');
+  const hexA = (hex, a) => { const n = parseInt(hex.replace('#', ''), 16); return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`; };
+
+  // ---------------- Rótulo ----------------
+  function renderOverlay() {
+    const o = st.modulo.overlay;
+    const item = PREVIEW && previewItem !== undefined ? previewItem : st.overlay.item;
+    const visible = SOLO !== 'banner' && !!item && (PREVIEW ? true : st.overlay.visible);
+    ovWrap.style.transform = `translate(${o.x}px, ${o.y}px) scale(${o.escala / 100})`;
+    const key = JSON.stringify([item, o.plantilla, o.borde, o.fondo, o.luces, o.aparicion, PREVIEW ? 0 : st.overlay.id]);
+    if (!visible) { ocultarOverlay(); ovKey = ''; return; }
+    if (key === ovKey && ovEl) return;
+    const nuevo = ovKey === '' || !ovEl || JSON.stringify(item) !== JSON.stringify(ovEl._item);
+    ovKey = key;
+    ocultarOverlay(nuevo ? 0.25 : 0);
+    const el = document.createElement('div');
+    el._item = item;
+    el.className = `rotulo tpl-${o.plantilla} ap-${o.aparicion}`;
+    el.style.setProperty('--c', item.color);
+    el.style.setProperty('--t', o.aparicion === 'instantaneo' || !nuevo ? '0s' : '.7s');
+    const card = `<div class="card" style="${o.borde.on ? `border:${o.borde.ancho}px solid ${o.borde.color};` : ''}border-radius:${o.borde.radio}px">
+        ${o.fondo.url ? `<div class="bgimg" style="background-image:url('${urlSegura(o.fondo.url)}')"></div>` : ''}
+        <div class="tint" style="${o.fondo.url ? 'opacity:.82' : ''}"></div>
+        <div class="accent"></div>
+        <div class="txt"><div class="nombre">${esc(item.texto)}</div><div class="sub">${esc(item.sub || '')}</div></div>
+        ${o.luces.on ? `<div class="shine" style="opacity:${o.luces.intensidad / 100};--vel:${Math.max(1, 7 - o.luces.velocidad)}s"></div>` : ''}
+      </div>`;
+    const sting = o.stinger.on && nuevo ? `<div class="stinger" style="--sd:${o.stinger.duracion}s"><i style="background:${o.stinger.color1}"></i><i style="background:${o.stinger.color2}"></i></div>` : '';
+    el.innerHTML = card + sting;
+    ovWrap.appendChild(el);
+    ovEl = el;
+    const delay = sting ? o.stinger.duracion * 450 : 0;
+    if (sting) requestAnimationFrame(() => el.querySelector('.stinger').classList.add('run'));
+    setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('on'))), delay);
+  }
+  function ocultarOverlay(t = 0.5) {
+    if (!ovEl) return;
+    const old = ovEl; ovEl = null;
+    if (!t) return old.remove();
+    old.style.setProperty('--t', t + 's');
+    old.classList.remove('on');
+    setTimeout(() => old.remove(), t * 1000 + 100);
+  }
+
+  // ---------------- Banner ----------------
+  function ajustar(el, cont, maxPx) {
+    let lo = 14, hi = maxPx, best = lo;
+    for (let i = 0; i < 12; i++) { const m = (lo + hi) / 2; el.style.fontSize = m + 'px'; if (cont.scrollHeight <= cont.clientHeight + 1) { best = m; lo = m; } else hi = m; }
+    el.style.fontSize = best + 'px';
+  }
+  function renderBanner() {
+    const b = st.modulo.banner;
+    let vivo = st.vivo && st.vivo.texto ? st.vivo : null;
+    if (!vivo && PREVIEW && b.ejemplo) vivo = EJEMPLO;
+    const quiere = PREVIEW ? (previewBanner ?? SOLO !== 'overlay') : st.banner.visible;
+    const visible = SOLO !== 'overlay' && quiere && !!vivo && !st.negro;
+    banner.classList.remove('hidden');
+    banner.className = `${b.posicion} ap-${b.aparicion}` + (visible ? ' on' : '');
+    banner.style.setProperty('--m', b.margen + 'px');
+    banner.style.setProperty('--alto', b.alto + 'px');
+    banner.style.setProperty('--t', b.aparicion === 'instantaneo' ? '0s' : b.transicion + 's');
+    // Fondo
+    const bbg = banner.querySelector('.bbg');
+    bbg.classList.toggle('difuso', !!b.difuminado);
+    const mk = SOLO === 'overlay' ? '' : b.fondo.tipo + '|' + b.fondo.url; // vista solo-rótulo: sin video de fondo
+    if (mk !== bMediaKey) {
+      bMediaKey = mk;
+      const m = banner.querySelector('.bmedia');
+      m.querySelectorAll('video').forEach((v) => { v.removeAttribute('src'); v.load(); });
+      m.innerHTML = !mk || !b.fondo.url ? '' : b.fondo.tipo === 'video' ? `<video src="${urlSegura(b.fondo.url)}" loop muted playsinline preload="auto"></video>` : `<img src="${urlSegura(b.fondo.url)}" alt="">`;
+    }
+    banner.querySelectorAll('.bmedia > *').forEach((x) => (x.style.filter = b.desenfoque > 0 ? `blur(${b.desenfoque}px)` : 'none'));
+    banner.querySelector('.bdim').style.opacity = b.fondo.url ? b.oscurecer / 100 : 0;
+    banner.querySelector('.bcolor').style.background = hexA(b.colorFondo, b.opacidadFondo / 100);
+    // Efecto y video de fondo solo trabajan mientras el banner se ve (ahorra procesador)
+    clearTimeout(apagarT);
+    if (visible) { fx.actualizar(b.efecto); medios(true); }
+    else apagarT = setTimeout(() => { fx.actualizar({ ...b.efecto, on: false }); medios(false); }, (b.transicion || 0.6) * 1000 + 100);
+    // Texto
+    Object.assign(bInner.style, {
+      fontFamily: `'${b.fuente}', 'Segoe UI', sans-serif`, fontWeight: b.negrita ? 700 : 400, fontStyle: b.cursiva ? 'italic' : 'normal',
+      color: b.color, opacity: st.ocultarTexto ? 0 : b.opacidad / 100, letterSpacing: b.espaciado + 'px', lineHeight: b.interlineado / 100,
+      textAlign: b.alineacion, transform: `translateY(${-b.subir}px)`,
+    });
+    if (vivo) {
+      const tk = JSON.stringify([vivo.texto, vivo.ref, b.fuente, b.tam, b.negrita, b.cursiva, b.espaciado, b.interlineado, b.posicion, b.alto, b.colorCita]);
+      if (tk !== bTextoKey) {
+        const cambiaTexto = !bTextoKey.startsWith(JSON.stringify([vivo.texto]).slice(0, -1));
+        bTextoKey = tk;
+        const pintar = () => {
+          bInner.innerHTML = fmt(vivo.texto) + (vivo.ref ? `<span class="cita" style="color:${b.colorCita}">${esc(vivo.ref)}</span>` : '');
+          ajustar(bInner, banner.querySelector('.btxt'), b.tam);
+          document.fonts?.load(`40px '${b.fuente}'`).then(() => ajustar(bInner, banner.querySelector('.btxt'), b.tam)).catch(() => {});
+        };
+        if (cambiaTexto && bVisible && visible) { bInner.style.transition = 'opacity .3s'; bInner.style.opacity = 0; setTimeout(() => { pintar(); bInner.style.opacity = st.ocultarTexto ? 0 : b.opacidad / 100; }, 300); }
+        else pintar();
+      } else {
+        const c = bInner.querySelector('.cita'); if (c) c.style.color = b.colorCita;
+      }
+    }
+    bVisible = visible;
+  }
+
+  function render() {
+    if (!st) return;
+    renderOverlay();
+    renderBanner();
+  }
+
+  // La vista previa del panel envía el rótulo/banner que se quiere ver antes de salir al aire
+  addEventListener('message', (e) => {
+    if (e.origin !== location.origin || !e.data || e.data.tipo !== 'preview') return;
+    if ('item' in e.data) previewItem = e.data.item;
+    if ('banner' in e.data) previewBanner = e.data.banner;
+    ovKey = ''; render();
+  });
+
+  // Dentro del panel (vista previa) el estado llega del panel: así no se gastan conexiones
+  // (los navegadores permiten solo 6 conexiones simultáneas por servidor).
+  const EMBEBIDO = PREVIEW && window.parent !== window;
+  function conectar() {
+    if (EMBEBIDO) {
+      addEventListener('message', (e) => { if (e.origin === location.origin && e.data && e.data.tipo === 'estado') { st = e.data.st; render(); } });
+      window.parent.postMessage({ tipo: 'pedirEstado' }, location.origin);
+      return;
+    }
+    const es = new EventSource('/api/eventos');
+    es.addEventListener('estado', (e) => { st = JSON.parse(e.data); render(); });
+  }
+  (document.fonts ? document.fonts.ready : Promise.resolve()).then(conectar);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,176 @@
+=====================================================================
+  PK-PENTECOSTAL  -  Biblia, canciones y rótulos para proyector y OBS
+=====================================================================
+  Hecho por Sebastian Lopez · IPUC Natania 6° Etapa
+  Zona Especial Misionera – Archipiélago de San Andrés, Providencia y Santa Catalina
+
+  «Por toda la tierra salió su voz, y hasta el extremo del mundo sus palabras.»
+                                                         Salmos 19:4
+=====================================================================
+
+REQUISITO (una sola vez)
+  Node.js 16 o superior (gratis): https://nodejs.org  -> versión "LTS".
+  Si no está instalado, los lanzadores lo avisan y abren la página.
+
+---------------------------------------------------------------------
+ABRIR EL PROGRAMA
+---------------------------------------------------------------------
+WINDOWS (dos formas, igual que el Proyektor original)
+  1) PK-PENTECOSTAL.vbs  -> sin ventana negra. Muestra "Iniciando..."
+                            y abre el panel en el navegador.
+  2) PK-PENTECOSTAL.bat  -> con ventana negra: muestra las direcciones
+                            y, si algo falla, el motivo.
+  Acceso directo con el logo en el Escritorio:
+     doble clic en "Crear acceso directo (Windows).vbs" (solo una vez).
+  Si el programa ya está abierto, volver a abrirlo solo muestra el panel.
+
+LINUX
+  En una terminal, dentro de la carpeta "Proyektor - 64Bits":
+     chmod +x iniciar-linux.sh        (solo la primera vez)
+     ./iniciar-linux.sh
+  Para tenerlo en el menú de aplicaciones:  ./iniciar-linux.sh --instalar
+
+macOS
+  Doble clic en "iniciar-mac.command".
+  La primera vez: clic derecho > Abrir. Si dice que no tiene permisos,
+  en Terminal:  chmod +x iniciar-mac.command
+
+iPHONE / iPAD (y celulares Android)
+  El programa corre en el computador; desde el iPad o el celular se
+  CONTROLA por Wi-Fi (misma red). Abra en Safari la dirección
+  "En la red local" que muestra la ventana negra o la pestaña
+  OBS > URLs, por ejemplo  http://192.168.1.20:8888/
+  Compartir > "Añadir a pantalla de inicio" lo deja como una app con el
+  logo de PK-PENTECOSTAL.
+  (La primera vez, Windows puede preguntar si permite el acceso en la
+  red: responda "Permitir" en redes privadas.)
+
+CERRAR
+  Botón ⏻ (arriba a la derecha del panel), o cerrar la ventana negra
+  si lo abrió con el .bat.
+
+IMPORTANTE: no abra el Proyektor original al mismo tiempo; los dos usan
+el puerto 8888.
+
+---------------------------------------------------------------------
+OBS STUDIO
+---------------------------------------------------------------------
+  Fuentes > + > Navegador. Ancho 1920, Alto 1080. URL:
+    http://localhost:8888/capa                          Rótulos + Banner (recomendado)
+    http://localhost:8888/capa?solo=overlay             Solo rótulos (nombres)
+    http://localhost:8888/capa?solo=banner              Solo banner (versículos/letras)
+    http://localhost:8888/salida?modo=obs               Tercio inferior clásico
+    http://localhost:8888/salida?modo=pantalla          Pantalla completa con fondo
+    http://localhost:8888/salida?modo=pantalla&fondo=0  Pantalla completa transparente
+    http://localhost:8888/salida?modo=chroma            Fondo verde (ATEM, vMix)
+  O conecte OBS (pestaña OBS) y pulse "Añadir la capa..." para crearla sola.
+
+  Control de OBS desde el panel (OBS 28 o superior):
+    En OBS: Herramientas > Ajustes del servidor WebSocket > Habilitar.
+    En el panel: OBS > engranaje ⚙ > escriba la contraseña > Conectar.
+    Permite: estado y botón TRANSMITIR, escenas con miniaturas, cambio con
+    Stinger, transiciones, cambio automático de escena, cámaras, audio
+    (volumen, silencio, vúmetros, añadir fuentes).
+
+PROYECTOR / TV DE LA IGLESIA
+  Botón "📽 Proyectar" sobre el monitor "AL AIRE · Pantalla".
+    - Chrome / Edge: la primera vez pide permiso para "administrar
+      ventanas en todas las pantallas": responda Permitir. Así se abre
+      sola en la 2ª pantalla y a pantalla completa.
+    - Otros navegadores: lleve la ventana al proyector y haga doble
+      clic (o tecla F / F11) para pantalla completa.
+    - Desde la ventana del proyector también funcionan las flechas,
+      Espacio, B, H y 1..9.
+    - "⏹ Detener" cierra la ventana del proyector.
+  (También en OBS > URLs > "Abrir ventana de proyector".)
+
+---------------------------------------------------------------------
+ATAJOS DE TECLADO
+---------------------------------------------------------------------
+  Clic                 Mandar al aire
+  Shift + clic         Varios versículos juntos
+  Flechas / Espacio    Siguiente / anterior (pasa de capítulo solo)
+  1..9                 Ir a la estrofa N de la canción
+  Esc                  Quitar texto del aire
+  B                    Pantalla negra
+  H                    Ocultar texto (deja el fondo)
+  Ctrl + K             Buscar referencia (Ej: "jn 3 16", "sal 23", "1 co 13:4-7")
+  Ctrl + S             Guardar ajustes del módulo OBS
+
+---------------------------------------------------------------------
+MÓDULO OBS (pestaña OBS)
+---------------------------------------------------------------------
+  OVERLAY · Rótulos
+    - Un clic pone el nombre al aire, otro clic lo quita.
+    - Lista (agregar, editar, color, ordenar, pegar varios), Ajustes
+      (texto por defecto), Reloj ON = se quita solo con el Temporizador.
+    - Luces, Fondo, Temporizador, Borde, Stinger, Plantilla, aparición.
+    - Vista previa: arrastre el rótulo para moverlo.
+  BANNER
+    - Fondo de imagen o video, efectos (partículas, nieve, bokeh,
+      estrellas, rayos), texto, colores, alto, desenfoque, transición.
+    - Los cambios se ven al instante; GUARDAR los conserva.
+    - OVERLAY y BANNER ocultan sin borrar.
+
+---------------------------------------------------------------------
+DATOS
+---------------------------------------------------------------------
+  Usa las carpetas del Proyektor original: biblias, cancioneros, fondos
+  y css/font. Agregue imágenes o videos a "fondos"; los que suba desde
+  el panel quedan en fondos/Subidos.
+  Al editar canciones se guarda copia en PK-PENTECOSTAL/respaldos.
+  Ajustes y rótulos: PK-PENTECOSTAL/config.json.
+
+---------------------------------------------------------------------
+CONTROL DESDE EL CELULAR (Android / iPhone)
+---------------------------------------------------------------------
+  1. Conecte el teléfono al MISMO Wi-Fi que el computador.
+  2. En el panel del computador presione "📱 Celular".
+  3. Escanee el código QR con la cámara del teléfono y toque el enlace.
+     El teléfono queda vinculado (no hay que instalar nada).
+  En el teléfono:
+    - Elegir / Diapositivas / Monitor cambian de vista.
+    - La barra de abajo: ◀ anterior, Negro, Ocultar, Limpiar, ▶ siguiente.
+    - Para tenerlo como app: menú del navegador > "Agregar a pantalla
+      de inicio".
+  Seguridad: solo los teléfonos que escanearon el QR pueden cambiar lo
+  que se proyecta. "Desvincular todos" (en la ventana del QR) genera un
+  código nuevo y desconecta a todos los teléfonos.
+  WI-FI PROPIO (cualquier lugar: hoteles, redes que bloquean, sin Wi-Fi)
+    En la ventana del QR elija "🛜 Wi-Fi propio" > "Crear Wi-Fi propio".
+    El computador crea la red PK-PENTECOSTAL. Escanee el QR ① para
+    unirse a esa red y luego el QR ② para abrir el panel.
+    Se apaga solo al cerrar el programa (y se restaura la zona Wi-Fi
+    que Windows tenía configurada). Solo en Windows; hasta 8 teléfonos.
+
+  Si el teléfono no logra abrir la página:
+    - Revise que ambos estén en el mismo Wi-Fi (no en datos móviles).
+    - Si el computador tiene varias redes, elija otra en "Red:".
+    - Permita el programa en el Firewall de Windows. Como administrador:
+      New-NetFirewallRule -DisplayName "PK-PENTECOSTAL (celulares en la red local)" -Direction Inbound -Protocol TCP -LocalPort 8888 -RemoteAddress LocalSubnet -Action Allow
+    - Algunas redes públicas (hoteles, wifi de invitados) bloquean que
+      los equipos se vean entre sí; use otra red o el router propio.
+
+---------------------------------------------------------------------
+IDIOMAS (Español latino · English UK · English US)
+---------------------------------------------------------------------
+  Pestaña "🌐 Idiomas": elija el idioma y todo el programa cambia al
+  instante (computador y celulares).
+  Biblias: en inglés cada versión usa su pareja real en inglés:
+    RV1960 -> King James (KJV) · NVI, NTV -> World English Bible (WEB)
+    DHH, TLA, PDT -> Bible in Basic English (BBE)   (dominio público)
+  Las citas salen en inglés ("John 3:16"); se puede buscar "juan 3:16"
+  o "jn 3:16" en cualquier idioma.
+  Canciones: en inglés se proyecta la traducción si existe (marca EN).
+  Para agregar o corregir una traducción: Editar canción ->
+  "Letra en inglés". Las traducciones se guardan aparte en
+  cancioneros/traducciones/ (los cancioneros originales no cambian).
+  Traducción automática (sin internet): en "🌐 Idiomas" pulse
+  "🤖 Traducir todas las canciones". Traduce en este computador las
+  canciones que no tienen traducción (marca EN·auto). En el editor de
+  canciones, el botón "🤖 Traducir automáticamente" traduce una sola.
+  Las canciones nuevas se traducen solas al guardarlas.
+  Cancioneros en inglés como archivo (EE. UU. y Reino Unido):
+  cancionerosCANCIONES<nombre> (English US).txt / (English UK).txt
+  Para volver a generarlos: en la carpeta PK-PENTECOSTAL	raductor
+  ejecute  node exportar.js
