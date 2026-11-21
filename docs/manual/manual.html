@@ -1,0 +1,741 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Manual de usuario - PK-PENTECOSTAL</title>
+<!-- Para crear el PDF: node generar-pdf.js (pone los fondos y los números de página del índice) -->
+<style>
+  /* ---------- Páginas: fondo azul de PK-PENTECOSTAL ---------- */
+  @page { size: Letter; margin: 17mm 17mm 19mm 17mm;
+    background: #04162e url("img/fondo-pagina.png") center / cover no-repeat;
+    @bottom-left { content: "PK-PENTECOSTAL · Manual de usuario"; font: 600 8pt "Segoe UI", sans-serif; color: #f8b800; }
+    @bottom-right { content: "Página " counter(page); font: 8pt "Segoe UI", sans-serif; color: #93abc9; } }
+  @page portada { margin: 0; background: #04162e url("img/fondo-portada.png") center / cover no-repeat;
+    @bottom-left { content: none; } @bottom-right { content: none; } }
+  :root { --azul: #1868a8; --celeste: #3088c0; --cielo: #7cc1f2; --oro: #f8b800; --tinta: #e6eef9; --gris: #93abc9;
+          --linea: rgba(150,190,235,.22); --caja: rgba(4,22,46,.62); }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { font: 10pt/1.55 "Segoe UI", system-ui, sans-serif; color: var(--tinta); margin: 0; }
+  h1, h2, h3 { line-height: 1.2; }
+  h1 { font-size: 22pt; font-weight: 800; color: #fff; margin: 0 0 5mm; padding-bottom: 3mm; border-bottom: 3px solid var(--oro); break-before: page; letter-spacing: .01em; }
+  h1 .n { display: inline-grid; place-items: center; min-width: 11mm; height: 11mm; margin-right: 3mm; border-radius: 50%; background: var(--oro); color: #04162e; font-size: 14pt; vertical-align: 1.5mm; }
+  h2 { font-size: 13.5pt; color: var(--oro); margin: 6mm 0 2.2mm; }
+  h3 { font-size: 11pt; color: var(--cielo); margin: 4mm 0 1.5mm; }
+  p { margin: 0 0 2.5mm; }
+  ul, ol { margin: 0 0 3mm; padding-left: 6mm; }
+  li { margin-bottom: 1.2mm; }
+  li::marker { color: var(--oro); }
+  b, strong { color: #fff; }
+  i { color: #cfe0f5; }
+  a { color: inherit; text-decoration: none; }
+  code { font: 9pt Consolas, monospace; color: #ffd766; background: rgba(255,255,255,.07); border: 1px solid var(--linea); padding: 0 1.2mm; border-radius: 3px; }
+  kbd { font: 600 8.5pt Consolas, monospace; color: #fff; background: #0f2c54; border: 1px solid #3d6aa3; border-bottom-width: 2px; border-radius: 4px; padding: 0 1.4mm; white-space: nowrap; }
+  .btn { display: inline-block; font-weight: 600; font-size: 9.5pt; padding: 0 2mm; border-radius: 4px; background: #1868a8; border: 1px solid #4a9ad6; color: #fff; white-space: nowrap; }
+  .btn.rojo { background: #7a1d24; border-color: #d0545e; }
+  .tag { display: inline-block; font: 700 8pt "Segoe UI", sans-serif; padding: 0 1.6mm; border-radius: 4px; }
+  .tag.en { background: #1868a8; color: #fff; }
+  .tag.auto { background: #5a4500; color: #ffd766; }
+  figure { margin: 3mm auto 4mm; width: 90%; break-inside: avoid; }
+  h2, h3 { break-after: avoid; }
+  figure img { width: 100%; display: block; border-radius: 7px; border: 1px solid rgba(160,200,245,.35); box-shadow: 0 2mm 6mm rgba(0,0,0,.45); }
+  figcaption { font-size: 8.8pt; color: var(--gris); margin-top: 1.8mm; text-align: center; font-style: italic; }
+  .pasos { counter-reset: paso; list-style: none; padding: 0; }
+  .pasos > li { counter-increment: paso; position: relative; padding-left: 10mm; margin-bottom: 2.4mm; break-inside: avoid; }
+  .pasos > li::before { content: counter(paso); position: absolute; left: 0; top: .1mm; width: 6.5mm; height: 6.5mm; border-radius: 50%; background: var(--oro); color: #04162e; font-weight: 800; font-size: 9pt; display: grid; place-items: center; }
+  .nota, .ojo, .tip { border-radius: 7px; padding: 3mm 4mm; margin: 3mm 0 4mm; break-inside: avoid; background: var(--caja); border: 1px solid var(--linea); }
+  .nota { border-left: 4px solid var(--celeste); }
+  .tip  { border-left: 4px solid #3fb76a; }
+  .ojo  { border-left: 4px solid var(--oro); }
+  .nota > b:first-child, .tip > b:first-child, .ojo > b:first-child { display: block; margin-bottom: .8mm; }
+  .nota > b:first-child { color: var(--cielo); } .tip > b:first-child { color: #6fdc95; } .ojo > b:first-child { color: var(--oro); }
+  table { width: 100%; border-collapse: collapse; margin: 2mm 0 4mm; font-size: 9.8pt; break-inside: auto; background: var(--caja); }
+  th, td { border: 1px solid var(--linea); padding: 1.7mm 2.4mm; text-align: left; vertical-align: top; }
+  th { background: #1868a8; color: #fff; font-weight: 700; border-bottom: 2px solid var(--oro); }
+  tr { break-inside: avoid; }
+  tr:nth-child(even) td { background: rgba(255,255,255,.035); }
+  .dos { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; }
+  .telefonos { display: flex; gap: 5mm; justify-content: center; margin: 3mm 0 4mm; break-inside: avoid; }
+  .telefonos figure { width: 31%; margin: 0; }
+  .telefonos figure img { border-radius: 12px; }
+  .lado { display: flex; gap: 6mm; align-items: flex-start; break-inside: avoid; }
+  .lado > figure { flex: none; width: 42%; margin: 0; }
+  .lado > div { flex: 1; }
+  .novedad { display: inline-block; font: 800 7.5pt "Segoe UI", sans-serif; letter-spacing: .08em; color: #04162e; background: var(--oro); border-radius: 3px; padding: .2mm 1.6mm; vertical-align: 1mm; margin-left: 2mm; }
+
+  /* ---------- Portada (como el fondo de pantalla de PK-PENTECOSTAL) ---------- */
+  .portada { page: portada; height: 279.4mm; position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 50mm 18mm 0; }
+  .portada img { width: 62mm; filter: drop-shadow(0 2mm 6mm rgba(0,0,0,.5)); }
+  .portada .t { margin: 11mm 0 0; font: 900 40pt/1 "Segoe UI", sans-serif; color: #fff; letter-spacing: .02em; text-shadow: 0 1.5mm 4mm rgba(0,0,0,.55); white-space: nowrap; }
+  .portada .t span { color: var(--oro); }
+  .portada .lema { margin: 4mm 0 0; font: 600 12pt "Segoe UI", sans-serif; letter-spacing: .42em; color: #9db6d6; }
+  .portada .raya { width: 46mm; height: 2px; margin: 8mm 0; background: linear-gradient(90deg, transparent, var(--oro), transparent); }
+  .portada .s { margin: 0; font: 700 16pt "Segoe UI", sans-serif; color: #fff; }
+  .portada .s small { display: block; margin-top: 2mm; font: 400 11pt "Segoe UI", sans-serif; color: var(--gris); }
+  .portada .verso { margin: 12mm 0 0; max-width: 150mm; font: italic 13pt/1.5 "Segoe UI", sans-serif; color: #e6eef9; }
+  .portada .verso b { display: block; margin-top: 2mm; font: 700 11pt "Segoe UI", sans-serif; color: var(--oro); font-style: normal; }
+  .portada .autor { position: absolute; left: 0; right: 0; bottom: 20mm; font-size: 10pt; color: var(--gris); }
+  .portada .autor b { display: block; font-size: 11pt; color: var(--oro); margin-bottom: 1mm; }
+  .portada .fecha { position: absolute; top: 14mm; right: 16mm; font: 600 9pt "Segoe UI", sans-serif; letter-spacing: .12em; color: #9db6d6; }
+
+  /* ---------- Índice ---------- */
+  .indice { break-before: page; }
+  .indice h2 { font-size: 22pt; color: #fff; border-bottom: 3px solid var(--oro); padding-bottom: 3mm; margin: 0 0 4mm; }
+  .indice ol { list-style: none; padding: 0; margin: 0; }
+  .indice li { margin: 0; border-bottom: 1px dotted rgba(150,190,235,.3); }
+  .indice a { display: flex; gap: 3mm; align-items: baseline; padding: 1.45mm 1mm; font-size: 11pt; }
+  .indice a span:first-child { color: var(--oro); font-weight: 800; min-width: 8mm; }
+  .indice a small { margin-left: auto; font-size: 11pt; font-weight: 700; color: var(--cielo); }
+  .indice .resumen { break-inside: avoid; margin-top: 5mm; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4mm; }
+  .indice .resumen div { background: var(--caja); border: 1px solid var(--linea); border-top: 3px solid var(--oro); border-radius: 7px; padding: 3mm; font-size: 9pt; color: var(--gris); }
+  .indice .resumen b { display: block; font-size: 15pt; color: #fff; }
+
+  /* ---------- Créditos ---------- */
+  .creditos { page: portada; break-before: page; height: 279.4mm; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 22mm; }
+  .creditos img { width: 50mm; margin-bottom: 8mm; }
+  .creditos .nom { font: 900 26pt "Segoe UI", sans-serif; color: #fff; margin: 0; }
+  .creditos .nom span { color: var(--oro); }
+  .creditos .hecho { margin: 6mm 0 1mm; font-size: 13pt; font-weight: 700; color: var(--oro); }
+  .creditos .zona { margin: 0; color: var(--gris); font-size: 10.5pt; }
+  .creditos .verso { margin: 12mm 0 0; padding-top: 7mm; border-top: 2px solid var(--oro); font: italic 14pt/1.5 "Segoe UI", sans-serif; color: #fff; max-width: 150mm; }
+  .creditos .verso b { display: block; margin-top: 2mm; font: 700 11pt "Segoe UI", sans-serif; color: var(--oro); font-style: normal; }
+  .creditos .fin { margin-top: 12mm; color: var(--gris); }
+</style>
+</head>
+<body>
+
+<!-- ======================= PORTADA ======================= -->
+<section class="portada">
+  <div class="fecha">NOVIEMBRE 2026</div>
+  <img src="img/logo-ipuc.webp" alt="Logo IPUC">
+  <p class="t">PK-<span>PENTECOSTAL</span></p>
+  <p class="lema">BIBLIA Y CANCIONES EN VIVO</p>
+  <div class="raya"></div>
+  <p class="s">Manual de usuario<small>Guía paso a paso · Proyector, OBS, celular e inglés</small></p>
+  <p class="verso">«Por toda la tierra salió su voz, y hasta el extremo del mundo sus palabras.»<b>Salmos 19:4</b></p>
+  <div class="autor"><b>Hecho por Sebastian Lopez · IPUC Natania 6° Etapa</b>Zona Especial Misionera – Archipiélago de San Andrés, Providencia y Santa Catalina</div>
+</section>
+
+<!-- ======================= ÍNDICE ======================= -->
+<section class="indice">
+  <h2>Contenido</h2>
+  <ol>
+    <li><a href="#c1"><span>1</span> ¿Qué es PK-PENTECOSTAL?<small></small></a></li>
+    <li><a href="#c2"><span>2</span> Instalación (una sola vez)<small></small></a></li>
+    <li><a href="#c3"><span>3</span> Abrir y cerrar el programa<small></small></a></li>
+    <li><a href="#c4"><span>4</span> Conociendo la pantalla principal<small></small></a></li>
+    <li><a href="#c5"><span>5</span> Biblia: proyectar versículos<small></small></a></li>
+    <li><a href="#c6"><span>6</span> Canciones: proyectar, crear y editar<small></small></a></li>
+    <li><a href="#c7"><span>7</span> Texto y anuncios<small></small></a></li>
+    <li><a href="#c8"><span>8</span> Fondos<small></small></a></li>
+    <li><a href="#c9"><span>9</span> Estilo: cómo se ve el texto<small></small></a></li>
+    <li><a href="#c10"><span>10</span> Controles en vivo<small></small></a></li>
+    <li><a href="#c11"><span>11</span> Proyectar en el proyector o TV de la iglesia<small></small></a></li>
+    <li><a href="#c12"><span>12</span> Uso con OBS Studio (transmisión)<small></small></a></li>
+    <li><a href="#c13"><span>13</span> Control desde el celular (código QR)<small></small></a></li>
+    <li><a href="#c14"><span>14</span> Idiomas: el programa en inglés<small></small></a></li>
+    <li><a href="#c15"><span>15</span> Atajos de teclado<small></small></a></li>
+    <li><a href="#c16"><span>16</span> Dónde se guardan los datos y copias de seguridad<small></small></a></li>
+    <li><a href="#c17"><span>17</span> Solución de problemas<small></small></a></li>
+    <li><a href="#c18"><span>18</span> Lista rápida para el día del culto<small></small></a></li>
+    <li><a href="#c19"><span>19</span> Créditos<small></small></a></li>
+  </ol>
+  <div class="resumen">
+    <div><b>8 Biblias</b>5 en español y 3 en inglés</div>
+    <div><b>1.849 canciones</b>en 6 cancioneros, todas también en inglés</div>
+    <div><b>Sin internet</b>funciona solo con el computador</div>
+  </div>
+</section>
+
+<!-- ======================= 1 ======================= -->
+<h1 id="c1"><span class="n">1</span>¿Qué es PK-PENTECOSTAL?</h1>
+<p><b>PK-PENTECOSTAL</b> es un programa para proyectar durante los cultos:</p>
+<ul>
+  <li><b>Versículos de la Biblia</b>: Reina Valera 1960, NVI, NTV, DHH, TLA, PDT y versiones en inglés (KJV, WEB y BBE).</li>
+  <li><b>Letras de canciones, himnos y coros</b> de seis cancioneros (Himnario Lluvias de Bendición, Manantial de Inspiración, Corario IPUC, Infantiles, Mi Cancionero y Canciones).</li>
+  <li><b>Anuncios y textos libres</b> escritos en el momento.</li>
+  <li><b>Rótulos con nombres</b> (predicador, cantantes, eventos) para la transmisión en vivo.</li>
+</ul>
+<p>Todo se maneja desde un <b>panel de control</b> que se abre en el navegador (Chrome o Edge). Ese mismo panel envía el contenido a:</p>
+<ul>
+  <li>El <b>proyector o televisor</b> de la iglesia (pantalla completa con fondo).</li>
+  <li><b>OBS Studio</b>, para la transmisión por Facebook o YouTube (tercio inferior, banner y rótulos).</li>
+  <li>Uno o varios <b>celulares</b>, desde donde también se puede manejar todo (capítulo 13).</li>
+</ul>
+<p>Y además el programa completo, las Biblias y las canciones se pueden poner <b>en inglés</b> con un clic (capítulo 14), para llevar la Palabra a quienes solo hablan inglés.</p>
+<div class="nota"><b>¿Cómo funciona por dentro?</b>El programa enciende un pequeño servidor en el computador (dirección <code>http://localhost:8888</code>). El panel, el proyector, OBS y los celulares se conectan a él, por eso todo cambia al mismo tiempo. <b>No necesita internet</b> para funcionar, ni siquiera para traducir.</div>
+
+<!-- ======================= 2 ======================= -->
+<h1 id="c2"><span class="n">2</span>Instalación (una sola vez)</h1>
+<h2>Requisito: Node.js</h2>
+<p>PK-PENTECOSTAL necesita <b>Node.js</b>, un programa gratuito. Solo se instala una vez.</p>
+<ol class="pasos">
+  <li>Abra <b>PK-PENTECOSTAL.vbs</b>. Si Node.js no está instalado, el programa le avisa y abre la página de descarga automáticamente (<code>nodejs.org/es/download</code>).</li>
+  <li>Descargue la versión <b>LTS</b> (la recomendada) para Windows.</li>
+  <li>Ejecute el instalador y pulse <span class="btn">Siguiente</span> en todas las ventanas hasta <span class="btn">Finalizar</span>. No hace falta cambiar ninguna opción.</li>
+  <li>Vuelva a abrir <b>PK-PENTECOSTAL.vbs</b>. Ya debe abrir el panel.</li>
+</ol>
+<h2>Crear el acceso directo en el Escritorio</h2>
+<ol class="pasos">
+  <li>Entre a la carpeta <code>PK-PENTECOSTAL</code>.</li>
+  <li>Haga doble clic en <b>Crear acceso directo (Windows).vbs</b>.</li>
+  <li>Aparecerá en el Escritorio el ícono <b>PK-PENTECOSTAL</b> con el logo de la IPUC. Desde ahora abra el programa con ese ícono.</li>
+</ol>
+<div class="tip"><b>Consejo</b>Si el ícono no muestra el logo, vuelva a ejecutar “Crear acceso directo”. Windows a veces tarda en refrescar los íconos.</div>
+<h2>Contenido de la carpeta</h2>
+<p>Al abrir la carpeta <code>PK-PENTECOSTAL</code> solo se ve lo que se usa a diario:</p>
+<table>
+  <tr><th style="width:38%">Lo que se ve</th><th>Para qué sirve</th></tr>
+  <tr><td><code>PK-PENTECOSTAL.vbs</code></td><td>Abre el programa (forma normal).</td></tr>
+  <tr><td><code>PK-PENTECOSTAL.bat</code></td><td>Abre el programa con una ventana negra que muestra los errores. Úselo solo si algo falla.</td></tr>
+  <tr><td><code>Crear acceso directo (Windows).vbs</code></td><td>Crea el ícono en el Escritorio.</td></tr>
+  <tr><td><code>Manual PK-PENTECOSTAL.pdf</code></td><td>Este manual.</td></tr>
+  <tr><td><code>fondos</code></td><td>Imágenes y videos de fondo, organizados en subcarpetas. Aquí puede agregar los suyos.</td></tr>
+  <tr><td><code>Imagenes</code></td><td>Fondos de pantalla de PK-PENTECOSTAL y pantallas de bienvenida y cierre.</td></tr>
+</table>
+<p>El resto de carpetas (<code>PK-PENTECOSTAL</code>, <code>biblias</code>, <code>cancioneros</code>, <code>css</code>…) están <b>ocultas</b> para que nadie las borre por error. El programa las usa normalmente. Para verlas: en el Explorador, <b>Vista → Mostrar → Elementos ocultos</b>.</p>
+<div class="ojo"><b>No borre, mueva ni cambie el nombre de las carpetas ocultas</b>Si oculta una carpeta usted mismo, en la ventana de Windows elija <b>“Aplicar cambios solo a esta carpeta”</b>. Si elige “a subcarpetas y archivos”, el programa no podrá guardar canciones ni ajustes.</div>
+
+<!-- ======================= 3 ======================= -->
+<h1 id="c3"><span class="n">3</span>Abrir y cerrar el programa</h1>
+<h2>Abrir en Windows</h2>
+<ol class="pasos">
+  <li>Haga doble clic en el ícono <b>PK-PENTECOSTAL</b> del Escritorio (o en <code>PK-PENTECOSTAL.vbs</code>).</li>
+  <li>Aparece el aviso <i>“Iniciando PK-PENTECOSTAL… Espere por favor”</i>.</li>
+  <li>En unos segundos se abre el <b>panel de control</b> en el navegador.</li>
+</ol>
+<p>Si el programa ya estaba abierto, abrirlo otra vez solo vuelve a mostrar el panel; no inicia una segunda copia.</p>
+<div class="ojo"><b>Importante</b>No abra el <b>Proyektor original</b> al mismo tiempo. Los dos usan la misma “puerta” (puerto 8888) y PK-PENTECOSTAL no podrá iniciar.</div>
+<h2>Abrir en Mac o Linux</h2>
+<p>Los archivos <code>iniciar-mac.command</code> e <code>iniciar-linux.sh</code> están entre las carpetas ocultas (vea el capítulo 2).</p>
+<ul>
+  <li><b>Mac:</b> doble clic en <code>iniciar-mac.command</code>. La primera vez: clic derecho → <b>Abrir</b>. Si dice que no tiene permisos, en la Terminal escriba <code>chmod +x iniciar-mac.command</code>.</li>
+  <li><b>Linux:</b> en una terminal dentro de la carpeta: <code>chmod +x iniciar-linux.sh</code> (solo la primera vez) y luego <code>./iniciar-linux.sh</code>. Con <code>./iniciar-linux.sh --instalar</code> queda en el menú de aplicaciones.</li>
+</ul>
+<h2>Cerrar el programa</h2>
+<ol class="pasos">
+  <li>Pulse el botón <span class="btn">⏻</span> (arriba a la derecha del panel).</li>
+  <li>Confirme con <span class="btn">Aceptar</span>. Se detiene el servidor y aparece “PK-PENTECOSTAL se cerró”.</li>
+  <li>Ya puede cerrar la pestaña del navegador.</li>
+</ol>
+<div class="nota"><b>Ojo</b>Al cerrar el programa, el proyector, OBS y los celulares dejan de recibir texto. Ciérrelo solo al terminar el culto.</div>
+
+<!-- ======================= 4 ======================= -->
+<h1 id="c4"><span class="n">4</span>Conociendo la pantalla principal</h1>
+<figure><img src="img/01-panel-biblia.png" alt=""><figcaption>Figura 1. Panel de control con un versículo al aire (Juan 3:16).</figcaption></figure>
+<p>El panel tiene <b>cuatro zonas</b>:</p>
+<h3>A. Barra superior</h3>
+<ul>
+  <li><b>Logo y nombre</b> del programa.</li>
+  <li><b>Pestañas</b>: 📖 Biblia · 🎵 Canciones · ✏️ Texto / Anuncios · 🖼️ Fondos · 🎨 Estilo · 📡 OBS · 🌐 Idiomas.</li>
+  <li><b>Controles en vivo</b> (a la derecha): <span class="btn">📱 Celular</span> <span class="btn">Ocultar texto</span> <span class="btn">Negro</span> <span class="btn">Limpiar</span> <span class="btn">⏻</span>. Se explican en el capítulo 10.</li>
+</ul>
+<h3>B. Columna izquierda: la biblioteca</h3>
+<p>Cambia según la pestaña elegida: libros de la Biblia, lista de canciones, cuadro de texto, galería de fondos, ajustes de estilo o idiomas.</p>
+<h3>C. Columna central: el contenido</h3>
+<p>Muestra los versículos del capítulo, las estrofas de la canción o las diapositivas del anuncio. <b>Un clic en cualquiera lo manda al aire</b>. Lo que está al aire se marca con borde rojo.</p>
+<h3>D. Columna derecha: los monitores</h3>
+<ul>
+  <li><b>AL AIRE · Pantalla</b>: lo que se ve en el proyector. Tiene el botón <span class="btn">📽 Proyectar</span>.</li>
+  <li><b>AL AIRE · OBS tercio inferior</b>: lo que se ve en la transmisión.</li>
+  <li><b>En vivo ahora</b>: la referencia y el texto que están al aire.</li>
+  <li>Abajo, el estado de conexión: <b style="color:#4cd07d">● Conectado al servidor</b>.</li>
+</ul>
+<p>En la parte inferior del panel aparece la franja de <b>créditos</b> del programa con el versículo de Salmos 19:4. Esta franja <b>no</b> se ve en el proyector ni en OBS.</p>
+
+<!-- ======================= 5 ======================= -->
+<h1 id="c5"><span class="n">5</span>Biblia: proyectar versículos</h1>
+<h2>Forma rápida: escribir la cita</h2>
+<ol class="pasos">
+  <li>Haga clic en la pestaña <b>📖 Biblia</b>.</li>
+  <li>Elija la versión en la lista superior (por ejemplo <b>Reina Valera 1960</b>).</li>
+  <li>En el cuadro de referencia escriba la cita y pulse <kbd>Enter</kbd> o <span class="btn">Ir</span>.</li>
+  <li>El capítulo se abre en el centro y el versículo buscado queda resaltado.</li>
+  <li>Haga <b>clic sobre el versículo</b> para mandarlo al aire.</li>
+</ol>
+<p>Formas válidas de escribir la cita (acepta abreviaturas, con o sin tildes, y también los nombres de los libros en inglés):</p>
+<table>
+  <tr><th>Escriba…</th><th>Resultado</th></tr>
+  <tr><td><code>Juan 3:16</code> o <code>jn 3 16</code></td><td>Juan capítulo 3, versículo 16</td></tr>
+  <tr><td><code>Juan 3:16-18</code></td><td>Versículos 16 al 18 juntos</td></tr>
+  <tr><td><code>sal 23</code> o <code>psalm 23</code></td><td>Salmo 23 completo (capítulo)</td></tr>
+  <tr><td><code>1 co 13:4-7</code></td><td>1 Corintios 13:4 al 7</td></tr>
+  <tr><td><code>john 3:16</code></td><td>Juan 3:16 (nombre en inglés)</td></tr>
+</table>
+<div class="tip"><b>Atajo</b>Pulse <kbd>Ctrl</kbd> + <kbd>K</kbd> en cualquier momento para ir directo al cuadro de búsqueda de cita.</div>
+<h2>Forma visual: libro y capítulo</h2>
+<ol class="pasos">
+  <li>En la sub-pestaña <b>Libros</b> haga clic en el libro (Antiguo o Nuevo Testamento).</li>
+  <li>Arriba del centro aparecen los <b>números de capítulo</b>: pulse el que necesite.</li>
+  <li>Use <span class="btn">◀ Cap.</span> y <span class="btn">Cap. ▶</span> para pasar al capítulo anterior o siguiente.</li>
+  <li>Clic en el versículo para mandarlo al aire.</li>
+</ol>
+<h2>Varios versículos a la vez</h2>
+<p>Haga clic en el primer versículo y luego <kbd>Shift</kbd> + clic en el último. Se proyectan todos juntos; el tamaño de la letra se ajusta solo para que quepan.</p>
+<h2>Avanzar durante la predicación</h2>
+<p>Con un versículo al aire, use <kbd>↓</kbd> / <kbd>→</kbd> / <kbd>Espacio</kbd> para el siguiente y <kbd>↑</kbd> / <kbd>←</kbd> para el anterior. Al llegar al último versículo pasa solo al capítulo siguiente.</p>
+<h2>Buscar palabras</h2>
+<ol class="pasos">
+  <li>Escriba una o varias palabras en <b>“Buscar palabras en la Biblia…”</b> (por ejemplo <i>amor paciente</i>).</li>
+  <li>Los resultados aparecen en la sub-pestaña <b>Resultados</b> (el número indica cuántos hay).</li>
+  <li>Clic en un resultado para abrir ese capítulo.</li>
+</ol>
+<h2>Historial</h2>
+<p>La sub-pestaña <b>Historial</b> guarda los versículos que ya se proyectaron en el culto. Clic en uno para volver a él rápidamente.</p>
+
+<!-- ======================= 6 ======================= -->
+<h1 id="c6"><span class="n">6</span>Canciones: proyectar, crear y editar</h1>
+<figure><img src="img/02-canciones.png" alt=""><figcaption>Figura 2. Una canción abierta: cada estrofa es una diapositiva.</figcaption></figure>
+<h2>Proyectar una canción</h2>
+<ol class="pasos">
+  <li>Haga clic en la pestaña <b>🎵 Canciones</b>.</li>
+  <li>Elija el <b>cancionero</b> en la lista superior (Himnario, Corario, Infantiles…).</li>
+  <li>Escriba en <b>“Buscar por título o letra…”</b> parte del título o una frase de la letra.</li>
+  <li>Clic en la canción: sus estrofas aparecen en el centro como diapositivas numeradas. (Doble clic la abre y proyecta la primera estrofa).</li>
+  <li>Clic en una estrofa para mandarla al aire.</li>
+  <li>Avance con <kbd>↓</kbd> o <kbd>Espacio</kbd>, o pulse el <b>número</b> de la estrofa (<kbd>1</kbd> a <kbd>9</kbd>) para saltar directamente a ella (útil para repetir el coro).</li>
+</ol>
+<h2>Crear una canción nueva</h2>
+<div class="lado">
+  <figure><img src="img/11-editor-cancion.png" alt=""><figcaption>Figura 3. Editor de canciones.</figcaption></figure>
+  <div>
+    <ol class="pasos">
+      <li>En la pestaña Canciones pulse <span class="btn">＋ Nueva</span>.</li>
+      <li>Escriba el <b>Título</b> y, si quiere, el <b>Tono</b> (por ejemplo <i>C</i>, <i>Re menor</i>).</li>
+      <li>Elija en qué <b>Cancionero</b> se guardará.</li>
+      <li>Escriba o pegue la <b>Letra</b>. <b>Deje una línea en blanco entre estrofas</b>: cada bloque será una diapositiva.</li>
+      <li>Opcional: llene <b>Título en inglés</b> y <b>Letra en inglés</b>, o pulse <span class="btn">🤖 Traducir automáticamente</span> (capítulo 14).</li>
+      <li>Pulse <span class="btn">Guardar</span>.</li>
+    </ol>
+  </div>
+</div>
+<h2>Editar o eliminar una canción</h2>
+<ol class="pasos">
+  <li>Abra la canción y pulse <span class="btn">✎ Editar</span> (arriba a la derecha del centro).</li>
+  <li>Corrija lo necesario y pulse <span class="btn">Guardar</span>, o <span class="btn rojo">Eliminar</span> para borrarla.</li>
+</ol>
+<div class="nota"><b>Copias de seguridad automáticas</b>Cada vez que se edita un cancionero, el programa guarda una copia anterior en la carpeta <code>PK-PENTECOSTAL\respaldos</code>. Si se equivoca, puede recuperar la versión anterior desde allí.</div>
+
+<!-- ======================= 7 ======================= -->
+<h1 id="c7"><span class="n">7</span>Texto y anuncios</h1>
+<figure><img src="img/03-texto.png" alt=""><figcaption>Figura 4. Anuncios divididos en tres diapositivas.</figcaption></figure>
+<ol class="pasos">
+  <li>Haga clic en la pestaña <b>✏️ Texto / Anuncios</b>.</li>
+  <li>En <b>Título / referencia</b> escriba un título opcional (ej.: <i>Anuncios</i>, <i>Tema de hoy</i>, el nombre del predicador). Se muestra como referencia debajo del texto.</li>
+  <li>En <b>Texto</b> escriba el contenido. <b>Una línea en blanco separa las diapositivas</b>.</li>
+  <li>Pulse <span class="btn">Cargar diapositivas</span>: aparecen en el centro.</li>
+  <li>Clic en cada diapositiva para mandarla al aire (o use las flechas y los números <kbd>1</kbd>–<kbd>9</kbd>).</li>
+  <li>Pulse <span class="btn">Guardar</span> si quiere usarlo otro día. Queda en la lista <b>Guardados</b>; clic para volver a cargarlo y <span class="btn">✕</span> para borrarlo.</li>
+</ol>
+<div class="tip"><b>Ideas de uso</b>Bienvenida, anuncios de la semana, el tema y la cita base de la predicación, motivos de oración, el número de cuenta para ofrendas, el nombre de los cantantes.</div>
+
+<!-- ======================= 8 ======================= -->
+<h1 id="c8"><span class="n">8</span>Fondos</h1>
+<figure><img src="img/04-fondos.png" alt=""><figcaption>Figura 5. Galería de fondos.</figcaption></figure>
+<p>El fondo se ve detrás del texto en la salida <b>Pantalla</b> (proyector).</p>
+<ol class="pasos">
+  <li>Haga clic en la pestaña <b>🖼️ Fondos</b>.</li>
+  <li>Elija una <b>categoría</b> en la lista (Biblias, Colores, Videos, Favoritos…).</li>
+  <li>Clic en una imagen o video: el fondo cambia al instante, aunque haya texto al aire. Los videos se repiten en bucle y sin sonido.</li>
+  <li>Para un <b>color sólido</b>: elija el color en el cuadrito y pulse <span class="btn">Color</span>.</li>
+</ol>
+<h2>Agregar sus propios fondos</h2>
+<ol class="pasos">
+  <li>Copie imágenes (<code>.jpg .png .webp</code>) o videos (<code>.mp4 .webm</code>) dentro de la carpeta <code>fondos</code>, en una subcarpeta existente o en una nueva (cada subcarpeta es una categoría).</li>
+  <li>Vuelva a la pestaña Fondos (o recargue la página con <kbd>F5</kbd>) y aparecerán.</li>
+</ol>
+<div class="tip"><b>Consejo</b>Use imágenes oscuras o poco cargadas para que el texto se lea bien, o suba el ajuste <b>Oscurecer fondo</b> en la pestaña Estilo. Para videos, prefiera resolución 1920×1080.</div>
+
+<!-- ======================= 9 ======================= -->
+<h1 id="c9"><span class="n">9</span>Estilo: cómo se ve el texto</h1>
+<div class="dos">
+  <figure style="margin-top:0;width:100%"><img src="img/05-estilo.png" alt=""><figcaption>Figura 6. Pestaña Estilo.</figcaption></figure>
+  <div>
+    <p>En la pestaña <b>🎨 Estilo</b> se ajusta la apariencia del texto. Todos los cambios se ven <b>al instante</b> en los monitores y quedan <b>guardados</b> automáticamente.</p>
+    <p>Hay dos grupos de ajustes:</p>
+    <ul>
+      <li><b>Pantalla completa / Proyector</b>: lo que se ve en el proyector.</li>
+      <li><b>Tercio inferior (OBS)</b>: la barra que se ve en la transmisión.</li>
+    </ul>
+    <p>Al final está <span class="btn">Restaurar estilo por defecto</span> para volver a los valores de fábrica.</p>
+  </div>
+</div>
+<h2>Pantalla completa / Proyector</h2>
+<table>
+  <tr><th style="width:30%">Ajuste</th><th>Qué hace</th></tr>
+  <tr><td><b>Fuente</b></td><td>Tipo de letra.</td></tr>
+  <tr><td><b>Tamaño máximo</b></td><td>Tamaño más grande permitido. El programa achica la letra solo si el texto es largo, para que siempre quepa.</td></tr>
+  <tr><td><b>Color texto / Color referencia</b></td><td>Color del versículo o letra, y de la cita (ej. “Juan 3:16 · RV1960”).</td></tr>
+  <tr><td><b>Alineación</b></td><td>Centro, izquierda o justificado.</td></tr>
+  <tr><td><b>Margen</b></td><td>Espacio libre alrededor del texto, en los bordes de la pantalla.</td></tr>
+  <tr><td><b>Posición vertical del texto</b></td><td><b>Sube o baja el texto</b> en la pantalla. Valores positivos = más arriba; negativos = más abajo; 0 = centrado. Use el deslizador o los botones <span class="btn">▲ Subir</span> <span class="btn">Centrar</span> <span class="btn">▼ Bajar</span>.</td></tr>
+  <tr><td><b>Oscurecer fondo</b></td><td>Oscurece la imagen o video de fondo para que el texto resalte.</td></tr>
+  <tr><td><b>Sombra / Contorno</b></td><td>Sombra o borde negro alrededor de las letras (mejora la lectura sobre fondos claros).</td></tr>
+  <tr><td><b>Negrita / MAYÚSCULAS</b></td><td>Letra gruesa / todo en mayúsculas.</td></tr>
+  <tr><td><b>Mostrar referencia</b></td><td>Muestra u oculta la cita bíblica o el título de la canción.</td></tr>
+  <tr><td><b>Transición (ms)</b></td><td>Duración del efecto al cambiar de diapositiva (0 = cambio instantáneo).</td></tr>
+</table>
+<div class="tip"><b>¿Cuándo subir o bajar el texto?</b>Si el púlpito, los músicos o las cabezas de los hermanos tapan la parte baja de la pantalla, suba el texto. Si la parte de arriba del proyector queda cortada, bájelo.</div>
+<h2>Tercio inferior (OBS)</h2>
+<table>
+  <tr><th style="width:30%">Ajuste</th><th>Qué hace</th></tr>
+  <tr><td><b>Posición</b></td><td>Abajo, arriba o centro de la imagen de la transmisión.</td></tr>
+  <tr><td><b>Fuente / Tamaño máximo</b></td><td>Tipo y tamaño de letra de la barra.</td></tr>
+  <tr><td><b>Ancho (%) / Alto (%)</b></td><td>Tamaño de la barra respecto a la pantalla.</td></tr>
+  <tr><td><b>Colores</b></td><td>Texto, barra, acento (franja lateral) y referencia.</td></tr>
+  <tr><td><b>Opacidad barra / Bordes redondeados</b></td><td>Transparencia y redondeo de la barra.</td></tr>
+  <tr><td><b>Mostrar barra, Sombra, MAYÚSCULAS, Mostrar referencia</b></td><td>Opciones de presentación.</td></tr>
+</table>
+
+<!-- ======================= 10 ======================= -->
+<h1 id="c10"><span class="n">10</span>Controles en vivo</h1>
+<figure style="width:70%"><img src="img/12-boton-celular.png" alt=""><figcaption>Figura 7. Controles en vivo, siempre arriba a la derecha.</figcaption></figure>
+<p>Están siempre visibles y funcionan desde cualquier pestaña:</p>
+<table>
+  <tr><th style="width:26%">Botón</th><th style="width:14%">Tecla</th><th>Qué hace</th></tr>
+  <tr><td><span class="btn">📱 Celular</span></td><td>—</td><td>Muestra el <b>código QR</b> para manejar el programa desde el teléfono (capítulo 13).</td></tr>
+  <tr><td><span class="btn">Ocultar texto</span></td><td><kbd>H</kbd></td><td>Oculta el texto pero <b>deja el fondo</b>. Pulse otra vez para mostrarlo. Útil durante la oración.</td></tr>
+  <tr><td><span class="btn">Negro</span></td><td><kbd>B</kbd></td><td>Pone la pantalla del proyector <b>totalmente negra</b>. Pulse otra vez para volver.</td></tr>
+  <tr><td><span class="btn">Limpiar</span></td><td><kbd>Esc</kbd></td><td><b>Quita del aire</b> el versículo, estrofa o anuncio actual (queda solo el fondo).</td></tr>
+  <tr><td><span class="btn rojo">⏻</span></td><td>—</td><td>Cierra el programa (ver capítulo 3).</td></tr>
+</table>
+
+<!-- ======================= 11 ======================= -->
+<h1 id="c11"><span class="n">11</span>Proyectar en el proyector o TV de la iglesia</h1>
+<figure style="width:66%"><img src="img/09-salida-pantalla.png" alt=""><figcaption>Figura 8. Así se ve la salida en el proyector.</figcaption></figure>
+<h2>Paso 1: conectar y extender la pantalla (Windows)</h2>
+<ol class="pasos">
+  <li>Conecte el proyector o TV al computador (HDMI o VGA) y enciéndalo.</li>
+  <li>Pulse <kbd>Windows</kbd> + <kbd>P</kbd> y elija <b>Extender</b>. Así el proyector funciona como una segunda pantalla y usted conserva el panel en su monitor. <i>(No use “Duplicar”, porque el público vería el panel de control).</i></li>
+</ol>
+<h2>Paso 2: pulsar “Proyectar”</h2>
+<ol class="pasos">
+  <li>En el monitor <b>AL AIRE · Pantalla</b> (columna derecha) pulse <span class="btn">📽 Proyectar</span>.</li>
+  <li><b>La primera vez</b>, Chrome o Edge preguntan si permite <i>“administrar ventanas en todas las pantallas”</i>. Responda <b>Permitir</b>.</li>
+  <li>La salida se abre <b>sola en la segunda pantalla y en pantalla completa</b>.</li>
+  <li>El botón cambia a <span class="btn rojo">⏹ Detener</span> mientras se está proyectando. Púlselo para cerrar la ventana del proyector.</li>
+</ol>
+<h2>Si no se abre sola en el proyector</h2>
+<p>Pasa si se negó el permiso, si usa otro navegador, o si no hay segunda pantalla detectada. Entonces se abre una ventana normal:</p>
+<ol class="pasos">
+  <li>Arrastre la ventana hasta la pantalla del proyector.</li>
+  <li>Haga <b>doble clic</b> dentro de ella, o pulse <kbd>F</kbd> o <kbd>F11</kbd>, para ponerla en pantalla completa.</li>
+</ol>
+<div class="tip"><b>Puede seguir controlando desde la ventana del proyector</b>Si por error hizo clic en la ventana del proyector, las teclas <kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd> <kbd>Espacio</kbd> <kbd>B</kbd> <kbd>H</kbd> y <kbd>1</kbd>–<kbd>9</kbd> siguen funcionando igual que en el panel.</div>
+<div class="nota"><b>Recuperar el permiso</b>Si respondió “Bloquear” por error: en Chrome haga clic en el candado a la izquierda de la dirección <code>localhost:8888</code> → <b>Administración de ventanas</b> → <b>Permitir</b>, y recargue con <kbd>F5</kbd>. Si el navegador bloquea la ventana emergente, permita “Ventanas emergentes” para este sitio de la misma forma.</div>
+<p>También puede abrir el proyector desde <b>📡 OBS → 🔗 URLs para OBS → Abrir ventana de proyector</b>; funciona igual que el botón Proyectar.</p>
+
+<!-- ======================= 12 ======================= -->
+<h1 id="c12"><span class="n">12</span>Uso con OBS Studio (transmisión)</h1>
+<p>La pestaña <b>📡 OBS</b> tiene tres secciones: <b>◧ OVERLAY · Rótulos</b>, <b>▬ BANNER</b> y <b>🔗 URLs para OBS</b>.</p>
+<h2>12.1 Añadir PK-PENTECOSTAL a OBS (forma manual)</h2>
+<figure><img src="img/08-obs-urls.png" alt=""><figcaption>Figura 9. Direcciones para OBS.</figcaption></figure>
+<ol class="pasos">
+  <li>En el panel vaya a <b>📡 OBS → 🔗 URLs para OBS</b> y pulse <span class="btn">Copiar</span> en la dirección que necesite.</li>
+  <li>En OBS: en <b>Fuentes</b> pulse <b>＋</b> → <b>Navegador</b> (Browser) → póngale un nombre → <b>Aceptar</b>.</li>
+  <li>Pegue la URL, escriba <b>Ancho 1920</b> y <b>Alto 1080</b> → <b>Aceptar</b>.</li>
+</ol>
+<table>
+  <tr><th style="width:44%">Dirección</th><th>Uso</th></tr>
+  <tr><td><code>localhost:8888/capa</code></td><td><b>Recomendada.</b> Rótulos + banner en una sola fuente.</td></tr>
+  <tr><td><code>localhost:8888/capa?solo=overlay</code></td><td>Solo los rótulos de nombres.</td></tr>
+  <tr><td><code>localhost:8888/capa?solo=banner</code></td><td>Solo el banner (versículos/letras con fondo y efectos).</td></tr>
+  <tr><td><code>/salida?modo=obs</code></td><td>Tercio inferior clásico (se ajusta en la pestaña Estilo).</td></tr>
+  <tr><td><code>/salida?modo=pantalla</code></td><td>Pantalla completa con fondo (escena dedicada a la letra).</td></tr>
+  <tr><td><code>/salida?modo=pantalla&amp;fondo=0</code></td><td>Pantalla completa sin fondo (transparente).</td></tr>
+  <tr><td><code>/salida?modo=chroma</code></td><td>Fondo verde para mezcladores (ATEM, vMix).</td></tr>
+</table>
+<figure style="width:50%"><img src="img/10-salida-obs.png" alt=""><figcaption>Figura 10. Tercio inferior clásico (fondo transparente en OBS).</figcaption></figure>
+
+<h2>12.2 Conectar el panel con OBS (control remoto)</h2>
+<p>Permite manejar OBS desde el panel: botón TRANSMITIR, escenas, cámaras y audio. Requiere OBS 28 o superior.</p>
+<ol class="pasos">
+  <li>En OBS: menú <b>Herramientas → Ajustes del servidor WebSocket</b>. Marque <b>Habilitar servidor WebSocket</b>. Pulse <b>Mostrar información de conexión</b> y copie la contraseña.</li>
+  <li>En el panel: <b>📡 OBS → OVERLAY</b>, en el cuadro “OBS desconectado” pulse el engranaje <span class="btn">⚙</span>.</li>
+  <li>Pegue la contraseña y pulse <span class="btn">Conectar</span>. El punto se pone verde.</li>
+  <li>Pulse <span class="btn">＋ Añadir la capa de rótulos/banner a la escena actual</span> para que el programa cree la fuente en OBS automáticamente.</li>
+</ol>
+<p>Ya conectado, puede:</p>
+<ul>
+  <li>Iniciar o detener la transmisión con <span class="btn rojo">● TRANSMITIR</span>.</li>
+  <li>Cambiar de <b>escena</b> con un clic (con miniaturas, transiciones y opción <i>Cambiar con stinger</i>).</li>
+  <li>Programar el <b>cambio automático de escena</b> (⏱ Temporizador).</li>
+  <li><b>Cámaras</b>: añadir y elegir el dispositivo de cada cámara.</li>
+  <li><b>Sonido de la transmisión</b>: volumen, silencio, vúmetros y añadir fuentes de audio.</li>
+</ul>
+
+<h2>12.3 OVERLAY · Rótulos de nombres</h2>
+<figure><img src="img/06-obs-overlay.png" alt=""><figcaption>Figura 11. Rótulos organizados por grupos.</figcaption></figure>
+<p>Los rótulos son los letreros con el nombre de quien está en la plataforma (predicador, cantantes, eventos).</p>
+<h3>Poner y quitar un nombre</h3>
+<ol class="pasos">
+  <li>Haga <b>un clic</b> en el botón del nombre: sale al aire en OBS y el botón muestra <b>● AL AIRE</b>.</li>
+  <li>Otro clic en el mismo nombre lo quita. También puede usar <span class="btn">⏏ Quitar</span> del grupo.</li>
+  <li>Para escribir un nombre que no está en la lista: escríbalo en <b>Acceso rápido</b> y pulse <span class="btn">Al aire</span>.</li>
+</ol>
+<div class="nota"><b>Nota</b>La tecla <kbd>Esc</kbd> no quita los rótulos (Esc es para la Biblia y canciones).</div>
+<h3>Organizar los rótulos</h3>
+<ul>
+  <li><span class="btn">＋ RÓTULO</span>: crea un grupo nuevo (ej.: <i>Nombres</i>, <i>Eventos</i>, <i>Escuela Dominical</i>).</li>
+  <li><span class="btn">☰ Lista</span>: agregar, editar, cambiar color, ordenar (▲▼) o eliminar nombres. Puede pegar muchos nombres a la vez, uno por línea.</li>
+  <li><span class="btn">⚙</span> Ajustes del grupo: nombre del grupo, <b>texto por defecto</b> (lo que sale debajo del nombre, ej. “IPUC Castilla”), color para nombres nuevos o eliminar el grupo.</li>
+  <li><span class="btn">Reloj OFF/ON</span>: con <b>ON</b>, los nombres del grupo se quitan solos después del tiempo del <b>Temporizador</b>.</li>
+</ul>
+<h3>Apariencia del rótulo (columna izquierda)</h3>
+<ul>
+  <li><b>Luces</b>: barrido de luz sobre el rótulo (intensidad y velocidad).</li>
+  <li><b>Fondo</b>: imagen de fondo del rótulo.</li>
+  <li><b>Temporizador</b>: segundos antes de que se quite solo.</li>
+  <li><b>Borde</b>: color, grosor y esquinas.</li>
+  <li><b>Stinger</b>: barrido de color antes de que aparezca el rótulo.</li>
+  <li><b>Plantilla</b>: IPUC-Blanco, Azul Noche, Oscuro Minimal, Rojo Moderno, Cristal o Color pleno; y la <b>forma de aparecer</b> (progresiva, deslizamiento o instantánea).</li>
+  <li><b>Vista previa · Overlay</b> (derecha): arrastre el rótulo con el mouse o use las flechas y el control de <b>Tamaño</b> para ubicarlo. Con <i>“Clic = vista previa primero”</i> el nombre se revisa antes de pulsar <span class="btn">Enviar al aire</span>.</li>
+</ul>
+<div class="tip"><b>OVERLAY y BANNER</b>Los botones grandes <b>OVERLAY</b> y <b>BANNER</b> ocultan o muestran cada capa <b>sin borrar</b> su contenido.</div>
+
+<h2>12.4 BANNER · Versículos y letras en la transmisión</h2>
+<figure><img src="img/07-obs-banner.png" alt=""><figcaption>Figura 12. Configuración del banner.</figcaption></figure>
+<p>El banner muestra en OBS lo que usted proyecte desde <b>Biblia</b>, <b>Canciones</b> o <b>Texto</b>, con fondo y efectos.</p>
+<ol class="pasos">
+  <li><b>Fondo</b> (izquierda): elija una imagen o video, o <span class="btn">Subir archivos…</span> para agregar los suyos (quedan en <code>fondos\Subidos</code>). <span class="btn">Ninguno</span> lo quita.</li>
+  <li><b>Efecto</b>: partículas, nieve, bokeh, estrellas o rayos, con color, opacidad, velocidad e intensidad.</li>
+  <li><b>Ajustes</b> (derecha): posición (abajo o lateral), fuente, negrita/cursiva, alineación, tamaño, colores, espacio entre letras, interlineado, subir/bajar; alto del banner, margen, color y opacidad del fondo, desenfoque y transición.</li>
+  <li><b>Forma de interactuar</b>: cómo aparecen overlay y banner, y si se permite que se vean a la vez cuando los dos van abajo.</li>
+  <li>Los cambios se ven al instante. Pulse <span class="btn">GUARDAR</span> para conservarlos (o <kbd>Ctrl</kbd> + <kbd>S</kbd>). <span class="btn">Restaurar</span> deshace los cambios sin guardar y <span class="btn">Por defecto</span> vuelve a los valores de fábrica.</li>
+</ol>
+
+<!-- ======================= 13 ======================= -->
+<h1 id="c13"><span class="n">13</span>Control desde el celular (código QR)</h1>
+<p>Puede manejar <b>todo el programa desde su teléfono</b> Android o iPhone (también tablet o iPad): buscar y proyectar canciones y versículos, avanzar, poner la pantalla en negro y más. No hay que instalar nada: funciona en el navegador del teléfono, por Wi-Fi.</p>
+
+<h2>Vincular el teléfono (una sola vez)</h2>
+<div class="lado">
+  <figure><img src="img/13-ventana-qr.png" alt=""><figcaption>Figura 13. Ventana “Conectar celular”.</figcaption></figure>
+  <div>
+    <ol class="pasos">
+      <li>Conecte el teléfono al <b>mismo Wi-Fi</b> que el computador (no use datos móviles).</li>
+      <li>En el panel del computador pulse el botón <span class="btn">📱 Celular</span>, arriba a la derecha.</li>
+      <li>Abra la <b>cámara</b> del teléfono y apunte al código QR.</li>
+      <li>Toque el enlace que aparece. Se abre PK-PENTECOSTAL en el teléfono y queda <b>vinculado</b>: las próximas veces basta con abrir la misma dirección.</li>
+      <li>Opcional: en el menú del navegador elija <b>Agregar a pantalla de inicio</b> (en iPhone: <b>Compartir → Añadir a pantalla de inicio</b>). Queda como una app con el logo de la IPUC.</li>
+    </ol>
+    <div class="nota"><b>¿Varias redes?</b>Si el computador está conectado a más de una red, la ventana muestra el selector <b>Red:</b>. Elija la del Wi-Fi donde está el teléfono.</div>
+  </div>
+</div>
+
+<h2 style="break-before: page">Wi-Fi propio: funciona en cualquier lugar</h2>
+<p>Algunas redes <b>no dejan que el teléfono vea al computador</b> (hoteles, redes de invitados, algunos routers) y entonces el teléfono se queda “cargando”. Otras veces simplemente no hay Wi-Fi. Para esos casos el computador puede <b>crear su propia red Wi-Fi</b>:</p>
+<div class="lado">
+  <figure style="width:48%"><img src="img/18-wifi-propio.png" alt=""><figcaption>Figura 14. Pestaña “Wi-Fi propio” encendida.</figcaption></figure>
+  <div>
+    <ol class="pasos">
+      <li>En la ventana <span class="btn">📱 Celular</span> elija la pestaña <b>🛜 Wi-Fi propio</b> y pulse <b>Crear Wi-Fi propio</b>. En unos segundos aparece la red <b>PK-PENTECOSTAL</b>.</li>
+      <li>Escanee el código <b>①</b> con la cámara del teléfono y toque <b>Conectarse</b> (no hay que escribir la clave).</li>
+      <li>Escanee el código <b>②</b> y toque el enlace. ¡Listo!</li>
+    </ol>
+    <div class="nota"><b>Bueno saber</b>Si el computador tiene internet, los teléfonos también lo tendrán a través de él. Si el teléfono avisa “Sin internet”, elija <b>Mantener conexión</b> (Android) o <b>Usar sin internet</b> (iPhone). Hasta 8 teléfonos a la vez. El Wi-Fi propio se apaga solo al cerrar el programa. Solo en Windows.</div>
+  </div>
+</div>
+
+<h2>Manejar el programa desde el teléfono</h2>
+<div class="telefonos">
+  <figure><img src="img/15-movil-elegir.png" alt=""><figcaption>Figura 15. Elegir.</figcaption></figure>
+  <figure><img src="img/16-movil-diapositivas.png" alt=""><figcaption>Figura 16. Diapositivas.</figcaption></figure>
+  <figure><img src="img/17-movil-monitor.png" alt=""><figcaption>Figura 17. Monitor.</figcaption></figure>
+</div>
+<p>Arriba están las mismas pestañas del computador (Biblia, Canciones, Texto, Fondos, Estilo, OBS, Idiomas); deslice con el dedo para ver todas. Debajo hay tres botones para cambiar de vista:</p>
+<table>
+  <tr><th style="width:26%">Vista</th><th>Para qué sirve</th></tr>
+  <tr><td><span class="btn">📚 Elegir</span></td><td>Buscar el libro de la Biblia, la canción o el anuncio. Al tocar uno, el teléfono pasa solo a <b>Diapositivas</b>.</td></tr>
+  <tr><td><span class="btn">🖥️ Diapositivas</span></td><td>Los versículos o estrofas. <b>Toque uno para proyectarlo</b>. Los capítulos se deslizan de lado en la fila de números.</td></tr>
+  <tr><td><span class="btn">📺 Monitor</span></td><td>Muestra lo que está viendo la iglesia en el proyector y en OBS.</td></tr>
+</table>
+<p>La <b>barra de abajo</b> está siempre visible y muestra lo que está <b>en vivo</b>:</p>
+<table>
+  <tr><th style="width:26%">Botón</th><th>Qué hace</th></tr>
+  <tr><td><span class="btn">◀</span> <span class="btn">▶</span></td><td>Versículo o estrofa <b>anterior / siguiente</b> (en la Biblia pasa de capítulo solo).</td></tr>
+  <tr><td><span class="btn">Negro</span></td><td>Pantalla del proyector en negro. Se ilumina en rojo mientras está activo.</td></tr>
+  <tr><td><span class="btn">Ocultar</span></td><td>Oculta el texto y deja el fondo.</td></tr>
+  <tr><td><span class="btn">Limpiar</span></td><td>Quita del aire lo que se está proyectando.</td></tr>
+</table>
+<div class="tip"><b>Trabajo en equipo</b>Puede usar el computador y uno o varios teléfonos al mismo tiempo: todo lo que haga uno se ve al instante en los demás.</div>
+
+<h2>Seguridad: solo teléfonos vinculados</h2>
+<div class="lado">
+  <figure style="width:30%"><img src="img/14-movil-vincular.png" alt=""><figcaption>Figura 18. Teléfono sin vincular.</figcaption></figure>
+  <div>
+    <p>Solo los teléfonos que <b>escanearon el código QR</b> pueden cambiar lo que se proyecta. Si alguien conectado al Wi-Fi de la iglesia escribe la dirección sin haber escaneado el código, verá el aviso <b>“Vincule este teléfono”</b> y no podrá tocar nada.</p>
+    <p>Para <b>desconectar a todos los teléfonos</b> (por ejemplo, si se perdió un celular), pulse <span class="btn">Desvincular todos</span> en la ventana del QR. Se crea un código nuevo y quienes deban seguir manejando el programa tendrán que escanearlo otra vez.</p>
+    <div class="nota"><b>Lo que solo se hace en el computador</b>Mostrar el código QR, desvincular teléfonos, traducir todas las canciones y cerrar el programa (⏻).</div>
+  </div>
+</div>
+<div class="ojo"><b>Si el teléfono no logra abrir la página</b>Revise que ambos estén en el mismo Wi-Fi. La primera vez, Windows puede preguntar si permite el acceso de Node.js a la red: responda <b>Permitir</b>. Si se queda <b>cargando</b>, la red no deja que los equipos se vean entre sí (hoteles, redes de invitados): use el <b>🛜 Wi-Fi propio</b>. Más detalles en el capítulo 17.</div>
+
+<!-- ======================= 14 ======================= -->
+<h1 id="c14"><span class="n">14</span>Idiomas: el programa en inglés<span class="novedad">NUEVO</span></h1>
+<p>Con la pestaña <b>🌐 Idiomas</b> todo PK-PENTECOSTAL cambia de idioma en un clic: los menús, los botones, los avisos, <b>las Biblias y las canciones</b>. El cambio se ve al mismo tiempo en el computador, en el proyector, en OBS y en los celulares.</p>
+<div class="lado">
+  <figure style="width:36%"><img src="img/19-idiomas.png" alt=""><figcaption>Figura 19. Pestaña Idiomas.</figcaption></figure>
+  <div>
+    <h2 style="margin-top:0">Cambiar el idioma</h2>
+    <ol class="pasos">
+      <li>Haga clic en la pestaña <b>🌐 Idiomas</b>.</li>
+      <li>Elija una opción:
+        <ul>
+          <li><b>Español latino</b>: el programa como siempre.</li>
+          <li><b>English (UK)</b>: inglés británico (<i>colour, Saviour, honour</i>).</li>
+          <li><b>English (US)</b>: inglés de Estados Unidos (<i>color, Savior, honor</i>).</li>
+        </ul>
+      </li>
+      <li>Listo: el panel cambia al instante. La opción elegida queda marcada en dorado y se recuerda la próxima vez que abra el programa.</li>
+    </ol>
+    <div class="tip"><b>Para cultos bilingües</b>Puede cambiar de idioma en medio del culto: lo que está al aire se vuelve a mostrar en el idioma nuevo.</div>
+  </div>
+</div>
+
+<h2>Biblias en inglés</h2>
+<p>En inglés, el programa usa automáticamente la <b>versión en inglés que corresponde</b> a la Biblia elegida en español:</p>
+<table>
+  <tr><th style="width:42%">Si eligió en español…</th><th>En inglés se usa…</th></tr>
+  <tr><td>Reina Valera 1960 (RV1960)</td><td><b>King James Version (KJV)</b>: la clásica, lenguaje antiguo como la RV1960.</td></tr>
+  <tr><td>NVI · NTV</td><td><b>World English Bible (WEB)</b>: inglés moderno.</td></tr>
+  <tr><td>DHH · TLA · PDT</td><td><b>Bible in Basic English (BBE)</b>: inglés sencillo, fácil de entender.</td></tr>
+</table>
+<p>Las citas se pueden escribir en español o en inglés: <code>juan 3:16</code>, <code>john 3:16</code>, <code>sal 23</code> y <code>psalm 23</code> funcionan igual. También puede elegir cualquier versión en inglés directamente en la lista de versiones.</p>
+<figure><img src="img/20-ingles-biblia.png" alt=""><figcaption>Figura 20. El programa en inglés: John 3:16 al aire.</figcaption></figure>
+
+<h2>Canciones en inglés</h2>
+<p>Las <b>1.849 canciones</b> de los seis cancioneros tienen su versión en inglés. En modo inglés se proyecta la letra en inglés; en español, la original. En la lista de canciones verá dos etiquetas:</p>
+<table>
+  <tr><th style="width:24%">Etiqueta</th><th>Significado</th></tr>
+  <tr><td><span class="tag en">EN</span></td><td>Traducción <b>revisada a mano</b>.</td></tr>
+  <tr><td><span class="tag auto">EN·auto</span></td><td>Traducción <b>automática</b>, hecha por el traductor del programa. Se entiende bien, pero puede tener errores: revísela antes de usarla en el culto.</td></tr>
+</table>
+<figure><img src="img/21-ingles-canciones.png" alt=""><figcaption>Figura 21. Cancionero en inglés con etiquetas EN y EN·auto.</figcaption></figure>
+
+<h2>Corregir o escribir una traducción</h2>
+<ol class="pasos">
+  <li>Abra la canción y pulse <span class="btn">✎ Editar</span>.</li>
+  <li>Abajo están <b>Título en inglés</b> y <b>Letra en inglés</b>. Corrija lo que haga falta, respetando una línea en blanco entre estrofas.</li>
+  <li>Si la canción no tiene traducción, pulse <span class="btn">🤖 Traducir automáticamente</span> y luego revise el resultado.</li>
+  <li>Pulse <span class="btn">Guardar</span>. Al corregirla a mano, la etiqueta cambia de <span class="tag auto">EN·auto</span> a <span class="tag en">EN</span> y el traductor ya no la vuelve a tocar.</li>
+</ol>
+
+<h2>Traductor automático (sin internet)</h2>
+<p>Las canciones nuevas que usted agregue se traducen solas al guardarlas. Si quiere traducir de una vez todas las que falten:</p>
+<ol class="pasos">
+  <li>En la pestaña <b>🌐 Idiomas</b>, en el cuadro <b>Traducción automática de canciones</b>, pulse <span class="btn">🤖 Traducir todas las canciones</span>.</li>
+  <li>Una barra muestra el avance. Puede seguir usando el programa mientras tanto, o pulsar <span class="btn rojo">Detener</span>.</li>
+</ol>
+<div class="nota"><b>Bueno saber</b>El traductor funciona <b>dentro del computador, sin internet</b>. Las traducciones hechas a mano nunca se reemplazan. Las palabras “Señor”, “Coro” y las marcas de repetición <code>//…//</code> se respetan (<i>Lord</i>, <i>CHORUS</i>). Este botón solo está en el computador, no en el celular.</div>
+
+<!-- ======================= 15 ======================= -->
+<h1 id="c15"><span class="n">15</span>Atajos de teclado</h1>
+<table>
+  <tr><th style="width:36%">Tecla</th><th>Acción</th></tr>
+  <tr><td>Clic</td><td>Mandar al aire el versículo / estrofa / diapositiva</td></tr>
+  <tr><td><kbd>Shift</kbd> + clic</td><td>Varios versículos juntos</td></tr>
+  <tr><td><kbd>↓</kbd> <kbd>→</kbd> <kbd>Espacio</kbd></td><td>Siguiente (en la Biblia pasa de capítulo solo)</td></tr>
+  <tr><td><kbd>↑</kbd> <kbd>←</kbd></td><td>Anterior</td></tr>
+  <tr><td><kbd>1</kbd> … <kbd>9</kbd></td><td>Ir a la estrofa / diapositiva número N</td></tr>
+  <tr><td><kbd>Esc</kbd></td><td>Quitar el texto del aire (Limpiar)</td></tr>
+  <tr><td><kbd>B</kbd></td><td>Pantalla negra (activar / desactivar)</td></tr>
+  <tr><td><kbd>H</kbd></td><td>Ocultar texto, dejando el fondo</td></tr>
+  <tr><td><kbd>Ctrl</kbd> + <kbd>K</kbd></td><td>Buscar referencia bíblica o canción</td></tr>
+  <tr><td><kbd>Ctrl</kbd> + <kbd>S</kbd></td><td>Guardar ajustes del módulo OBS</td></tr>
+  <tr><td><kbd>F</kbd>, <kbd>F11</kbd> o doble clic</td><td>En la ventana del proyector: pantalla completa</td></tr>
+  <tr><td><kbd>Windows</kbd> + <kbd>P</kbd></td><td>(Windows) Elegir “Extender” para usar el proyector como segunda pantalla</td></tr>
+</table>
+<div class="nota"><b>Nota</b>Los atajos no actúan mientras está escribiendo en un cuadro de texto. Pulse <kbd>Esc</kbd> una vez para salir del cuadro y otra vez para limpiar.</div>
+
+<!-- ======================= 16 ======================= -->
+<h1 id="c16"><span class="n">16</span>Dónde se guardan los datos y copias de seguridad</h1>
+<table>
+  <tr><th style="width:38%">Qué</th><th>Dónde</th></tr>
+  <tr><td>Biblias</td><td>Carpeta <code>biblias</code> (archivos <code>.bi</code> en español y <code>.txt</code> en inglés). Para agregar una versión, copie su archivo aquí.</td></tr>
+  <tr><td>Cancioneros</td><td>Carpeta <code>cancioneros</code> (un archivo <code>.js</code> por cancionero).</td></tr>
+  <tr><td>Traducciones al inglés</td><td><code>cancioneros\traducciones</code> (un archivo por cancionero).</td></tr>
+  <tr><td>Cancioneros en inglés para compartir</td><td><code>cancioneros\CANCIONES</code>: copias de cada cancionero en <b>English US</b> y <b>English UK</b>.</td></tr>
+  <tr><td>Copias de canciones editadas</td><td><code>PK-PENTECOSTAL\respaldos</code></td></tr>
+  <tr><td>Fondos</td><td>Carpeta <code>fondos</code> y sus subcarpetas; lo subido desde el panel queda en <code>fondos\Subidos</code>.</td></tr>
+  <tr><td>Fuentes (tipos de letra)</td><td><code>css\font</code></td></tr>
+  <tr><td>Ajustes, estilos, rótulos, textos guardados, idioma, historial y la clave de los celulares</td><td><code>PK-PENTECOSTAL\config.json</code></td></tr>
+</table>
+<p>Casi todas estas carpetas están ocultas (capítulo 2). El programa las usa sin problema.</p>
+<h2>Hacer una copia de seguridad</h2>
+<ol class="pasos">
+  <li>Cierre el programa con <span class="btn rojo">⏻</span>.</li>
+  <li>En el Escritorio, haga clic derecho sobre la carpeta <b>PK-PENTECOSTAL</b> → <b>Comprimir en archivo ZIP</b> (en Windows 11: <b>Comprimir en… → Archivo ZIP</b>). El ZIP incluye también las carpetas ocultas.</li>
+  <li>Póngale la fecha al nombre (ej.: <i>Respaldo PK-PENTECOSTAL 2026-11-20.zip</i>) y guarde una copia <b>fuera del computador</b>: memoria USB o Google Drive.</li>
+</ol>
+<p><b>Para restaurar o pasar el programa a otro computador:</b> descomprima el ZIP en el Escritorio, instale Node.js (capítulo 2) y abra <code>PK-PENTECOSTAL.vbs</code>.</p>
+<div class="ojo"><b>Cuide la copia</b>El respaldo incluye <code>config.json</code>, con la clave de vinculación de los celulares y la del Wi-Fi propio. No lo comparta. Si se lo da a otra iglesia, pulse luego <span class="btn">Desvincular todos</span> en la ventana del QR para que se cree una clave nueva.</div>
+
+<!-- ======================= 17 ======================= -->
+<h1 id="c17"><span class="n">17</span>Solución de problemas</h1>
+<table>
+  <tr><th style="width:34%">Problema</th><th>Solución</th></tr>
+  <tr><td>Dice que necesita Node.js</td><td>Instale Node.js versión LTS (capítulo 2) y vuelva a abrir el programa.</td></tr>
+  <tr><td>“No se pudo iniciar PK-PENTECOSTAL”</td><td>El puerto 8888 está ocupado, casi siempre porque el <b>Proyektor original</b> está abierto. Ciérrelo. Para ver el detalle del error, abra <code>PK-PENTECOSTAL.bat</code>.</td></tr>
+  <tr><td>El panel dice “Conectando…” o “Desconectado”</td><td>El servidor se cerró. Vuelva a abrir el programa desde el ícono.</td></tr>
+  <tr><td>Pulso Proyectar y no pasa nada</td><td>El navegador bloqueó la ventana emergente. Permita “Ventanas emergentes” para <code>localhost:8888</code> (ícono a la izquierda de la dirección) y pulse de nuevo.</td></tr>
+  <tr><td>La salida se abre en mi monitor, no en el proyector</td><td>Revise que el proyector esté en modo <b>Extender</b> (<kbd>Windows</kbd>+<kbd>P</kbd>) y que el permiso de “Administración de ventanas” esté en Permitir. Si no, arrastre la ventana al proyector y haga doble clic.</td></tr>
+  <tr><td>El público ve el panel de control</td><td>Está en modo “Duplicar”. Pulse <kbd>Windows</kbd>+<kbd>P</kbd> → <b>Extender</b>.</td></tr>
+  <tr><td>El texto queda tapado abajo o cortado arriba</td><td>Estilo → <b>Posición vertical del texto</b>: suba o baje el texto. También puede aumentar el <b>Margen</b>.</td></tr>
+  <tr><td>El texto no se lee bien sobre el fondo</td><td>Suba <b>Oscurecer fondo</b>, active <b>Sombra</b> o <b>Contorno</b>, o elija un fondo más oscuro.</td></tr>
+  <tr><td>La pantalla del proyector está negra</td><td>Puede estar activado <span class="btn">Negro</span> (tecla <kbd>B</kbd>) u <span class="btn">Ocultar texto</span> (<kbd>H</kbd>). Púlselos de nuevo.</td></tr>
+  <tr><td>Un fondo nuevo no aparece</td><td>Verifique el formato (<code>.jpg .png .webp .mp4 .webm</code>) y recargue el panel con <kbd>F5</kbd>.</td></tr>
+  <tr><td>No se guardan las canciones o los ajustes</td><td>Probablemente se ocultaron también los archivos de adentro de las carpetas. Muestre los elementos ocultos, abra las <b>Propiedades</b> de la carpeta, quite y vuelva a marcar <b>Oculto</b> eligiendo <b>“Aplicar cambios solo a esta carpeta”</b>… o pida ayuda a quien instaló el programa.</td></tr>
+  <tr><td>En inglés, una canción sale en español</td><td>Esa canción aún no tiene traducción. Ábrala → <span class="btn">✎ Editar</span> → <span class="btn">🤖 Traducir automáticamente</span> → <span class="btn">Guardar</span>, o use <b>Traducir todas las canciones</b> (capítulo 14).</td></tr>
+  <tr><td>Una traducción automática tiene errores</td><td>Corríjala en el editor, en <b>Letra en inglés</b>, y guarde. Pasa a ser traducción revisada (<span class="tag en">EN</span>).</td></tr>
+  <tr><td>El celular no abre la página</td><td>Mismo Wi-Fi (no datos móviles). En la ventana del QR pruebe otra opción en <b>Red:</b>. Permita Node.js en el Firewall de Windows; si hace falta, en PowerShell como administrador: <code>New-NetFirewallRule -DisplayName "PK-PENTECOSTAL" -Direction Inbound -Protocol TCP -LocalPort 8888 -RemoteAddress LocalSubnet -Action Allow</code>. Si se queda <b>cargando</b> (hoteles, redes de invitados), use <b>🛜 Wi-Fi propio</b> (capítulo 13).</td></tr>
+  <tr><td>El celular dice “Vincule este teléfono”</td><td>Ese teléfono no está vinculado o se pulsó <b>Desvincular todos</b>. Escanee de nuevo el código QR (botón <span class="btn">📱 Celular</span> en el computador).</td></tr>
+  <tr><td>OBS no se conecta</td><td>Active el servidor WebSocket en OBS (Herramientas) y revise la contraseña. Requiere OBS 28 o superior.</td></tr>
+  <tr><td>En OBS no se ve nada</td><td>Revise la URL de la fuente Navegador y el tamaño 1920×1080. Con la fuente seleccionada pulse <b>Actualizar</b> (refrescar caché).</td></tr>
+</table>
+
+<!-- ======================= 18 ======================= -->
+<h1 id="c18"><span class="n">18</span>Lista rápida para el día del culto</h1>
+<h2>Antes del culto</h2>
+<ol class="pasos">
+  <li>Encienda el proyector o TV y conéctelo al computador. <kbd>Windows</kbd>+<kbd>P</kbd> → <b>Extender</b>.</li>
+  <li>Abra <b>PK-PENTECOSTAL</b> desde el ícono del Escritorio.</li>
+  <li>Pulse <span class="btn">📽 Proyectar</span> y confirme que la salida aparece en el proyector a pantalla completa.</li>
+  <li>Elija el <b>fondo</b> del día (pestaña Fondos).</li>
+  <li>Revise el <b>Estilo</b>: tamaño de letra y posición vertical para que se lea desde atrás.</li>
+  <li>¿Hay visitantes que hablan inglés? Revise en <b>🌐 Idiomas</b> que las canciones del día tengan buena traducción.</li>
+  <li>Prepare los <b>anuncios</b> en Texto / Anuncios y guárdelos.</li>
+  <li>Busque y deje listas las <b>canciones</b> de la alabanza.</li>
+  <li>Si hay transmisión: abra OBS, conecte el panel (📡 OBS → ⚙ → Conectar) y revise los <b>rótulos</b> con los nombres del día.</li>
+  <li>Si va a manejar desde el teléfono: pulse <span class="btn">📱 Celular</span> y escanee el código QR (solo la primera vez).</li>
+  <li>Pulse <kbd>Esc</kbd> para dejar la pantalla limpia hasta que empiece el culto.</li>
+</ol>
+<h2>Durante el culto</h2>
+<ul>
+  <li><b>Alabanza</b>: Canciones → clic en la estrofa; <kbd>↓</kbd> para avanzar; números para repetir el coro.</li>
+  <li><b>Predicación</b>: <kbd>Ctrl</kbd>+<kbd>K</kbd>, escriba la cita, <kbd>Enter</kbd>, clic en el versículo.</li>
+  <li><b>Oración</b>: <kbd>H</kbd> (ocultar texto) o <kbd>B</kbd> (negro).</li>
+  <li><b>Entre partes del culto</b>: <kbd>Esc</kbd> para limpiar.</li>
+  <li><b>Desde el teléfono</b>: toque el versículo o la estrofa; use ◀ ▶ de la barra de abajo para avanzar.</li>
+</ul>
+<h2>Al terminar</h2>
+<ol class="pasos">
+  <li>Pulse <span class="btn rojo">⏹ Detener</span> para cerrar la ventana del proyector.</li>
+  <li>Pulse <span class="btn rojo">⏻</span> y confirme para cerrar el programa.</li>
+  <li>Apague el proyector.</li>
+  <li>Una vez al mes, haga una <b>copia de seguridad</b> (capítulo 16).</li>
+</ol>
+
+<!-- ======================= 19 ======================= -->
+<h1 id="c19" style="position:absolute;opacity:0;height:0;margin:0;padding:0;border:0;overflow:hidden"><span class="n">19</span>Créditos</h1>
+<section class="creditos">
+  <img src="img/logo-ipuc.webp" alt="Logo IPUC">
+  <p class="nom">PK-<span>PENTECOSTAL</span></p>
+  <p class="hecho">Hecho por Sebastian Lopez · IPUC Natania 6° Etapa</p>
+  <p class="zona">Zona Especial Misionera – Archipiélago de San Andrés, Providencia y Santa Catalina</p>
+  <p class="verso">«Por toda la tierra salió su voz, y hasta el extremo del mundo sus palabras.»<b>Salmos 19:4</b></p>
+  <p class="fin">Software para la proyección de la Palabra y la alabanza en los cultos.<br>Dios les bendiga.</p>
+</section>
+
+</body>
+</html>

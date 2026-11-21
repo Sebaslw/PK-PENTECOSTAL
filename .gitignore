@@ -1,0 +1,9 @@
+# Se crean en cada computador (claves privadas, historial)
+PK-PENTECOSTAL/config.local.json
+PK-PENTECOSTAL/respaldos/
+# Pesados: vienen en el .zip de Releases
+PK-PENTECOSTAL/traductor/node_modules/
+PK-PENTECOSTAL/traductor/modelos/
+*.zip
+node_modules/
+fondos/VIDEOS ANIMADOS/Particles Blue Bokeh Dust Abstract light motion titles cinematic background.mp4

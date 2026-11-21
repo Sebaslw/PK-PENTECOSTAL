@@ -1,0 +1,31 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<!-- Genera los fondos del manual (tamaño Carta, 1275×1650) con el estilo del fondo de pantalla de PK-PENTECOSTAL.
+     ?tipo=portada  → resplandor fuerte y anillos (portada y créditos)
+     ?tipo=pagina   → versión suave para las páginas interiores -->
+<style>
+  html, body { margin: 0; width: 1275px; height: 1650px; overflow: hidden; }
+  body { position: relative;
+    background: radial-gradient(ellipse 900px 900px at 50% var(--cy), #1a5a9c 0%, #0f3a70 28%, #0a2a55 48%, #061b3a 72%, #030f24 100%); }
+  .anillos { position: absolute; inset: 0;
+    background: repeating-radial-gradient(circle at 50% var(--cy), transparent 0 var(--paso), rgba(140,190,240,var(--op)) var(--paso) calc(var(--paso) + 1.6px)); }
+  .vineta { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(1,8,20,.55) 100%); }
+  .franja { position: absolute; left: 0; right: 0; bottom: 0; height: 10px; background: linear-gradient(90deg, transparent, #f8b800 20%, #f8b800 80%, transparent); opacity: var(--franja); }
+</style></head>
+<body>
+<div class="anillos"></div><div class="vineta"></div><div class="franja"></div>
+<script>
+  const portada = new URLSearchParams(location.search).get('tipo') !== 'pagina';
+  const r = document.documentElement.style;
+  r.setProperty('--cy', portada ? '36%' : '50%');
+  r.setProperty('--paso', portada ? '170px' : '210px');
+  r.setProperty('--op', portada ? '.13' : '.06');
+  r.setProperty('--franja', portada ? '.9' : '0');
+  // Páginas interiores: Chrome no pinta la imagen en los márgenes (allí queda el color #04162e),
+  // así que los bordes de la imagen terminan exactamente en ese color para que no se note el corte.
+  if (!portada) {
+    document.body.style.background = 'radial-gradient(ellipse closest-side at 50% 50%, #0e3768 0%, #0a2a55 40%, #071f43 72%, #04162e 100%) #04162e';
+    document.querySelector('.vineta').remove();
+  }
+</script>
+</body></html>

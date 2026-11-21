@@ -1,0 +1,214 @@
+{
+  "estilo": {
+    "fuente": "Montserrat",
+    "peso": "900",
+    "interlineado": 1.18,
+    "tamMax": 161,
+    "color": "#ffffff",
+    "sombra": true,
+    "contorno": false,
+    "mayusculas": false,
+    "alineacion": "center",
+    "negrita": true,
+    "margen": 1,
+    "posicionV": 28,
+    "pantalla": "auto",
+    "ajusteFondo": "completa",
+    "refColor": "#ffffff",
+    "mostrarRef": true,
+    "oscurecerFondo": 0,
+    "fondo": {
+      "tipo": "imagen",
+      "valor": "/fondos/IMAGENES/ipuc-azul-oscuro.webp"
+    },
+    "transicion": 1500,
+    "obs": {
+      "posicion": "abajo",
+      "ancho": 84,
+      "altoMax": 37,
+      "tamMax": 58,
+      "fuente": "Montserrat",
+      "color": "#ffffff",
+      "barra": false,
+      "barraColor": "#ffffff",
+      "barraOpacidad": 0,
+      "acento": "#f5b301",
+      "refColor": "#f5b301",
+      "redondeo": 0,
+      "sombra": true,
+      "mayusculas": false,
+      "mostrarRef": true
+    }
+  },
+  "modulo": {
+    "exclusivos": true,
+    "overlay": {
+      "plantilla": "IPUC-Blanco",
+      "x": 0,
+      "y": 0,
+      "escala": 100,
+      "aparicion": "progresivo",
+      "luces": {
+        "on": true,
+        "intensidad": 60,
+        "velocidad": 3
+      },
+      "fondo": {
+        "url": "",
+        "nombre": ""
+      },
+      "temporizador": {
+        "on": false,
+        "segundos": 10
+      },
+      "borde": {
+        "on": true,
+        "color": "#ffffff",
+        "ancho": 3,
+        "radio": 10
+      },
+      "stinger": {
+        "on": false,
+        "color1": "#00d4ff",
+        "color2": "#ff2d55",
+        "duracion": 0.9
+      }
+    },
+    "banner": {
+      "posicion": "abajo",
+      "fuente": "Lato",
+      "negrita": false,
+      "cursiva": false,
+      "tam": 46,
+      "alineacion": "center",
+      "color": "#ffffff",
+      "colorCita": "#f5b301",
+      "opacidad": 100,
+      "espaciado": 0,
+      "interlineado": 125,
+      "subir": 0,
+      "alto": 260,
+      "margen": 40,
+      "colorFondo": "#0b1a33",
+      "difuminado": true,
+      "opacidadFondo": 75,
+      "oscurecer": 35,
+      "desenfoque": 4,
+      "transicion": 0.6,
+      "aparicion": "progresivo",
+      "ejemplo": true,
+      "tamPreview": 100,
+      "fondo": {
+        "tipo": "",
+        "url": "",
+        "nombre": ""
+      },
+      "efecto": {
+        "on": true,
+        "tipo": "particulas",
+        "color": "#ffffff",
+        "opacidad": 60,
+        "velocidad": 40,
+        "intensidad": 50
+      }
+    }
+  },
+  "rotulos": [
+    {
+      "id": "1ohgaojc",
+      "nombre": "Nombres",
+      "subtitulo": "IPUC Castilla",
+      "reloj": false,
+      "items": [
+        {
+          "id": "84x9urwi",
+          "texto": "Arnulfo Gomez",
+          "sub": "",
+          "color": "#00bcd4"
+        },
+        {
+          "id": "uprbp8a3",
+          "texto": "Estefania Lopez",
+          "sub": "",
+          "color": "#e91e63"
+        },
+        {
+          "id": "iwn8zyid",
+          "texto": "Jesus Muñoz",
+          "sub": "",
+          "color": "#4caf50"
+        },
+        {
+          "id": "8l4exg7p",
+          "texto": "Juan Andrés Uribe",
+          "sub": "",
+          "color": "#ff9800"
+        },
+        {
+          "id": "drlczrsb",
+          "texto": "Juan Felipe",
+          "sub": "",
+          "color": "#9c27b0"
+        },
+        {
+          "id": "p7obk8v0",
+          "texto": "Pastor Andres Perez",
+          "sub": "",
+          "color": "#f44336"
+        },
+        {
+          "id": "y67lgl15",
+          "texto": "Pedrito Perez",
+          "sub": "",
+          "color": "#3f51b5"
+        }
+      ]
+    },
+    {
+      "id": "ybciom50",
+      "nombre": "Eventos",
+      "subtitulo": "Programación",
+      "reloj": false,
+      "items": [
+        {
+          "id": "0175cvi1",
+          "texto": "Culto de Damas Dorcas",
+          "sub": "",
+          "color": "#d81b60"
+        },
+        {
+          "id": "xnq91gbi",
+          "texto": "Culto de evangelismo",
+          "sub": "",
+          "color": "#00897b"
+        },
+        {
+          "id": "gbxgpq67",
+          "texto": "Culto de Jovenes",
+          "sub": "",
+          "color": "#5e35b1"
+        },
+        {
+          "id": "v7uzmu5z",
+          "texto": "Dominical",
+          "sub": "",
+          "color": "#1e88e5"
+        },
+        {
+          "id": "k0n4ewru",
+          "texto": "Escuela Dominical",
+          "sub": "",
+          "color": "#f4511e"
+        }
+      ]
+    },
+    {
+      "id": "zx6170ha",
+      "nombre": "Escuela Dominical",
+      "subtitulo": "Participantes",
+      "reloj": false,
+      "items": []
+    }
+  ],
+  "idioma": "es"
+}

@@ -1,0 +1,659 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PK-PENTECOSTAL</title>
+<meta name="theme-color" content="#04162e">
+<meta name="author" content="Sebastian Lopez - IPUC Natania 6° Etapa">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="PK-PENTECOSTAL">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" type="image/png" href="/icono-192.png">
+<link rel="icon" type="image/png" sizes="64x64" href="/icono-64.png">
+<link rel="apple-touch-icon" href="/icono-180.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="stylesheet" href="/fuentes.css">
+<link rel="stylesheet" href="/control.css">
+<link rel="stylesheet" href="/obs.css">
+<link rel="stylesheet" href="/movil.css">
+<script src="/clave.js"></script>
+<script src="/visor.js"></script>
+<script src="/i18n-en.js"></script>
+<script src="/i18n.js"></script>
+</head>
+<body>
+<!-- Pantalla de bienvenida (se muestra al abrir el programa; se quita sola o con un clic) -->
+<div id="bienvenida" class="pk-pantalla" role="dialog" aria-label="Bienvenido a PK-PENTECOSTAL">
+  <div class="pp-caja"><img class="pp-logo" src="/logo-ipuc.webp" width="160" height="160" alt=""><p class="pp-hola">Bienvenido a</p><h1 class="pp-titulo">PK-<b>PENTECOSTAL</b></h1><p class="pp-sub">Biblia y canciones en vivo</p><hr class="pp-sep"><p class="pp-verso">«Por toda la tierra salió su voz, y hasta el extremo del mundo sus palabras.» <b>Salmos 19:4</b></p><hr class="pp-sep"><p class="pp-credito">Hecho por Sebastian Lopez · IPUC Natania 6° Etapa</p><p class="pp-zona">Zona Especial Misionera – Archipiélago de San Andrés, Providencia y Santa Catalina</p><p class="pp-pie">Clic para continuar</p></div>
+</div>
+<script>
+(() => {
+  const el = document.getElementById('bienvenida');
+  // Solo al abrir el programa (no cada vez que se recarga la página)
+  let visto = false;
+  try { visto = sessionStorage.getItem('pk-bienvenida') === '1'; sessionStorage.setItem('pk-bienvenida', '1'); } catch (_) {}
+  if (visto) { el.remove(); return; }
+  let cerrado = false;
+  const cerrar = () => { if (cerrado) return; cerrado = true; el.classList.add('fuera'); setTimeout(() => el.remove(), 700); };
+  el.addEventListener('click', cerrar);
+  addEventListener('keydown', cerrar, { once: true });
+  setTimeout(cerrar, 3500);
+})();
+</script>
+<header class="top">
+  <div class="brand"><img class="logo-img" src="/logo-ipuc.webp" alt="IPUC" height="34"><span>PK-<b>PENTECOSTAL</b></span></div>
+  <nav class="tabs" id="tabs">
+    <button data-tab="biblia" class="active">📖 Biblia</button>
+    <button data-tab="canciones">🎵 Canciones</button>
+    <button data-tab="texto">✏️ Texto / Anuncios</button>
+    <button data-tab="fondos">🖼️ Fondos</button>
+    <button data-tab="estilo">🎨 Estilo</button>
+    <button data-tab="obs">📡 OBS</button>
+    <button data-tab="idiomas">🌐 Idiomas</button>
+  </nav>
+  <div class="live-ctrl">
+    <button id="btnMovil" title="Conectar un celular con código QR">📱 Celular</button>
+    <button id="btnOcultar" title="Ocultar texto (H)">Ocultar texto <kbd>H</kbd></button>
+    <button id="btnNegro" title="Pantalla negra (B)">Negro <kbd>B</kbd></button>
+    <button id="btnLimpiar" class="danger" title="Quitar del aire (Esc)">Limpiar <kbd>Esc</kbd></button>
+    <button id="btnApagar" class="danger" title="Cerrar el programa (detiene el servidor)">⏻</button>
+  </div>
+</header>
+
+<main class="layout">
+  <!-- ========== Columna izquierda: biblioteca ========== -->
+  <section class="panel lib">
+    <!-- BIBLIA -->
+    <div class="pane" data-pane="biblia">
+      <div class="row">
+        <select id="bibVersion" class="grow"></select>
+      </div>
+      <form id="refForm" class="row">
+        <input id="refInput" class="grow" placeholder="Ej: Juan 3:16-18  ·  sal 23  ·  1 co 13" autocomplete="off">
+        <button class="primary">Ir</button>
+      </form>
+      <div class="row">
+        <input id="bibBuscar" class="grow" placeholder="Buscar palabras en la Biblia…" autocomplete="off">
+      </div>
+      <div class="subtabs">
+        <button data-bsub="libros" class="active">Libros</button>
+        <button data-bsub="resultados">Resultados <span id="numRes" class="pill">0</span></button>
+        <button data-bsub="historial">Historial</button>
+      </div>
+      <div class="scroll" id="bLibros">
+        <div class="testamento">Antiguo Testamento</div>
+        <div class="books" id="booksAT"></div>
+        <div class="testamento">Nuevo Testamento</div>
+        <div class="books" id="booksNT"></div>
+      </div>
+      <div class="scroll hidden" id="bResultados"></div>
+      <div class="scroll hidden" id="bHistorial"></div>
+    </div>
+
+    <!-- CANCIONES -->
+    <div class="pane hidden" data-pane="canciones">
+      <div class="row">
+        <select id="cancionero" class="grow"></select>
+        <button id="btnNuevaCancion" title="Nueva canción">＋ Nueva</button>
+      </div>
+      <div class="row"><input id="canBuscar" class="grow" placeholder="Buscar por título o letra…" autocomplete="off"></div>
+      <div class="scroll" id="listaCanciones"></div>
+    </div>
+
+    <!-- TEXTO -->
+    <div class="pane hidden" data-pane="texto">
+      <label>Título / referencia (opcional)</label>
+      <input id="txtTitulo" placeholder="Ej: Anuncio, Tema de hoy, Nombre del predicador…">
+      <label>Texto <small>(deje una línea en blanco para separar diapositivas)</small></label>
+      <textarea id="txtCuerpo" rows="10" placeholder="Escriba aquí…"></textarea>
+      <div class="row">
+        <button id="btnTxtCargar" class="grow">Cargar diapositivas</button>
+        <button id="btnTxtGuardar">Guardar</button>
+      </div>
+      <label>Guardados</label>
+      <div class="scroll" id="txtGuardados"></div>
+    </div>
+
+    <!-- FONDOS -->
+    <div class="pane hidden" data-pane="fondos">
+      <div class="row">
+        <select id="fondoCat" class="grow"></select>
+        <input type="color" id="fondoColor" value="#000000" title="Fondo de color sólido">
+        <button id="btnFondoColor">Color</button>
+      </div>
+      <label for="fondoAjuste">Imagen en el proyector</label>
+      <div class="row">
+        <select id="fondoAjuste" class="grow">
+          <option value="completa">Completa, sin recortar (recomendado)</option>
+          <option value="llenar">Llenar la pantalla (recorta bordes)</option>
+          <option value="estirar">Estirar a toda la pantalla</option>
+        </select>
+      </div>
+      <p class="hint">Los fondos se ven en la salida <b>Pantalla</b>. Agregue imágenes o videos (.jpg .png .webp .mp4 .webm) a la carpeta <code>fondos</code>.</p>
+      <div class="scroll grid-fondos" id="fondosGrid"></div>
+    </div>
+
+    <!-- ESTILO -->
+    <div class="pane hidden" data-pane="idiomas">
+      <h3 class="idi-h">🌐 Idioma del programa</h3>
+      <p class="hint">Cambia todos los menús, botones y avisos, en el computador y en los celulares.</p>
+      <div class="idiomas" id="idiomas">
+        <button type="button" data-idioma="es"><img class="idi-flag" src="/bandera-co.svg" alt="" width="42" height="28"><span class="idi-txt"><b data-no-traducir>Español latino</b><small>Español latino</small></span></button>
+        <button type="button" data-idioma="en-GB"><img class="idi-flag" src="/bandera-gb.svg" alt="" width="42" height="28"><span class="idi-txt"><b data-no-traducir>English (UK)</b><small>Inglés británico</small></span></button>
+        <button type="button" data-idioma="en-US"><img class="idi-flag" src="/bandera-us.svg" alt="" width="42" height="28"><span class="idi-txt"><b data-no-traducir>English (US)</b><small>Inglés (EE. UU.)</small></span></button>
+      </div>
+      <p class="hint">📖 Biblias: en inglés se usa la pareja de cada versión (RV1960 → KJV · NVI, NTV → WEB · DHH, TLA, PDT → BBE).</p>
+      <p class="hint">🎵 Canciones: en inglés se proyecta la traducción de la canción cuando existe.</p>
+      <div class="trad-card" id="tradCard">
+        <h4>🤖 Traducción automática de canciones</h4>
+        <p class="hint">Traduce al inglés, en este computador y sin internet, todas las canciones que aún no tienen traducción. Las traducciones hechas a mano no se tocan. Las automáticas se marcan <span class="en-tag auto">EN·auto</span> y se pueden corregir en el editor.</p>
+        <div class="trad-barra hidden" id="tradBarra"><i id="tradRelleno"></i></div>
+        <div class="hint" id="tradEstado"></div>
+        <div class="row">
+          <button type="button" class="primary grow" id="btnTraducirTodo">🤖 Traducir todas las canciones</button>
+          <button type="button" class="danger hidden" id="btnTraducirCancelar">Detener</button>
+        </div>
+      </div>
+    </div>
+    <div class="pane hidden" data-pane="estilo">
+      <div class="scroll form" id="formEstilo">
+        <h4>Pantalla completa / Proyector</h4>
+        <div class="f"><label>Tamaño de la pantalla del proyector</label>
+          <select data-k="pantalla">
+            <option value="3200x1440">3200 × 1440 px · Pantalla LED</option>
+            <option value="1920x1080">1920 × 1080 px · Full HD (16:9)</option>
+            <option value="1280x720">1280 × 720 px · HD (16:9)</option>
+            <option value="1024x768">1024 × 768 px · Proyector 4:3</option>
+            <option value="auto">Automático (tamaño de la ventana)</option>
+          </select></div>
+        <div class="f"><label>Fuente</label><select data-k="fuente" class="fuentes"></select></div>
+        <div class="f"><label>Tamaño máximo <output></output></label><input type="range" min="30" max="200" data-k="tamMax"></div>
+        <div class="f2">
+          <div class="f"><label>Grosor de letra</label><select data-k="peso"><option value="400">Normal</option><option value="700">Negrita</option><option value="800">Extra negrita (recomendado)</option><option value="900">Máxima</option></select></div>
+          <div class="f"><label>Interlineado <output></output></label><input type="range" min="1" max="1.6" step="0.02" data-k="interlineado"></div>
+        </div>
+        <div class="f2">
+          <div class="f"><label>Color texto</label><input type="color" data-k="color"></div>
+          <div class="f"><label>Color referencia</label><input type="color" data-k="refColor"></div>
+        </div>
+        <div class="f"><label>Alineación</label>
+          <select data-k="alineacion"><option value="center">Centro</option><option value="left">Izquierda</option><option value="justify">Justificado</option></select></div>
+        <div class="f"><label>Margen <output></output></label><input type="range" min="0" max="20" data-k="margen"></div>
+        <div class="f"><label>Posición vertical del texto <output></output></label><input type="range" min="-30" max="30" step="1" data-k="posicionV" title="Positivo = más arriba · Negativo = más abajo">
+          <div class="row pos-v"><button type="button" data-posv="2">▲ Subir</button><button type="button" data-posv="0">Centrar</button><button type="button" data-posv="-2">▼ Bajar</button></div></div>
+        <div class="f"><label>Oscurecer fondo <output></output></label><input type="range" min="0" max="90" data-k="oscurecerFondo"></div>
+        <div class="checks">
+          <label><input type="checkbox" data-k="sombra"> Sombra suave</label>
+          <label><input type="checkbox" data-k="contorno"> Contorno</label>
+          <label><input type="checkbox" data-k="mayusculas"> MAYÚSCULAS</label>
+          <label><input type="checkbox" data-k="mostrarRef"> Mostrar referencia</label>
+        </div>
+        <div class="f"><label>Transición (ms) <output></output></label><input type="range" min="0" max="1500" step="50" data-k="transicion"></div>
+
+        <h4>Tercio inferior (OBS)</h4>
+        <div class="f"><label>Posición</label>
+          <select data-k="obs.posicion"><option value="abajo">Abajo</option><option value="arriba">Arriba</option><option value="centro">Centro</option></select></div>
+        <div class="f"><label>Fuente</label><select data-k="obs.fuente" class="fuentes"></select></div>
+        <div class="f"><label>Tamaño máximo <output></output></label><input type="range" min="20" max="120" data-k="obs.tamMax"></div>
+        <div class="f"><label>Ancho (%) <output></output></label><input type="range" min="30" max="100" data-k="obs.ancho"></div>
+        <div class="f"><label>Alto (%) <output></output></label><input type="range" min="10" max="60" data-k="obs.altoMax"></div>
+        <div class="f2">
+          <div class="f"><label>Texto</label><input type="color" data-k="obs.color"></div>
+          <div class="f"><label>Barra</label><input type="color" data-k="obs.barraColor"></div>
+          <div class="f"><label>Acento</label><input type="color" data-k="obs.acento"></div>
+          <div class="f"><label>Referencia</label><input type="color" data-k="obs.refColor"></div>
+        </div>
+        <div class="f"><label>Opacidad barra <output></output></label><input type="range" min="0" max="100" data-k="obs.barraOpacidad"></div>
+        <div class="f"><label>Bordes redondeados <output></output></label><input type="range" min="0" max="40" data-k="obs.redondeo"></div>
+        <div class="checks">
+          <label><input type="checkbox" data-k="obs.barra"> Mostrar barra</label>
+          <label><input type="checkbox" data-k="obs.sombra"> Sombra</label>
+          <label><input type="checkbox" data-k="obs.mayusculas"> MAYÚSCULAS</label>
+          <label><input type="checkbox" data-k="obs.mostrarRef"> Mostrar referencia</label>
+        </div>
+        <button id="btnResetEstilo" class="danger" style="margin-top:12px">Restaurar estilo por defecto</button>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ========== Columna central: contenido ========== -->
+  <section class="panel content">
+    <div class="content-head">
+      <div>
+        <div id="cTitulo" class="c-title">Seleccione un libro, canción o texto</div>
+        <div id="cSub" class="c-sub"></div>
+      </div>
+      <div class="c-actions" id="cActions"></div>
+    </div>
+    <div id="chapters" class="chapters hidden"></div>
+    <div class="scroll" id="items"></div>
+    <div class="foot-hint">
+      <span><kbd>Clic</kbd> al aire</span>
+      <span><kbd>Shift</kbd>+clic varios versículos</span>
+      <span><kbd>↑</kbd><kbd>↓</kbd> anterior/siguiente</span>
+      <span><kbd>Ctrl</kbd>+<kbd>K</kbd> buscar</span>
+    </div>
+  </section>
+
+  <!-- ========== Columna derecha: monitores ========== -->
+  <section class="panel monitors">
+    <div class="mon">
+      <div class="mon-head"><span class="dot live"></span> AL AIRE · Pantalla<button id="btnProyectar" class="btn-proy" title="Abrir la salida en el proyector / segunda pantalla">📽 Proyectar</button></div>
+      <div class="screen"><iframe src="/salida?modo=pantalla&monitor=1" tabindex="-1"></iframe></div>
+    </div>
+    <div class="mon">
+      <div class="mon-head"><span class="dot live"></span> AL AIRE · OBS tercio inferior</div>
+      <div class="screen checker"><iframe src="/salida?modo=obs&monitor=1" tabindex="-1"></iframe></div>
+    </div>
+    <div class="now">
+      <div class="now-label">En vivo ahora</div>
+      <div id="nowRef" class="now-ref">—</div>
+      <div id="nowTxt" class="now-txt"></div>
+    </div>
+    <div class="conn" id="conn">● Conectando…</div>
+  </section>
+</main>
+
+<!-- ===================== MÓDULO OBS (overlay + banner) ===================== -->
+<section id="obsMod" class="obsmod hidden">
+  <div class="mod-nav">
+    <button data-view="overlay" class="active">◧ OVERLAY · Rótulos</button>
+    <button data-view="banner">▬ BANNER</button>
+    <button data-view="urls">🔗 URLs para OBS</button>
+    <span class="grow"></span>
+    <span class="mod-obs-mini" id="obsMini"><span class="dot"></span> OBS desconectado</span>
+  </div>
+
+  <!-- ===================== VISTA OVERLAY ===================== -->
+  <div class="mod-view" data-view="overlay">
+    <!-- Izquierda: configuración del overlay -->
+    <aside class="col col-l scroll">
+      <h2 class="mod-h">OVERLAY</h2>
+      <div class="big-btns">
+        <button class="big cyan" data-capa="overlay"><span class="st"></span>OVERLAY</button>
+        <button class="big red" data-capa="banner"><span class="st"></span>BANNER</button>
+      </div>
+      <form class="row quick" id="quickForm">
+        <input id="quickTxt" class="grow" placeholder="Acceso rápido: escriba un nombre…" autocomplete="off">
+        <button class="primary">Al aire</button>
+      </form>
+
+      <div class="mcard">
+        <div class="mcard-h"><b>💡 Luces</b><label class="sw"><input type="checkbox" data-m="overlay.luces.on"><i></i></label></div>
+        <div class="mstate" data-estado="luces"></div>
+        <div class="f"><label>Intensidad del barrido <output></output></label><input type="range" min="5" max="100" data-m="overlay.luces.intensidad"></div>
+        <div class="f"><label>Velocidad <output></output></label><input type="range" min="1" max="6" data-m="overlay.luces.velocidad"></div>
+      </div>
+
+      <div class="mcard">
+        <div class="mcard-h"><b>🖼 Fondo</b></div>
+        <div class="mstate" id="ovFondoNombre">Sin fondo (color de plantilla)</div>
+        <div class="row">
+          <button class="grow" id="ovFondoCambiar">Cambiar fondo…</button>
+          <label class="btn-file">Seleccionar archivo<input type="file" accept="image/*" id="ovFondoFile" hidden></label>
+          <button id="ovFondoQuitar" title="Quitar fondo">✕</button>
+        </div>
+      </div>
+
+      <div class="mcard">
+        <div class="mcard-h"><b>⏱ Temporizador</b><label class="sw"><input type="checkbox" data-m="overlay.temporizador.on"><i></i></label></div>
+        <div class="mstate">El rótulo se quita solo después de:</div>
+        <div class="f"><label>Duración (segundos) <output></output></label><input type="range" min="3" max="60" data-m="overlay.temporizador.segundos"></div>
+      </div>
+
+      <div class="mcard">
+        <div class="mcard-h"><b>▢ Borde</b><label class="sw"><input type="checkbox" data-m="overlay.borde.on"><i></i></label></div>
+        <div class="f2">
+          <div class="f"><label>Color</label><input type="color" data-m="overlay.borde.color"></div>
+          <div class="f grow"><label>Grosor <output></output></label><input type="range" min="1" max="12" data-m="overlay.borde.ancho"></div>
+        </div>
+        <div class="f"><label>Esquinas redondeadas <output></output></label><input type="range" min="0" max="40" data-m="overlay.borde.radio"></div>
+      </div>
+
+      <div class="mcard">
+        <div class="mcard-h"><b>⚡ STINGER</b><label class="sw"><input type="checkbox" data-m="overlay.stinger.on"><i></i></label></div>
+        <div class="mstate">Barrido de color antes de que aparezca el rótulo.</div>
+        <details class="adv"><summary>Configuración avanzada</summary>
+          <div class="f2">
+            <div class="f"><label>Color 1</label><input type="color" data-m="overlay.stinger.color1"></div>
+            <div class="f"><label>Color 2</label><input type="color" data-m="overlay.stinger.color2"></div>
+          </div>
+          <div class="f"><label>Duración (s) <output></output></label><input type="range" min="0.3" max="2" step="0.1" data-m="overlay.stinger.duracion"></div>
+        </details>
+      </div>
+
+      <div class="mcard">
+        <div class="mcard-h"><b>🎨 Plantilla</b></div>
+        <select data-m="overlay.plantilla" class="full">
+          <option value="IPUC-Blanco">IPUC-Blanco</option>
+          <option value="Azul-Noche">Azul Noche</option>
+          <option value="Oscuro-Minimal">Oscuro Minimal</option>
+          <option value="Rojo-Moderno">Rojo Moderno</option>
+          <option value="Cristal">Cristal</option>
+          <option value="Color-Pleno">Color pleno (color del nombre)</option>
+        </select>
+        <div class="f"><label>Forma de aparecer</label>
+          <select data-m="overlay.aparicion" class="full"><option value="progresivo">Progresivamente</option><option value="deslizamiento">Deslizamiento</option><option value="instantaneo">Aparición instantánea</option></select></div>
+      </div>
+
+      <div class="savebar mini" data-savebar></div>
+
+      <h3 class="mod-h3">CÓMO FUNCIONAN LOS RÓTULOS</h3>
+      <div class="help">
+        <details><summary>Poner un nombre al aire</summary><p>Haga <b>un clic</b> en el botón del nombre. Sale al aire en la capa <b>/capa</b> de OBS con la plantilla elegida. El botón muestra <span class="badge-live">● AL AIRE</span>. Clic otra vez sobre el mismo nombre lo quita.</p></details>
+        <details><summary>Texto por defecto</summary><p>Cada grupo tiene un <b>texto por defecto</b> (⚙ Ajustes del grupo), que aparece debajo del nombre (ej. "IPUC Castilla"). Si un nombre tiene su propio cargo, se usa ese.</p></details>
+        <details><summary>Reloj OFF / ON</summary><p>Con el reloj <b>ON</b>, los nombres de ese grupo se quitan solos después de la duración del <b>Temporizador</b>. Con <b>OFF</b> se quedan hasta que usted los quite.</p></details>
+        <details><summary>Lista</summary><p>El botón <b>☰ Lista</b> abre el editor: agregue, modifique, cambie el color, ordene (▲▼) o elimine nombres. También puede pegar muchos nombres a la vez, uno por línea.</p></details>
+        <details><summary>Ajustes</summary><p><b>⚙</b> cambia el nombre del grupo, el texto por defecto, el color para nuevos nombres, o elimina el grupo completo.</p></details>
+        <details><summary>Quitar</summary><p><b>⏏ Quitar</b> saca del aire el rótulo del grupo. <b>Esc</b> no lo quita (Esc es para la Biblia/canciones). El botón <b>OVERLAY</b> oculta o vuelve a mostrar el último rótulo sin borrarlo.</p></details>
+        <details><summary>Colocarlos en pantalla</summary><p>En <b>Vista previa · Overlay</b> arrastre el rótulo con el mouse para moverlo, o use las flechas y el control de tamaño. Se aplica en OBS al instante.</p></details>
+        <details><summary>Overlay o banner</summary><p><b>OVERLAY</b> = rótulos de nombres. <b>BANNER</b> = versículos y letras proyectados, con fondo y efectos. Si los dos van abajo, al activar uno se oculta el otro (se puede cambiar en BANNER → Forma de interactuar).</p></details>
+      </div>
+    </aside>
+
+    <!-- Centro: rótulos -->
+    <section class="col col-c">
+      <div class="rot-head">
+        <div><h2 class="mod-h" style="margin:0">RÓTULOS</h2><div class="hint" style="margin:2px 0 0">Un clic pone el nombre al aire en su rótulo.</div></div>
+        <button class="primary" id="btnNuevoGrupo">＋ RÓTULO</button>
+      </div>
+      <div class="scroll" id="grupos"></div>
+    </section>
+
+    <!-- Derecha: OBS -->
+    <aside class="col col-r scroll">
+      <div class="mcard obs-state">
+        <div class="obs-line">
+          <span class="dot" id="obsDot"></span>
+          <div class="grow"><b id="obsTxt">OBS desconectado</b><div class="hint" id="obsSub" style="margin:0">Configure la conexión WebSocket</div></div>
+          <button id="obsCfg" title="Configurar conexión">⚙</button>
+          <button id="obsConectar">Conectar</button>
+        </div>
+        <div class="obs-line">
+          <span id="streamTxt" class="stream-txt">Transmisión: —</span>
+          <span class="grow"></span>
+          <button id="btnStream" class="stream-btn" disabled>● TRANSMITIR</button>
+        </div>
+        <button id="btnAddCapa" class="full" disabled>＋ Añadir la capa de rótulos/banner a la escena actual</button>
+      </div>
+
+      <div class="mcard">
+        <div class="subtabs mt0">
+          <button data-ptab="prev" class="active">Vista previa · Overlay</button>
+          <button data-ptab="vol">Volumen y sonido</button>
+        </div>
+        <div data-ppane="prev">
+          <div class="screen checker" id="ovPrev"><iframe src="/capa?preview=1&solo=overlay" tabindex="-1" id="ovPrevFrame"></iframe><div class="drag-layer" id="ovDrag" title="Arrastre para mover el rótulo"></div></div>
+          <div class="row mt8">
+            <label class="chk"><input type="checkbox" id="prevPrimero"> Clic = vista previa primero</label>
+            <span class="grow"></span>
+            <button id="prevAlAire" class="primary" disabled>Enviar al aire</button>
+          </div>
+          <div class="pos-ctrl">
+            <div class="pad">
+              <button data-mv="0,-10">▲</button><button data-mv="-10,0">◀</button><button data-mv="reset" title="Posición original">⟲</button><button data-mv="10,0">▶</button><button data-mv="0,10">▼</button>
+            </div>
+            <div class="grow">
+              <div class="f"><label>Tamaño <output></output></label><input type="range" min="40" max="180" data-m="overlay.escala"></div>
+              <div class="hint" id="posTxt"></div>
+            </div>
+          </div>
+        </div>
+        <div data-ppane="vol" class="hidden"><div id="mezclador" class="mezclador"><div class="hint">Conecte OBS para ver las fuentes de audio.</div></div></div>
+      </div>
+
+      <div class="mcard">
+        <div class="mcard-h"><b>ESCENAS DE OBS</b>
+          <label class="chk small"><input type="checkbox" id="swMinis" checked> Miniaturas</label>
+        </div>
+        <div class="row scene-tools">
+          <label class="chk small"><input type="checkbox" id="swStinger"> Cambiar con stinger</label>
+          <span class="grow"></span>
+          <button id="btnEfectos" title="Transición entre escenas">✨ Efectos</button>
+          <button id="btnTimer" title="Cambio automático de escena">⏱ <span id="timerTxt">Temporizador</span></button>
+          <button id="btnObsCfg2" title="Configuración">⚙</button>
+        </div>
+        <div class="scenes" id="escenas"><div class="hint">Sin conexión con OBS.</div></div>
+      </div>
+
+      <div class="mcard">
+        <div class="mcard-h"><b>CÁMARAS</b><button id="btnAddCam" class="primary small">＋ AÑADIR CÁMARA</button></div>
+        <div id="camaras"><div class="hint">Sin conexión con OBS.</div></div>
+      </div>
+
+      <div class="mcard">
+        <div class="mcard-h"><b>SONIDO DE LA TRANSMISIÓN</b><button id="btnAddAudio" class="small">＋ Fuente</button></div>
+        <div class="row"><select id="audioSel" class="grow"><option>Sin conexión con OBS</option></select></div>
+        <div id="audioMain"></div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ===================== VISTA BANNER ===================== -->
+  <div class="mod-view hidden" data-view="banner">
+    <aside class="col col-l scroll">
+      <h2 class="mod-h">FONDO</h2>
+      <div class="subtabs mt0" id="bTabs">
+        <button data-btipo="imagen" class="active">Imágenes</button>
+        <button data-btipo="video">Videos</button>
+        <span class="grow"></span><span class="pill" id="bCount">0</span>
+      </div>
+      <div class="bgal" id="bGal"></div>
+      <div class="row mt8">
+        <button id="bPrev">◀</button><span class="grow center" id="bPag">1 / 1</span><button id="bNext">▶</button>
+      </div>
+      <div class="row">
+        <button id="bNinguno" class="grow">Ninguno</button>
+        <label class="btn-file grow">Subir archivos…<input type="file" accept="image/*,video/mp4,video/webm" multiple id="bFile" hidden></label>
+        <button id="bBorrar" class="danger" title="Eliminar del disco el archivo activo">🗑</button>
+      </div>
+      <div class="mstate" id="bActivo">Fondo: ninguno</div>
+
+      <div class="mcard mt8">
+        <div class="mcard-h"><b>✨ EFECTO</b><label class="sw"><input type="checkbox" data-m="banner.efecto.on"><i></i></label></div>
+        <div class="f2">
+          <div class="f grow"><label>Efecto</label><select data-m="banner.efecto.tipo" id="efectoSel" class="full"></select></div>
+          <div class="f"><label>Color</label><input type="color" data-m="banner.efecto.color"></div>
+        </div>
+        <div class="f"><label>Opacidad <output></output></label><input type="range" min="0" max="100" data-m="banner.efecto.opacidad"></div>
+        <div class="f"><label>Velocidad <output></output></label><input type="range" min="0" max="100" data-m="banner.efecto.velocidad"></div>
+        <div class="f"><label>Intensidad <output></output></label><input type="range" min="0" max="100" data-m="banner.efecto.intensidad"></div>
+      </div>
+    </aside>
+
+    <section class="col col-c scroll">
+      <div class="rot-head">
+        <h2 class="mod-h" style="margin:0">Banner - Vista previa</h2>
+        <div class="f inline"><label>Tamaño <output></output></label><input type="range" min="50" max="160" data-m="banner.tamPreview" id="bTamPrev"></div>
+      </div>
+      <div class="bprev-wrap"><div class="screen checker" id="bPrevScreen"><iframe src="/capa?preview=1&solo=banner" tabindex="-1"></iframe></div></div>
+      <label class="chk center mt8"><input type="checkbox" data-m="banner.ejemplo"> Mostrar un versículo de ejemplo cuando no haya nada proyectado</label>
+
+      <div class="mcard mt8 interact">
+        <h3 class="mod-h3 mt0">FORMA DE INTERACTUAR</h3>
+        <div class="big-btns">
+          <button class="big cyan" data-capa="overlay"><span class="st"></span>OVERLAY</button>
+          <button class="big red" data-capa="banner"><span class="st"></span>BANNER</button>
+          <button class="big gear" id="btnInteractCfg" title="Configurar forma de aparecer">⚙</button>
+        </div>
+        <div class="interact-info" id="interactInfo"></div>
+        <div class="interact-cfg hidden" id="interactCfg">
+          <div class="f2">
+            <div class="f grow"><label>Overlay aparece</label><select data-m="overlay.aparicion" class="full"><option value="progresivo">Progresivamente</option><option value="deslizamiento">Deslizamiento</option><option value="instantaneo">Aparición instantánea</option></select></div>
+            <div class="f grow"><label>Banner aparece</label><select data-m="banner.aparicion" class="full"><option value="progresivo">Progresivamente</option><option value="deslizamiento">Deslizamiento</option><option value="instantaneo">Aparición instantánea</option></select></div>
+          </div>
+          <label class="chk"><input type="checkbox" data-m="exclusivos"> No mostrar overlay y banner a la vez (cuando el banner va abajo)</label>
+        </div>
+        <p class="hint">OVERLAY y BANNER <b>ocultan sin eliminar</b>: el contenido se conserva y vuelve al pulsarlos de nuevo. El texto del banner es lo que proyecte desde <b>Biblia</b>, <b>Canciones</b> o <b>Texto</b>.</p>
+      </div>
+    </section>
+
+    <aside class="col col-r scroll">
+      <h2 class="mod-h">AJUSTES</h2>
+      <div class="mcard">
+        <div class="mcard-h"><b>POSICIÓN</b></div>
+        <select data-m="banner.posicion" class="full"><option value="abajo">Banner: Abajo</option><option value="lateral">Banner: Lateral</option></select>
+      </div>
+      <div class="mcard">
+        <div class="mcard-h"><b>TEXTO</b></div>
+        <div class="row">
+          <select data-m="banner.fuente" class="fuentes grow"></select>
+          <button class="tbtn" data-tog="banner.negrita" title="Negrita"><b>N</b></button>
+          <button class="tbtn" data-tog="banner.cursiva" title="Cursiva"><i>K</i></button>
+        </div>
+        <div class="f"><label>Alineación</label><select data-m="banner.alineacion" class="full"><option value="center">Centro</option><option value="left">Izquierda</option><option value="right">Derecha</option><option value="justify">Justificado</option></select></div>
+        <div class="f"><label>Tamaño máximo <output></output></label><input type="range" min="20" max="90" data-m="banner.tam"></div>
+        <div class="f2">
+          <div class="f"><label>Color texto</label><input type="color" data-m="banner.color"></div>
+          <div class="f"><label>Color cita</label><input type="color" data-m="banner.colorCita"></div>
+        </div>
+        <div class="f"><label>Opacidad <output></output></label><input type="range" min="10" max="100" data-m="banner.opacidad"></div>
+        <div class="f"><label>Espacio entre letras <output></output></label><input type="range" min="-2" max="10" step="0.5" data-m="banner.espaciado"></div>
+        <div class="f"><label>Interlineado <output></output></label><input type="range" min="90" max="180" data-m="banner.interlineado"></div>
+        <div class="f"><label>Subir / bajar <output></output></label><input type="range" min="-80" max="80" data-m="banner.subir"></div>
+      </div>
+      <div class="mcard">
+        <div class="mcard-h"><b>BANNER</b></div>
+        <div class="f"><label>Alto (px) <output></output></label><input type="range" min="120" max="600" data-m="banner.alto"></div>
+        <div class="f"><label>Posición / margen (px) <output></output></label><input type="range" min="0" max="200" data-m="banner.margen"></div>
+        <div class="f2">
+          <div class="f"><label>Color de fondo</label><input type="color" data-m="banner.colorFondo"></div>
+          <label class="chk grow" style="margin-top:22px"><input type="checkbox" data-m="banner.difuminado"> Fondo difuminado</label>
+        </div>
+        <div class="f"><label>Opacidad del fondo <output></output></label><input type="range" min="0" max="100" data-m="banner.opacidadFondo"></div>
+        <div class="f"><label>Oscurecer imagen/video <output></output></label><input type="range" min="0" max="90" data-m="banner.oscurecer"></div>
+        <div class="f"><label>Desenfoque <output></output></label><input type="range" min="0" max="30" data-m="banner.desenfoque"></div>
+        <div class="f"><label>Transición (s) <output></output></label><input type="range" min="0" max="2.5" step="0.1" data-m="banner.transicion"></div>
+      </div>
+      <div class="savebar" data-savebar></div>
+    </aside>
+  </div>
+
+  <!-- ===================== VISTA URLs ===================== -->
+  <div class="mod-view hidden" data-view="urls">
+    <section class="col scroll obs-help" style="max-width:860px;margin:0 auto;width:100%">
+      <h4>Cómo usar con OBS Studio</h4>
+      <ol>
+        <li>En OBS: <b>Fuentes → ＋ → Navegador</b> (Browser). Ancho <b>1920</b>, alto <b>1080</b>.</li>
+        <li>Pegue una de estas URL. O conecte OBS (pestaña Overlay) y use <b>“Añadir la capa…”</b> para crearla automáticamente.</li>
+        <li>Para controlar OBS desde aquí: en OBS vaya a <b>Herramientas → Ajustes del servidor WebSocket</b>, active el servidor y copie la contraseña.</li>
+      </ol>
+      <div class="url-card"><b>Rótulos + Banner (recomendado)</b><p>Una sola fuente con los nombres (overlay) y los versículos/letras (banner).</p>
+        <div class="row"><input readonly class="grow url" data-path="/capa"><button class="copy">Copiar</button></div></div>
+      <div class="url-card"><b>Solo rótulos</b><p>Si quiere los nombres en una fuente separada.</p>
+        <div class="row"><input readonly class="grow url" data-path="/capa?solo=overlay"><button class="copy">Copiar</button></div></div>
+      <div class="url-card"><b>Solo banner</b><p>Versículos y letras con fondo y efectos.</p>
+        <div class="row"><input readonly class="grow url" data-path="/capa?solo=banner"><button class="copy">Copiar</button></div></div>
+      <div class="url-card"><b>Tercio inferior clásico</b><p>Versículos y letras en barra sencilla (pestaña Estilo).</p>
+        <div class="row"><input readonly class="grow url" data-path="/salida?modo=obs"><button class="copy">Copiar</button></div></div>
+      <div class="url-card"><b>Pantalla completa con fondo</b><p>Escena dedicada a letras/versículos.</p>
+        <div class="row"><input readonly class="grow url" data-path="/salida?modo=pantalla"><button class="copy">Copiar</button></div></div>
+      <div class="url-card"><b>Pantalla completa transparente</b><p>Texto grande sin fondo.</p>
+        <div class="row"><input readonly class="grow url" data-path="/salida?modo=pantalla&fondo=0"><button class="copy">Copiar</button></div></div>
+      <div class="url-card"><b>Chroma verde</b><p>Para mezcladores (ATEM, vMix).</p>
+        <div class="row"><input readonly class="grow url" data-path="/salida?modo=chroma"><button class="copy">Copiar</button></div></div>
+      <div class="url-card"><b>Proyector / TV de la iglesia</b><p>El proyector tiene su propia dirección, distinta del panel. Con las pantallas en modo <b>Extender</b>, lo que haga en el panel no se ve en el proyector.</p>
+        <div class="row"><input readonly class="grow" id="urlProyector"><button class="copy">Copiar</button></div>
+        <div class="row"><button id="btnAbrirProyector" class="grow primary">Abrir ventana de proyector</button></div>
+        <div class="row"><button id="btnExtender" class="grow" title="El proyector muestra solo la salida">🖥️ Extender pantallas</button><button id="btnDuplicar" class="grow" title="El proyector muestra lo mismo que el computador">Duplicar pantallas</button></div></div>
+      <div id="redLocal" class="hint"></div>
+    </section>
+  </div>
+</section>
+
+<!-- Diálogo genérico del módulo -->
+<dialog id="dlgGen"><form method="dialog" class="dlg"><h3 id="dgTitulo"></h3><div id="dgCuerpo"></div><div class="row" id="dgBotones"></div></form></dialog>
+
+
+<!-- Editor de canciones -->
+<dialog id="dlgCancion">
+  <form method="dialog" class="dlg">
+    <h3 id="dlgTitulo">Nueva canción</h3>
+    <div class="f2">
+      <div class="f grow"><label>Título</label><input id="edTi" required></div>
+      <div class="f" style="width:90px"><label>Tono</label><input id="edTono" placeholder="G"></div>
+    </div>
+    <div class="f"><label>Cancionero</label><select id="edLibro"></select></div>
+    <div class="f"><label>Letra <small>(línea en blanco = nueva diapositiva)</small></label><textarea id="edLe" rows="16" required></textarea></div>
+    <details class="ed-en"><summary>🌐 Letra en inglés <small>(opcional · se proyecta cuando el programa está en inglés)</small></summary>
+      <div class="f"><label>Título en inglés</label><input id="edTiEn"></div>
+      <div class="f"><label>Letra en inglés</label><textarea id="edLeEn" rows="10"></textarea></div>
+      <button type="button" id="btnAutoTraducir" class="grow" style="width:100%">🤖 Traducir automáticamente</button>
+    </details>
+    <div class="row">
+      <button value="cancel" class="grow">Cancelar</button>
+      <button id="edBorrar" value="borrar" class="danger hidden">Eliminar</button>
+      <button id="edGuardar" value="ok" class="primary grow">Guardar</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlgMovil" class="dlg">
+  <h3>📱 Conectar celular</h3>
+  <div class="hint">Controle PK-PENTECOSTAL desde su teléfono Android o iPhone</div>
+  <div class="mv-tabs" id="mvTabs">
+    <button type="button" data-t="red" class="active">📶 Misma red</button>
+    <button type="button" data-t="wifi">🛜 Wi-Fi propio</button>
+  </div>
+  <div class="mv-panel" data-t="red">
+  <div id="mvSinRed" class="hidden"><p>Este computador no está conectado a ninguna red. Use la pestaña <b>🛜 Wi-Fi propio</b>.</p></div>
+  <div id="mvConRed">
+    <div id="mvQr"></div>
+    <div id="mvUrl"></div>
+    <div id="mvIpFila" class="row hidden"><label style="margin:0">Red:</label><select id="mvIp"></select></div>
+    <ol>
+      <li>Conecte el teléfono al <b>mismo Wi-Fi</b> que este computador.</li>
+      <li>Abra la <b>cámara</b> del teléfono y apunte a este código.</li>
+      <li>Toque el enlace que aparece. ¡Listo! El teléfono queda vinculado.</li>
+    </ol>
+    <div class="mv-ayuda">¿El teléfono se queda cargando? La red no deja que se vean (pasa en hoteles y redes de invitados). Use <a href="#" id="mvIrWifi">🛜 Wi-Fi propio</a>.</div>
+  </div>
+  </div>
+  <div class="mv-panel hidden" data-t="wifi">
+    <div id="mvWifiNo" class="hidden"><p id="mvWifiNoTxt"></p></div>
+    <div id="mvWifiApagado">
+      <p>El computador crea <b>su propia red Wi-Fi</b> para los teléfonos. Funciona en cualquier lugar: hoteles, redes que bloquean equipos o donde no hay Wi-Fi.</p>
+      <button type="button" id="mvWifiOn" class="primary" style="width:100%;padding:12px">🛜 Crear Wi-Fi propio</button>
+      <p class="hint">Si el computador tiene internet, los teléfonos también lo tendrán a través de él.</p>
+    </div>
+    <div id="mvWifiOk" class="hidden">
+      <div class="mv-dos">
+        <div><div class="mv-paso">① Unirse al Wi-Fi</div><div id="mvQrWifi" class="mv-qr"></div><div class="mv-marca"><img src="/icono-64.png" alt="" width="26" height="26"><span id="mvSsid"></span></div><div class="mv-dato">Clave del Wi-Fi: <b id="mvPass"></b></div></div>
+        <div><div class="mv-paso">② Abrir el panel</div><div id="mvQrPanel" class="mv-qr"></div><div class="mv-dato" id="mvUrlWifi"></div></div>
+      </div>
+      <ol>
+        <li>Escanee el código <b>①</b> con la cámara y toque <b>Conectarse</b>.</li>
+        <li>Luego escanee el código <b>②</b> y toque el enlace. ¡Listo!</li>
+      </ol>
+      <div class="mv-ayuda">Si el teléfono avisa <b>“Sin internet”</b>, elija <b>Mantener conexión</b> (Android) o <b>Usar sin internet</b> (iPhone). El control funciona igual.</div>
+      <div class="mv-dato" id="mvClientes"></div>
+      <button type="button" id="mvWifiOff" class="danger" style="width:100%;margin-top:8px">Apagar Wi-Fi propio</button>
+    </div>
+    <div id="mvWifiCargando" class="hidden"><p class="hint">⏳ <span id="mvWifiCargandoTxt">Encendiendo el Wi-Fi propio…</span></p></div>
+  </div>
+  <div class="row">
+    <button id="mvRenovar" class="danger grow" title="Los teléfonos vinculados dejarán de funcionar hasta escanear el nuevo código">Desvincular todos</button>
+    <button id="mvCerrar" class="primary grow">Cerrar</button>
+  </div>
+</dialog>
+
+<div id="toast"></div>
+<footer class="creditos">
+  <span class="cr-autor"><img src="/icono-64.png" alt="" width="18" height="18"> Hecho por Sebastian Lopez · IPUC Natania 6° Etapa</span>
+  <span class="cr-zona">Zona Especial Misionera – Archipiélago de San Andrés, Providencia y Santa Catalina</span>
+  <span class="cr-verso">«Por toda la tierra salió su voz, y hasta el extremo del mundo sus palabras.» <b>Salmos 19:4</b></span>
+</footer>
+
+<script src="/libros.js"></script>
+<script src="/miniaturas.js"></script>
+<script src="/control.js"></script>
+<script src="/efectos.js"></script>
+<script src="/obsws.js"></script>
+<script src="/obs.js"></script>
+<script src="/qrcode.js"></script>
+<script src="/movil.js"></script>
+</body>
+</html>

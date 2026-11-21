@@ -1,0 +1,1 @@
+{"name":"pk-traductor","private":true,"version":"1.0.0","description":"Traductor automático español→inglés sin internet para PK-PENTECOSTAL","dependencies":{"@huggingface/transformers":"^3.8.1"}}
