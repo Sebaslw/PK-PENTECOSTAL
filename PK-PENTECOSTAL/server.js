@@ -150,7 +150,7 @@ const urlProyector = () => (webActiva ? `http://proyector.${DOMINIO}${sufijoWeb(
 // hacia la dirección nueva. Solo vive en memoria y se entrega una vez.
 let almacenPendiente = null;
 const APP_NOMBRE = 'PK-PENTECOSTAL';
-const APP_VERSION = process.env.PK_VERSION || '2.0.4';
+const APP_VERSION = process.env.PK_VERSION || '2.0.5';
 const ABRIR = process.argv.includes('--abrir');
 
 if (parseInt(process.versions.node, 10) < 16) {

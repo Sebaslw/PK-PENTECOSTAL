@@ -9,12 +9,12 @@
 =====================================================================
 
 VERSIÓN 2.0 PARA WINDOWS (recomendada) - NO NECESITA NODE.JS
-  · PK-PENTECOSTAL-Instalador-2.0.4.exe -> doble clic, "Siguiente".
+  · PK-PENTECOSTAL-Instalador-2.0.5.exe -> doble clic, "Siguiente".
       Crea accesos directos en el Escritorio y en el menú Inicio.
       Se desinstala desde Configuración -> Aplicaciones.
       SE ACTUALIZA SOLO (desde 2.0.3): avisa, descarga la versión nueva y
       la instala encima, sin desinstalar. Sus datos se conservan.
-  · PK-PENTECOSTAL-Portable-2.0.4.exe   -> no se instala (memoria USB).
+  · PK-PENTECOSTAL-Portable-2.0.5.exe   -> no se instala (memoria USB).
   Al abrirlo: si ya estaba abierto solo muestra la ventana; si el puerto
   8888 lo usa otro programa, elige otro libre (sin cerrar ese programa).
   Datos del usuario (se conservan al actualizar y al desinstalar):
