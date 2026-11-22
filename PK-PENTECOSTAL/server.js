@@ -1548,6 +1548,10 @@ async function handle(req, res) {
     if (!equipo) return sendJSON(res, { encontrado: false, error: 'Solo desde el computador' }, 403);
     return sendJSON(res, obsLocal());
   }
+  if (p === '/api/obs/buscar') { // OBS en otro computador de la red (solo desde el panel de este equipo)
+    if (!equipo) return sendJSON(res, { encontrados: [], error: 'Solo desde el computador' }, 403);
+    return sendJSON(res, await buscarOBS());
+  }
   if (p === '/api/info') return sendJSON(res, { app: APP_NOMBRE, version: APP_VERSION, url: urlPanel(), urlProyector: urlProyector(), puertoProyector: PORT_PROY, autor: 'Hecho por Sebastian Lopez · IPUC Natania 6° Etapa', zona: 'Zona Especial Misionera – Archipiélago de San Andrés, Providencia y Santa Catalina', puerto: PORT, ips: localIPs(), sistema: process.platform, datos: ID_DATOS, escritorio: EN_ELECTRON });
   if (p === '/api/apagar' && req.method === 'POST') {
     // Solo desde este mismo equipo (no desde celulares/tabletas de la red)
@@ -1644,6 +1648,24 @@ function obsLocal() {
     }
   } catch (_) { /* sin global.ini */ }
   return { encontrado: false };
+}
+// OBS en otro computador: prueba el puerto del servidor WebSocket de OBS (4455) en las redes de este equipo
+// (/24), todos a la vez y con espera corta. Devuelve las IP que responden.
+function buscarOBS() {
+  const puerto = +process.env.PK_OBS_PUERTO || 4455;  // PK_OBS_PUERTO / PK_OBS_REDES: solo para pruebas
+  const propias = localIPs();
+  const redes = process.env.PK_OBS_REDES ? process.env.PK_OBS_REDES.split(',').map((x) => x.trim()).filter(Boolean)
+    : [...new Set(propias.map((ip) => ip.split('.').slice(0, 3).join('.')))];
+  const probar = (ip) => new Promise((ok) => {
+    const s = require('net').connect({ host: ip, port: puerto });
+    const fin = (r) => { s.destroy(); ok(r); };
+    s.setTimeout(300, () => fin(false));
+    s.once('connect', () => fin(true));
+    s.once('error', () => fin(false));
+  });
+  const ips = redes.flatMap((r) => Array.from({ length: 254 }, (_, i) => `${r}.${i + 1}`));
+  return Promise.all(ips.map((ip) => probar(ip).then((si) => (si ? { ip, propio: propias.includes(ip) || ip.startsWith('127.') } : null))))
+    .then((r) => ({ puerto, encontrados: r.filter(Boolean) }));
 }
 function esLocal(req) {
   const a = req.socket.remoteAddress || '';

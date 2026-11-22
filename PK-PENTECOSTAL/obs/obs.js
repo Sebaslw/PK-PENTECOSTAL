@@ -422,8 +422,12 @@
         toast(`Conectado con OBS · se corrigieron puerto y contraseña con los de OBS (puerto ${r.usada.puerto})`);
       }
     } catch (e) {
-      estadoOBS('off', 'OBS desconectado', e.message);
-      if (manual) toast('OBS: ' + e.message);
+      // OBS en otro computador que no responde: decir qué revisar EN ESE equipo
+      const msg = !local && !/contraseña/i.test(e.message)
+        ? `No se pudo conectar con OBS en ${c.host}:${c.puerto}. En ese computador: OBS abierto, Herramientas → Ajustes del servidor WebSocket → Habilitar, y permita OBS en el Firewall de Windows.`
+        : e.message;
+      estadoOBS('off', 'OBS desconectado', msg);
+      if (manual) toast('OBS: ' + msg);
       if (c.auto && !/contraseña/i.test(e.message)) reintento = setTimeout(() => conectar(false), 10000);
       return;
     }
@@ -451,8 +455,28 @@
       <div class="f2"><div class="f grow"><label>Servidor (IP)</label><input id="ocH" class="full" value="${esc(c.host)}"></div>
       <div class="f" style="width:110px"><label>Puerto</label><input id="ocP" type="number" class="full" value="${c.puerto}"></div></div>
       <div class="f"><label>Contraseña</label><input id="ocC" type="password" class="full" value="${esc(c.clave)}" autocomplete="off"></div>
-      <label class="chk"><input type="checkbox" id="ocA" ${c.auto ? 'checked' : ''}> Conectar automáticamente al abrir</label>`,
-      [['cancel', 'Cancelar'], ['ok', 'Guardar y conectar', 'primary']]);
+      <label class="chk"><input type="checkbox" id="ocA" ${c.auto ? 'checked' : ''}> Conectar automáticamente al abrir</label>
+      <p class="hint">¿OBS está en <b>otro computador</b> de la red? Escriba su IP o búsquelo:</p>
+      <button type="button" id="ocBuscar">🔎 Buscar OBS en la red</button>
+      <div id="ocEncontrados" class="row" style="flex-wrap:wrap;gap:6px;margin-top:6px"></div>`,
+      [['cancel', 'Cancelar'], ['ok', 'Guardar y conectar', 'primary']], (cuerpo) => {
+        cuerpo.querySelector('#ocBuscar').addEventListener('click', async (ev) => {
+          const b = ev.currentTarget, caja = cuerpo.querySelector('#ocEncontrados');
+          b.disabled = true; caja.innerHTML = '<span class="hint">Buscando OBS en la red…</span>';
+          try {
+            const r = await api('/api/obs/buscar');
+            const lista = r.encontrados || [];
+            caja.innerHTML = lista.length
+              ? lista.map((x) => `<button type="button" data-ip="${esc(x.ip)}">${esc(x.ip)}${x.propio ? ' (este equipo)' : ''}</button>`).join('')
+              : '<span class="hint">No se encontró OBS en la red. Revise que OBS esté abierto con el servidor WebSocket habilitado.</span>';
+            caja.querySelectorAll('[data-ip]').forEach((x) => x.addEventListener('click', () => {
+              cuerpo.querySelector('#ocH').value = x.dataset.ip; cuerpo.querySelector('#ocP').value = r.puerto || 4455;
+              caja.querySelectorAll('[data-ip]').forEach((y) => y.classList.toggle('primary', y === x));
+            }));
+          } catch (err) { caja.innerHTML = `<span class="hint">${esc(err.message)}</span>`; }
+          b.disabled = false;
+        });
+      });
     if (r !== 'ok') return;
     store.set('obs', { host: $('#ocH').value.trim() || 'localhost', puerto: +$('#ocP').value || 4455, clave: $('#ocC').value, auto: $('#ocA').checked });
     conectar(true);
@@ -481,15 +505,35 @@
     if (!confirm(activo ? '¿DETENER la transmisión en vivo?' : '¿INICIAR la transmisión en vivo en OBS?')) return;
     try { await obs.call(activo ? 'StopStream' : 'StartStream'); toast(activo ? 'Deteniendo transmisión…' : 'Iniciando transmisión…'); } catch (e) { toast('OBS: ' + e.message); }
   });
+  // Dirección de este programa para las fuentes de navegador de OBS. OBS en este equipo: la del panel.
+  // OBS en otro computador: la IP de ESTE equipo en la red de OBS (pkipuc.localhost allá sería él mismo).
+  async function baseURLParaOBS() {
+    const host = cfg().host;
+    const local = ['localhost', '127.0.0.1', '::1', location.hostname].includes(host) || /\.localhost$/.test(host);
+    if (local) return location.origin;
+    const info = await api('/api/info');
+    const ip = OBSWS.ipPara(host, info.ips);
+    return ip ? `http://${ip}:${info.puerto}` : location.origin;
+  }
+  PP.baseURLParaOBS = baseURLParaOBS;
   $('#btnAddCapa').addEventListener('click', async () => {
+    const nombre = 'PK-PENTECOSTAL · Capa';
+    let url = location.origin + '/capa';
     try {
+      url = (await baseURLParaOBS()) + '/capa';
       const { currentProgramSceneName } = await obs.call('GetCurrentProgramScene');
-      await obs.call('CreateInput', { sceneName: currentProgramSceneName, inputName: 'PK-PENTECOSTAL · Capa', inputKind: 'browser_source',
-        inputSettings: { url: location.origin + '/capa', width: 1920, height: 1080, reroute_audio: false, shutdown: false } });
+      await obs.call('CreateInput', { sceneName: currentProgramSceneName, inputName: nombre, inputKind: 'browser_source',
+        inputSettings: { url, width: 1920, height: 1080, reroute_audio: false, shutdown: false } });
       toast(`Capa añadida a la escena "${currentProgramSceneName}"`);
     } catch (e) {
-      if (e.code === 601) toast('La capa “PK-PENTECOSTAL · Capa” ya existe en OBS');
-      else toast('OBS: ' + e.message);
+      if (e.code !== 601) return toast('OBS: ' + e.message);
+      // ya existe: se asegura de que apunte a este equipo (p. ej. creada antes con pkipuc.localhost)
+      try {
+        const { inputSettings } = await obs.call('GetInputSettings', { inputName: nombre });
+        if (inputSettings && inputSettings.url === url) return toast(`La capa “${nombre}” ya existe en OBS`);
+        await obs.call('SetInputSettings', { inputName: nombre, inputSettings: { url } });
+        toast('Capa actualizada con la dirección de este equipo');
+      } catch (e2) { toast('OBS: ' + e2.message); }
     }
   });
 

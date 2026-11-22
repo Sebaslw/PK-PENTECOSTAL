@@ -96,5 +96,15 @@
       });
     }
   }
+  // OBS en otro equipo: las fuentes de navegador que se crean en OBS deben apuntar a ESTE computador por su
+  // IP de la red (http://pkipuc.localhost en el equipo de OBS sería él mismo). Elige la IP de la misma red
+  // que OBS; si ninguna comparte red, la primera. null si OBS está en este mismo equipo.
+  OBSWS.ipPara = function (hostOBS, ips) {
+    const h = String(hostOBS || '').toLowerCase();
+    if (!h || h === 'localhost' || h === '::1' || h.endsWith('.localhost') || /^127\./.test(h)) return null;
+    const lista = (ips || []).filter(Boolean);
+    const red = (ip) => String(ip).split('.').slice(0, 3).join('.');
+    return lista.find((ip) => red(ip) === red(h)) || lista[0] || null;
+  };
   window.OBSWS = OBSWS;
 })();

@@ -52,7 +52,7 @@ async function medir(win, puerto, texto, grupo) {
 
 app.whenReady().then(async () => {
   const datos = fs.mkdtempSync(path.join(os.tmpdir(), 'pk-tam-'));
-  const srv = spawn('node', [path.join(RAIZ, 'PK-PENTECOSTAL', 'server.js')], { env: { ...process.env, PK_DATA_ROOT: datos, PORT_WEB: '0', ELECTRON_RUN_AS_NODE: '' }, stdio: ['ignore', 'pipe', 'pipe', 'ipc'] });
+  const srv = spawn('node', [path.join(RAIZ, 'PK-PENTECOSTAL', 'server.js')], { env: { ...process.env, PK_DATA_ROOT: datos, PORT_WEB: '0', ELECTRON_RUN_AS_NODE: '', PK_OBS_DIR: path.join(datos, 'sin-obs') }, stdio: ['ignore', 'pipe', 'pipe', 'ipc'] });
   let listo = null; srv.on('message', (m) => { if (!listo) listo = m; });
   for (let t = 0; !listo && t < 150; t++) await sleep(100);
   const puerto = listo.puerto;

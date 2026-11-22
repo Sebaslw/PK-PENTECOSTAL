@@ -12,7 +12,7 @@
     "start": "electron .",
     "servidor": "node PK-PENTECOSTAL/server.js --abrir",
     "probar": "node electron/pruebas.js",
-    "probar-obs": "node electron/prueba-obs.js",
+    "probar-obs": "node electron/prueba-obs.js && electron electron/prueba-obs-panel.js",
     "probar-letra": "node electron/prueba-letra.js",
     "probar-tamano": "electron electron/prueba-tamano.js",
     "miniaturas": "electron electron/miniaturas-fabrica.js",

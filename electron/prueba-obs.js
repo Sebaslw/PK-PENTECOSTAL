@@ -18,40 +18,7 @@ let fallos = 0;
 const ok = (c, t) => { console.log((c ? '  ✔ ' : '  ✘ ') + t); if (!c) fallos++; };
 const sha = (s) => crypto.createHash('sha256').update(s).digest('base64');
 
-// ---------- OBS simulado: servidor WebSocket v5 mínimo (handshake + tramas de texto)
-function obsFalso(clave) {
-  const srv = http.createServer();
-  srv.on('upgrade', (req, sock) => {
-    const acc = crypto.createHash('sha1').update(req.headers['sec-websocket-key'] + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11').digest('base64');
-    sock.write(`HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ${acc}\r\n\r\n`);
-    const enviar = (o) => { const b = Buffer.from(JSON.stringify(o)); const h = b.length < 126 ? Buffer.from([0x81, b.length]) : Buffer.from([0x81, 126, b.length >> 8, b.length & 255]); sock.write(Buffer.concat([h, b])); };
-    const cerrar = (code, motivo) => { const r = Buffer.from(motivo); const p = Buffer.concat([Buffer.from([code >> 8, code & 255]), r]); sock.write(Buffer.concat([Buffer.from([0x88, p.length]), p])); sock.end(); };
-    const salt = crypto.randomBytes(16).toString('base64'), challenge = crypto.randomBytes(16).toString('base64');
-    enviar({ op: 0, d: { obsWebSocketVersion: '5.7.6', rpcVersion: 1, authentication: { salt, challenge } } });
-    let buf = Buffer.alloc(0);
-    sock.on('data', (d) => {
-      buf = Buffer.concat([buf, d]);
-      while (buf.length >= 2) {
-        const op = buf[0] & 15; let len = buf[1] & 127, i = 2;
-        if (len === 126) { len = buf.readUInt16BE(2); i = 4; }
-        if (buf.length < i + 4 + len) return;
-        const m = buf.slice(i, i + 4), p = Buffer.from(buf.slice(i + 4, i + 4 + len).map((x, k) => x ^ m[k % 4]));
-        buf = buf.slice(i + 4 + len);
-        if (op === 8) { sock.end(); return; }
-        const { op: o, d: dd } = JSON.parse(p.toString());
-        if (o === 1) {
-          if (dd.authentication !== sha(sha(clave + salt) + challenge)) return cerrar(4009, 'Authentication failed.');
-          enviar({ op: 2, d: { negotiatedRpcVersion: 1 } });
-        } else if (o === 6) {
-          const datos = dd.requestType === 'GetVersion' ? { obsVersion: '33.0.1', obsWebSocketVersion: '5.7.6', platform: 'windows' } : {};
-          enviar({ op: 7, d: { requestType: dd.requestType, requestId: dd.requestId, requestStatus: { result: true, code: 100 }, responseData: datos } });
-        }
-      }
-    });
-    sock.on('error', () => {});
-  });
-  return new Promise((r) => srv.listen(0, () => r(srv))); // IPv4 + IPv6, como OBS
-}
+const { obsFalso } = require('./obs-falso');
 
 // ---------- cliente del panel (obsws.js) cargado tal cual, como en el navegador
 function cargarCliente() {
@@ -122,6 +89,37 @@ const getJSON = (port, p) => new Promise((ok2) => {
   ok(e5 && /desactivado|Habilitar/i.test(e5.message), 'Mensaje pide activar el servidor WebSocket → ' + (e5 && e5.message));
 
   ch.kill(); await new Promise((r) => ch.once('exit', r));
+
+  console.log('\n8) OBS en otro equipo: IP de este computador para las capas');
+  ok(OBSWS.ipPara('192.168.0.50', ['192.168.56.1', '192.168.0.12']) === '192.168.0.12', 'ipPara elige la IP de la misma red que OBS');
+  ok(OBSWS.ipPara('10.0.0.9', ['192.168.0.12', '192.168.56.1']) === '192.168.0.12', 'ipPara usa la primera IP si ninguna comparte red');
+  ok(OBSWS.ipPara('localhost', ['192.168.0.12']) === null && OBSWS.ipPara('127.0.0.1', ['192.168.0.12']) === null, 'ipPara devuelve null si OBS está en este equipo');
+
+  console.log('\n9) Buscar OBS en la red');
+  const obs2 = await obsFalso(CLAVE);
+  const arrancarCon = async (env) => {
+    const c = spawn(process.execPath, [path.join(RAIZ, 'server.js')], { env: { ...process.env, PK_DATA_ROOT: path.join(TMP, 'datos-' + Math.random()), PORT_WEB: '0', ...env }, stdio: ['ignore', 'pipe', 'pipe', 'ipc'] });
+    let m = null; c.on('message', (x) => { if (!m) m = x; });
+    for (let t = 0; !m && t < 150; t++) await new Promise((r) => setTimeout(r, 100));
+    return { c, puerto: m && m.puerto };
+  };
+  const s1 = await arrancarCon({ PK_OBS_REDES: '127.0.0', PK_OBS_PUERTO: String(obs2.address().port) });
+  const tb = Date.now(); const bus = await getJSON(s1.puerto, '/api/obs/buscar');
+  const ips = ((bus.json && bus.json.encontrados) || []).map((e) => e.ip);
+  // (en Windows todo 127.x es este equipo: el OBS simulado responde en las 254 direcciones)
+  ok(bus.code === 200 && ips.includes('127.0.0.1'), `GET /api/obs/buscar encuentra el OBS (${ips.length} direcciones, la primera ${ips[0]}) en ${Date.now() - tb} ms`);
+  ok(Date.now() - tb < 5000, 'La búsqueda termina en menos de 5 s');
+  s1.c.kill(); await new Promise((r) => s1.c.once('exit', r));
+  const libre = await new Promise((r) => { const t = http.createServer().listen(0, () => { const p = t.address().port; t.close(() => r(p)); }); });
+  const s3 = await arrancarCon({ PK_OBS_REDES: '127.0.0', PK_OBS_PUERTO: String(libre) });
+  const bus3 = await getJSON(s3.puerto, '/api/obs/buscar');
+  ok(bus3.code === 200 && bus3.json.encontrados.length === 0, 'Sin OBS en la red → lista vacía (' + (bus3.json && bus3.json.encontrados.length) + ')');
+  s3.c.kill(); await new Promise((r) => s3.c.once('exit', r));
+  const s2 = await arrancarCon({ PK_TEST_REMOTO: '1' });
+  const bus2 = await getJSON(s2.puerto, '/api/obs/buscar');
+  ok(bus2.code === 403, 'Desde otro equipo (celular): 403 → ' + bus2.code);
+  s2.c.kill(); await new Promise((r) => s2.c.once('exit', r));
+  obs2.close();
 
   // 7) OBS real de este equipo (si está abierto)
   const cfgReal = path.join(process.env.APPDATA || path.join(os.homedir(), '.config'), 'obs-studio', 'plugin_config', 'obs-websocket', 'config.json');

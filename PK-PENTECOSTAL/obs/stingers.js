@@ -369,7 +369,11 @@
     try {
       const { scenes } = await obs.call('GetSceneList');
       const vid = await obs.call('GetVideoSettings').catch(() => ({ baseWidth: 1920, baseHeight: 1080 }));
-      let existe = await obs.call('GetInputSettings', { inputName: FUENTE_OBS }).then(() => true, () => false);
+      // OBS en otro computador: la fuente apunta a la IP de este equipo (ver baseURLParaOBS en obs.js)
+      const url = (PP.baseURLParaOBS ? await PP.baseURLParaOBS() : location.origin) + '/stinger';
+      const previa = await obs.call('GetInputSettings', { inputName: FUENTE_OBS }).catch(() => null);
+      let existe = !!previa;
+      if (previa && previa.inputSettings && previa.inputSettings.url !== url) await obs.call('SetInputSettings', { inputName: FUENTE_OBS, inputSettings: { url } });
       let n = 0;
       for (const sc of scenes) {
         const sceneName = sc.sceneName;
@@ -378,7 +382,7 @@
         if (!it) {
           const r = existe ? await obs.call('CreateSceneItem', { sceneName, sourceName: FUENTE_OBS })
             : await obs.call('CreateInput', { sceneName, inputName: FUENTE_OBS, inputKind: 'browser_source',
-              inputSettings: { url: location.origin + '/stinger', width: 1920, height: 1080, reroute_audio: true, shutdown: false, restart_when_active: false } });
+              inputSettings: { url, width: 1920, height: 1080, reroute_audio: true, shutdown: false, restart_when_active: false } });
           existe = true; id = r.sceneItemId; n++;
           await obs.call('SetSceneItemTransform', { sceneName, sceneItemId: id, sceneItemTransform: { positionX: 0, positionY: 0, boundsType: 'OBS_BOUNDS_STRETCH', boundsWidth: vid.baseWidth || 1920, boundsHeight: vid.baseHeight || 1080 } }).catch(() => {});
         }
