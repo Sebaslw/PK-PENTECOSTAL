@@ -436,7 +436,7 @@
   <li>Haga <b>doble clic</b> dentro de ella, o pulse <kbd>F</kbd> o <kbd>F11</kbd>, para ponerla en pantalla completa.</li>
 </ol>
 <div class="tip"><b>Puede seguir controlando desde la ventana del proyector</b>Si por error hizo clic en la ventana del proyector, las teclas <kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd> <kbd>Espacio</kbd> <kbd>B</kbd> <kbd>H</kbd> y <kbd>1</kbd>–<kbd>9</kbd> siguen funcionando igual que en el panel.</div>
-<div class="nota"><b>Recuperar el permiso</b>Si respondió “Bloquear” por error: en Chrome haga clic en el candado a la izquierda de la dirección $1pkipuc.localhost</code> → <b>Administración de ventanas</b> → <b>Permitir</b>, y recargue con <kbd>F5</kbd>. Si el navegador bloquea la ventana emergente, permita “Ventanas emergentes” para este sitio de la misma forma.</div>
+<div class="nota"><b>Recuperar el permiso</b>Si respondió “Bloquear” por error: en Chrome haga clic en el candado a la izquierda de la dirección <code>http://pkipuc.localhost</code> → <b>Administración de ventanas</b> → <b>Permitir</b>, y recargue con <kbd>F5</kbd>. Si el navegador bloquea la ventana emergente, permita “Ventanas emergentes” para este sitio de la misma forma.</div>
 <p>También puede abrir el proyector desde <b>📡 OBS → 🔗 URLs para OBS → Abrir ventana de proyector</b>; funciona igual que el botón Proyectar.</p>
 
 <!-- ======================= 12 ======================= -->
@@ -451,14 +451,15 @@
 </ol>
 <table>
   <tr><th style="width:44%">Dirección</th><th>Uso</th></tr>
-  <tr><td>$1pkipuc.localhost/capa</code></td><td><b>Recomendada.</b> Rótulos + banner en una sola fuente.</td></tr>
-  <tr><td>$1pkipuc.localhost/capa?solo=overlay</code></td><td>Solo los rótulos de nombres.</td></tr>
-  <tr><td>$1pkipuc.localhost/capa?solo=banner</code></td><td>Solo el banner (versículos/letras con fondo y efectos).</td></tr>
+  <tr><td><code>http://pkipuc.localhost/capa</code></td><td><b>Recomendada.</b> Rótulos + banner en una sola fuente.</td></tr>
+  <tr><td><code>http://pkipuc.localhost/capa?solo=overlay</code></td><td>Solo los rótulos de nombres.</td></tr>
+  <tr><td><code>http://pkipuc.localhost/capa?solo=banner</code></td><td>Solo el banner (versículos/letras con fondo y efectos).</td></tr>
   <tr><td><code>/salida?modo=obs</code></td><td>Tercio inferior clásico (se ajusta en la pestaña Estilo).</td></tr>
   <tr><td><code>/salida?modo=pantalla</code></td><td>Pantalla completa con fondo (escena dedicada a la letra).</td></tr>
   <tr><td><code>/salida?modo=pantalla&amp;fondo=0</code></td><td>Pantalla completa sin fondo (transparente).</td></tr>
   <tr><td><code>/salida?modo=chroma</code></td><td>Fondo verde para mezcladores (ATEM, vMix).</td></tr>
 </table>
+<div class="nota"><b>¿OBS está en otro computador?</b>Estas direcciones solo funcionan en el computador donde está PK-PENTECOSTAL. Para OBS en otro equipo, vea <b>OBS en otro computador</b> (sección 12.2).</div>
 <figure style="width:50%"><img src="img/10-salida-obs.png" alt=""><figcaption>Figura 10. Tercio inferior clásico (fondo transparente en OBS).</figcaption></figure>
 
 <h2>12.2 Conectar el panel con OBS (control remoto)<span class="novedad">NUEVO</span></h2>
@@ -477,6 +478,13 @@
   <li>Pulse <span class="btn">＋ Añadir la capa…</span> y, en Stingers, <span class="btn">Añadir el stinger a todas las escenas</span>. El programa las crea en OBS con la <b>dirección de red de este computador</b> (por ejemplo <code>http://192.168.0.12:8888/capa</code>), así OBS las ve desde el otro equipo. Si ya existían con la dirección anterior, se corrigen solas.</li>
 </ol>
 <div class="ojo"><b>Si no conecta</b>El panel dice qué revisar. En el computador de OBS: que OBS esté abierto, el servidor WebSocket habilitado y OBS <b>permitido en el Firewall de Windows</b> (la primera vez Windows pregunta: elija <b>Redes privadas</b>). En el computador de PK-PENTECOSTAL, permita también el programa en el Firewall para que OBS pueda cargar la capa.</div>
+<table>
+  <tr><th style="width:34%">Situación</th><th>Qué hacer</th></tr>
+  <tr><td>«Buscar OBS en la red» muestra <b>(este equipo)</b></td><td>Ese OBS está en este mismo computador. Al tocarlo, el programa usa <code>localhost</code>: las capas siguen funcionando aunque el router cambie la IP.</td></tr>
+  <tr><td>«Buscar» no encuentra nada</td><td>Revise que los dos computadores estén en la <b>misma red</b> y que OBS esté abierto con el servidor WebSocket habilitado. También puede escribir la IP a mano: en el computador de OBS se ve en <b>Mostrar información de conexión</b>.</td></tr>
+  <tr><td>La capa o el stinger dejaron de verse en OBS</td><td>Probablemente el router le dio <b>otra IP</b> a este computador. Pulse otra vez <span class="btn">＋ Añadir la capa…</span> y <span class="btn">Añadir el stinger a todas las escenas</span>: el programa corrige la dirección sin duplicar nada. Para que no vuelva a pasar, pida a quien administre la red que <b>reserve una IP fija</b> para este computador en el router.</td></tr>
+  <tr><td>Añadir otras fuentes a mano</td><td>Las direcciones de <b>🔗 URLs para OBS</b> (<code>http://pkipuc.localhost/…</code>) solo funcionan en este computador. En el computador de OBS cambie el comienzo por la dirección de red de este equipo, la que aparece en la ventana <span class="btn">📱 Celular</span>. Por ejemplo, <code>http://pkipuc.localhost/salida?modo=obs</code> pasa a ser <code>http://192.168.0.12:8888/salida?modo=obs</code>.</td></tr>
+</table>
 <p>Ya conectado, puede:</p>
 <ul>
   <li>Iniciar o detener la transmisión con <span class="btn rojo">● TRANSMITIR</span>.</li>
@@ -700,7 +708,7 @@
   <tr><td>Dice que necesita Node.js</td><td>Instale Node.js versión LTS (capítulo 2) y vuelva a abrir el programa.</td></tr>
   <tr><td>“No se pudo iniciar PK-PENTECOSTAL”</td><td>El puerto 8888 está ocupado, casi siempre porque el <b>Proyektor original</b> está abierto. Ciérrelo. Para ver el detalle del error, abra <code>PK-PENTECOSTAL.bat</code>.</td></tr>
   <tr><td>El panel dice “Conectando…” o “Desconectado”</td><td>El servidor se cerró. Vuelva a abrir el programa desde el ícono.</td></tr>
-  <tr><td>Pulso Proyectar y no pasa nada</td><td>El navegador bloqueó la ventana emergente. Permita “Ventanas emergentes” para $1pkipuc.localhost</code> (ícono a la izquierda de la dirección) y pulse de nuevo.</td></tr>
+  <tr><td>Pulso Proyectar y no pasa nada</td><td>El navegador bloqueó la ventana emergente. Permita “Ventanas emergentes” para <code>http://pkipuc.localhost</code> (ícono a la izquierda de la dirección) y pulse de nuevo.</td></tr>
   <tr><td>La salida se abre en mi monitor, no en el proyector</td><td>Revise que el proyector esté en modo <b>Extender</b> (<kbd>Windows</kbd>+<kbd>P</kbd>) y que el permiso de “Administración de ventanas” esté en Permitir. Si no, arrastre la ventana al proyector y haga doble clic.</td></tr>
   <tr><td>El público ve el panel de control</td><td>Está en modo “Duplicar”. Pulse <kbd>Windows</kbd>+<kbd>P</kbd> → <b>Extender</b>.</td></tr>
   <tr><td>El texto queda tapado abajo o cortado arriba</td><td>Estilo → <b>Posición vertical del texto</b>: suba o baje el texto. También puede aumentar el <b>Margen</b>.</td></tr>
@@ -712,8 +720,8 @@
   <tr><td>Una traducción automática tiene errores</td><td>Corríjala en el editor, en <b>Letra en inglés</b>, y guarde. Pasa a ser traducción revisada (<span class="tag en">EN</span>).</td></tr>
   <tr><td>El celular no abre la página</td><td>Mismo Wi-Fi (no datos móviles). En la ventana del QR pruebe otra opción en <b>Red:</b>. Permita Node.js en el Firewall de Windows; si hace falta, en PowerShell como administrador: <code>New-NetFirewallRule -DisplayName "PK-PENTECOSTAL" -Direction Inbound -Protocol TCP -LocalPort 8888 -RemoteAddress LocalSubnet -Action Allow</code>. Si se queda <b>cargando</b> (hoteles, redes de invitados), use <b>🛜 Wi-Fi propio</b> (capítulo 13).</td></tr>
   <tr><td>El celular dice “Vincule este teléfono”</td><td>Ese teléfono no está vinculado o se pulsó <b>Desvincular todos</b>. Escanee de nuevo el código QR (botón <span class="btn">📱 Celular</span> en el computador).</td></tr>
-  <tr><td>OBS no se conecta</td><td>Abra OBS y espere a que cargue del todo. Revise que esté marcado <b>Herramientas → Ajustes del servidor WebSocket → Habilitar servidor WebSocket</b>; si no lo está, el panel lo avisa. Requiere OBS 28 o superior. Si OBS está en <b>otro computador</b>, escriba su IP, puerto y contraseña en el engranaje <span class="btn">⚙</span>.</td></tr>
-  <tr><td>En OBS no se ve nada</td><td>Revise la URL de la fuente Navegador y el tamaño 1920×1080. Con la fuente seleccionada pulse <b>Actualizar</b> (refrescar caché).</td></tr>
+  <tr><td>OBS no se conecta</td><td>Abra OBS y espere a que cargue del todo. Revise que esté marcado <b>Herramientas → Ajustes del servidor WebSocket → Habilitar servidor WebSocket</b>; si no lo está, el panel lo avisa. Requiere OBS 28 o superior. Si OBS está en <b>otro computador</b>: engranaje <span class="btn">⚙</span> → <span class="btn">🔎 Buscar OBS en la red</span>, la contraseña de ese OBS, y permita OBS en el Firewall de Windows de ese equipo (sección 12.2).</td></tr>
+  <tr><td>En OBS no se ve nada</td><td>Revise la URL de la fuente Navegador y el tamaño 1920×1080. Con la fuente seleccionada pulse <b>Actualizar</b> (refrescar caché). Si OBS está en <b>otro computador</b>, la dirección debe empezar con la IP de este equipo (no <code>pkipuc.localhost</code>): pulse <span class="btn">＋ Añadir la capa…</span> para que el programa la corrija, y permita PK-PENTECOSTAL en el Firewall de este computador.</td></tr>
 </table>
 
 <!-- ======================= 18 ======================= -->

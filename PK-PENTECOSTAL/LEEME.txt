@@ -101,6 +101,8 @@ OBS STUDIO
     OBS en otro computador: engranaje ⚙ > Buscar OBS en la red (o la IP) >
     contraseña > Guardar y conectar. La capa y el stinger se crean en OBS con
     la IP de este computador. Permita OBS en el Firewall de ese equipo.
+    Si la capa deja de verse (el router cambió la IP de este computador),
+    pulse otra vez "Añadir la capa": se corrige sola. Mejor: IP fija en el router.
 
   Canciones: todas salen con el mismo tamaño de letra. Una estrofa larga se
   reparte en varias diapositivas (Estilo > Líneas por diapositiva, 6).
