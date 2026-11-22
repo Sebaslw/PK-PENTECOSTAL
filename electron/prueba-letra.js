@@ -36,6 +36,9 @@ ok(L.renglones(larga) === 3, 'Línea de 100 letras = 3 renglones');
 ok(igual(tam(L.estrofas([larga, larga, larga, larga].join('\n'), 6)), [2, 2]), '4 líneas de 100 letras con N=6 → 2+2');
 ok(igual(tam(L.estrofas(lineas(8), 4)), [4, 4]) && igual(tam(L.estrofas(lineas(9), 4)), [3, 3, 3]), 'N=4: 8 → 4+4 y 9 → 3+3+3');
 
+const libre = L.estrofas('Visite https://www.facebook.com/ipuc\n  Ofrenda 50 / 100', 6, { limpiar: false });
+ok(libre.length === 1 && libre[0] === 'Visite https://www.facebook.com/ipuc\nOfrenda 50 / 100', 'Texto libre (limpiar: false) conserva enlaces y « / » → ' + JSON.stringify(libre));
+
 console.log('\n3) Todos los cancioneros de fábrica (N=6)');
 const dir = path.join(__dirname, '..', 'cancioneros');
 for (const f of fs.readdirSync(dir).filter((x) => x.endsWith('.js'))) {

@@ -51,11 +51,13 @@
     return partes;
   }
 
-  function estrofas(le, lineasMax = 6) {
+  // opciones.limpiar = false: texto libre / anuncios (se respetan enlaces y "/"; solo se quitan espacios)
+  function estrofas(le, lineasMax = 6, opciones = {}) {
     const max = Math.max(2, Math.min(12, +lineasMax || 6));
+    const limpiar = opciones.limpiar === false ? (l) => String(l).trim() : limpiarLinea;
     const bloques = [];
     let actual = [];
-    for (const l of String(le || '').replace(/\r\n?/g, '\n').split('\n').map(limpiarLinea)) {
+    for (const l of String(le || '').replace(/\r\n?/g, '\n').split('\n').map(limpiar)) {
       if (l) actual.push(l); else if (actual.length) { bloques.push(actual); actual = []; }
     }
     if (actual.length) bloques.push(actual);

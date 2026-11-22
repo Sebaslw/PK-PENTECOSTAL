@@ -291,8 +291,8 @@
 
   // Letra limpia (sin espacios ni marcas //) y repartida en diapositivas de máximo N renglones (letra.js):
   // así todas las canciones se proyectan con el mismo tamaño de letra
-  function estrofas(le) {
-    return window.PKLetra.estrofas(le, (estado && estado.estilo && estado.estilo.lineasMax) || 6);
+  function estrofas(le, opciones) {
+    return window.PKLetra.estrofas(le, (estado && estado.estilo && estado.estilo.lineasMax) || 6, opciones);
   }
   function abrirCancion(s) {
     CAN.actual = s;
@@ -372,7 +372,7 @@
 
   // ================================================================ TEXTO / ANUNCIOS
   function cargarTexto(titulo, cuerpo) {
-    const slides = estrofas(cuerpo);
+    const slides = estrofas(cuerpo, { limpiar: false }); // anuncios: enlaces y "/" tal cual
     if (!slides.length) return toast('Escriba algún texto');
     $('#chapters').classList.add('hidden');
     ctx = { tipo: 'texto', items: slides.map((t) => ({ texto: t, titulo, ref: titulo })) };

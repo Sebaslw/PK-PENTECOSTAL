@@ -103,6 +103,11 @@ app.whenReady().then(async () => {
     ok(d4 === n4, `Con «Líneas por diapositiva» = 4 se recalcula sola → ${n4} diapositivas · panel: ${await js(`document.querySelectorAll('#items .slide').length`)}`);
     const rango = await js(`(() => { const r = document.querySelector('#formEstilo [data-k="lineasMax"]'); return r && r.min + '-' + r.max + '=' + r.value; })()`);
     ok(rango === '2-12=4', `Ajuste «Líneas por diapositiva» en Estilo (2–12) muestra el valor → ${rango}`);
+
+    // Texto libre / anuncios: sale tal cual se escribió (la limpieza de // es solo para canciones)
+    await js(`document.querySelector('#txtTitulo').value = 'Anuncio'; document.querySelector('#txtCuerpo').value = 'Visite https://www.facebook.com/ipuc\\nOfrenda 50 / 100'; document.querySelector('#btnTxtCargar').click()`);
+    const anuncio = await esperar(`(() => { const s = document.querySelector('#items .slide'); return s && /Visite/.test(s.textContent) && s.textContent; })()`);
+    ok(!!anuncio && anuncio.includes('https://www.facebook.com/ipuc') && anuncio.includes('50 / 100'), 'Texto libre conserva enlaces y « / » → ' + JSON.stringify(anuncio));
   } finally { srv.kill(); }
   console.log(fallos ? `\n✘ ${fallos} prueba(s) fallaron` : '\n✔ Mismo tamaño en todas las canciones');
   app.exit(fallos ? 1 : 0);
