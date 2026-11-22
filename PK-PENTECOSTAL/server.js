@@ -1552,7 +1552,7 @@ async function handle(req, res) {
     if (!equipo) return sendJSON(res, { encontrados: [], error: 'Solo desde el computador' }, 403);
     return sendJSON(res, await buscarOBS());
   }
-  if (p === '/api/info') return sendJSON(res, { app: APP_NOMBRE, version: APP_VERSION, url: urlPanel(), urlProyector: urlProyector(), puertoProyector: PORT_PROY, autor: 'Hecho por Sebastian Lopez · IPUC Natania 6° Etapa', zona: 'Zona Especial Misionera – Archipiélago de San Andrés, Providencia y Santa Catalina', puerto: PORT, ips: localIPs(), sistema: process.platform, datos: ID_DATOS, escritorio: EN_ELECTRON });
+  if (p === '/api/info') return sendJSON(res, { app: APP_NOMBRE, version: APP_VERSION, url: urlPanel(), urlProyector: urlProyector(), puertoProyector: PORT_PROY, autor: 'Hecho por Sebastian Lopez · IPUC Natania 6° Etapa', zona: 'Zona Especial Misionera – Archipiélago de San Andrés, Providencia y Santa Catalina', puerto: PORT, ips: process.env.PK_TEST_IPS ? process.env.PK_TEST_IPS.split(",") : localIPs(), /* PK_TEST_IPS: solo pruebas */ sistema: process.platform, datos: ID_DATOS, escritorio: EN_ELECTRON });
   if (p === '/api/apagar' && req.method === 'POST') {
     // Solo desde este mismo equipo (no desde celulares/tabletas de la red)
     if (!esEquipo(req)) return sendJSON(res, { error: 'Solo se puede cerrar desde el equipo donde corre el programa' }, 403);

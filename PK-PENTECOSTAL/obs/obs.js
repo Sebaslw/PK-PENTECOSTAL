@@ -406,12 +406,24 @@
     }
   }
 
+  // ¿OBS está en ESTE computador? localhost, 127.x, *.localhost, la dirección del panel o una IP de la red
+  // de este mismo equipo (p. ej. 192.168.0.12): entonces las capas usan la dirección del panel, que no
+  // depende de la IP que dé el router.
+  let ipsPropias = null;
+  const infoEquipo = () => api('/api/info').catch(() => ({ ips: [], puerto: location.port }));
+  async function esOBSLocal(host) {
+    const h = String(host || '').toLowerCase();
+    if (['localhost', '::1', location.hostname].includes(h) || /^127\./.test(h) || /\.localhost$/.test(h)) return true;
+    if (!ipsPropias) ipsPropias = (await infoEquipo()).ips || [];
+    return ipsPropias.includes(h);
+  }
+
   async function conectar(manual) {
     clearTimeout(reintento);
     const c = cfg();
     estadoOBS('wait', 'Conectando con OBS…', `ws://${c.host}:${c.puerto}`);
     // OBS en este mismo equipo: si el puerto o la contraseña guardados no sirven, se usan los que tiene OBS
-    const local = ['localhost', '127.0.0.1', '::1', location.hostname].includes(c.host) || /\.localhost$/.test(c.host);
+    const local = await esOBSLocal(c.host);
     const detectar = local ? () => api('/api/obs/local') : null;
     let corregida = false;
     try {
@@ -467,7 +479,8 @@
             const r = await api('/api/obs/buscar');
             const lista = r.encontrados || [];
             caja.innerHTML = lista.length
-              ? lista.map((x) => `<button type="button" data-ip="${esc(x.ip)}">${esc(x.ip)}${x.propio ? ' (este equipo)' : ''}</button>`).join('')
+              // OBS de este mismo equipo → "localhost" (no depende de la IP que dé el router)
+              ? lista.map((x) => `<button type="button" data-ip="${esc(x.propio ? 'localhost' : x.ip)}">${esc(x.ip)}${x.propio ? ' (este equipo)' : ''}</button>`).join('')
               : '<span class="hint">No se encontró OBS en la red. Revise que OBS esté abierto con el servidor WebSocket habilitado.</span>';
             caja.querySelectorAll('[data-ip]').forEach((x) => x.addEventListener('click', () => {
               cuerpo.querySelector('#ocH').value = x.dataset.ip; cuerpo.querySelector('#ocP').value = r.puerto || 4455;
@@ -509,9 +522,8 @@
   // OBS en otro computador: la IP de ESTE equipo en la red de OBS (pkipuc.localhost allá sería él mismo).
   async function baseURLParaOBS() {
     const host = cfg().host;
-    const local = ['localhost', '127.0.0.1', '::1', location.hostname].includes(host) || /\.localhost$/.test(host);
-    if (local) return location.origin;
-    const info = await api('/api/info');
+    if (await esOBSLocal(host)) return location.origin;
+    const info = await infoEquipo();
     const ip = OBSWS.ipPara(host, info.ips);
     return ip ? `http://${ip}:${info.puerto}` : location.origin;
   }

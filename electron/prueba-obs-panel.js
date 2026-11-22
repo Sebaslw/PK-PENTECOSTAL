@@ -30,28 +30,34 @@ app.whenReady().then(async () => {
   const ip = ipRed();
   if (!ip) { console.log('Sin red local: se omite la prueba'); return app.exit(0); }
   const obs = await obsFalso(CLAVE);
-  const datos = fs.mkdtempSync(path.join(os.tmpdir(), 'pk-obsp-'));
-  const srv = spawn('node', [path.join(RAIZ, 'PK-PENTECOSTAL', 'server.js')], { env: { ...process.env, PK_DATA_ROOT: datos, PORT_WEB: '0', ELECTRON_RUN_AS_NODE: '', PK_OBS_DIR: path.join(datos, 'sin-obs') }, stdio: ['ignore', 'pipe', 'pipe', 'ipc'] });
-  let listo = null; srv.on('message', (m) => { if (!listo) listo = m; });
-  for (let t = 0; !listo && t < 150; t++) await sleep(100);
-  const P = listo.puerto;
+  // PK_OBS_DIR vacío: el panel nunca toma la contraseña del OBS real. PK_TEST_IPS: IP que el servidor
+  // anuncia como suya (10.9.9.9 = este equipo "está en otra red" → el OBS simulado queda en OTRO equipo)
+  async function arrancar(extra) {
+    const datos = fs.mkdtempSync(path.join(os.tmpdir(), 'pk-obsp-'));
+    const c = spawn('node', [path.join(RAIZ, 'PK-PENTECOSTAL', 'server.js')], { env: { ...process.env, PK_DATA_ROOT: datos, PORT_WEB: '0', ELECTRON_RUN_AS_NODE: '', PK_OBS_DIR: path.join(datos, 'sin-obs'), ...extra }, stdio: ['ignore', 'pipe', 'pipe', 'ipc'] });
+    let m = null; c.on('message', (x) => { if (!m) m = x; });
+    for (let t = 0; !m && t < 150; t++) await sleep(100);
+    return { c, P: m.puerto };
+  }
+  let srv = await arrancar({ PK_TEST_IPS: '10.9.9.9' });
+  let P = srv.P;
   const win = new BrowserWindow({ show: false, width: 1400, height: 900, webPreferences: { backgroundThrottling: false } });
   const js = (c) => win.webContents.executeJavaScript(c).catch(() => null);
   const esperar = async (fn, ms = 10000) => { for (let t = 0; t < ms / 100; t++) { const r = await fn(); if (r) return r; await sleep(100); } return null; };
   const abrirCon = async (cfg) => {
-    await win.loadURL(`http://127.0.0.1:${P}/?quedarse=1`).catch(() => {});
-    await esperar(() => js(`!!document.querySelector('#obsConectar')`));
+    // primero una página sin panel (no conecta a nada) para guardar la configuración de OBS de la prueba
+    await win.loadURL(`http://127.0.0.1:${P}/api/info`).catch(() => {});
     await js(`localStorage.setItem('pp.obs', ${JSON.stringify(JSON.stringify(cfg))}); 1`);
     await win.loadURL(`http://127.0.0.1:${P}/?quedarse=1`).catch(() => {});
     await esperar(() => js(`!!document.querySelector('#obsConectar')`));
   };
   try {
-    console.log(`OBS simulado «en otro equipo»: ${ip}:${obs.address().port} · PK-PENTECOSTAL en el puerto ${P}`);
+    console.log(`OBS simulado «en otro equipo»: ${ip}:${obs.address().port} · este equipo anuncia 10.9.9.9 · PK-PENTECOSTAL en el puerto ${P}`);
     await abrirCon({ host: ip, puerto: obs.address().port, clave: CLAVE, auto: true });
     const con = await esperar(() => js(`document.querySelector('#obsTxt').textContent === 'OBS conectado'`));
     ok(con, 'El panel se conecta al OBS por la IP de la red → ' + await js(`document.querySelector('#obsTxt').textContent + ' · ' + document.querySelector('#obsSub').textContent`));
 
-    const esperada = `http://${ip}:${P}`;
+    const esperada = `http://10.9.9.9:${P}`;
     console.log('\nCapa de rótulos/banner');
     await js(`document.querySelector('#btnAddCapa').click()`);
     await esperar(() => obs.fuentes.has(CAPA));
@@ -89,7 +95,17 @@ app.whenReady().then(async () => {
     await js(`document.querySelector('#obsCfg').click()`);
     const boton = await esperar(() => js(`(() => { const b = [...document.querySelectorAll('button')].find(x => /Buscar OBS en la red/.test(x.textContent)); return !!b; })()`));
     ok(!!boton, 'La ventana ⚙ tiene el botón «Buscar OBS en la red»');
-  } catch (e) { ok(false, "Error: " + e.message); } finally { srv.kill(); obs.close(); }
+
+    console.log('\nOBS en ESTE equipo, conectado por su propia IP de la red (' + ip + ')');
+    srv.c.kill(); await new Promise((r) => srv.c.once('exit', r));
+    srv = await arrancar({}); P = srv.P; obs.fuentes.clear();
+    await abrirCon({ host: ip, puerto: obs.address().port, clave: CLAVE, auto: true });
+    ok(await esperar(() => js(`document.querySelector('#obsTxt').textContent === 'OBS conectado'`)), 'Conecta');
+    await js(`document.querySelector('#btnAddCapa').click()`);
+    await esperar(() => obs.fuentes.has(CAPA));
+    const local = `http://127.0.0.1:${P}/capa`;
+    ok(obs.fuentes.has(CAPA) && obs.fuentes.get(CAPA).url === local, `Se trata como OBS local: la capa usa la dirección del panel, no la IP de la red → ${obs.fuentes.get(CAPA) && obs.fuentes.get(CAPA).url}`);
+  } catch (e) { ok(false, 'Error: ' + e.message); } finally { srv.c.kill(); obs.close(); }
   console.log(fallos ? `\n✘ ${fallos} prueba(s) fallaron` : '\n✔ OBS en otro equipo: todo correcto');
   app.exit(fallos ? 1 : 0);
 });
