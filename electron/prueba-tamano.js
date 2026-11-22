@@ -76,8 +76,33 @@ app.whenReady().then(async () => {
       const comun = [...tams].sort((a, b) => a - b)[Math.floor(tams.length / 2)];
       const distintas = tams.filter((v) => !(Math.abs(v - comun) <= 0.5));
       ok(distintas.length === 0, `${tams.length} diapositivas con el mismo tamaño (${comun.toFixed(1)} px) · distintas: ${distintas.length}${distintas.length ? ' → ' + distintas.map((v) => v.toFixed(1)).join(', ') : ''}`);
-
     }
+
+    // Panel: la canción se reparte con «Líneas por diapositiva» y se recalcula al cambiar el ajuste
+    console.log('\nPanel');
+    const libro = 'Corario IPUC castilla';
+    const lista = cancioneros()[libro + '.js'];
+    const crudo = (x) => (x.le || '').replace(/\r\n?/g, '\n');
+    const estrofaMax = (x) => Math.max(0, ...crudo(x).split(/\n\s*\n/).map((b) => b.split('\n').filter((l) => l.trim()).length));
+    const cancion = lista.slice(0, 400).reduce((a, b) => (estrofaMax(b) > estrofaMax(a) ? b : a));
+    await win.loadURL(`http://127.0.0.1:${puerto}/?quedarse=1`).catch(() => {});
+    const js = (c) => win.webContents.executeJavaScript(c).catch(() => null);
+    const esperar = async (c, ms = 8000) => { for (let t = 0; t < ms / 100; t++) { const r = await js(c); if (r) return r; await sleep(100); } return null; };
+    await esperar(`[...document.querySelectorAll('#cancionero option')].some(o => o.value === ${JSON.stringify(libro)})`);
+    await js(`(() => { const s = document.querySelector('#cancionero'); s.value = ${JSON.stringify(libro)}; s.dispatchEvent(new Event('change')); })()`);
+    const k = `${libro}|${cancion.id}`;
+    await esperar(`!!document.querySelector('#listaCanciones .list-item[data-k=${JSON.stringify(JSON.stringify(k)).slice(1, -1)}]')`);
+    await js(`document.querySelector('#listaCanciones .list-item[data-k=${JSON.stringify(JSON.stringify(k)).slice(1, -1)}]').click()`);
+    const n6 = L.estrofas(cancion.le, 6).length, n4 = L.estrofas(cancion.le, 4).length;
+    const d6 = await esperar(`document.querySelectorAll('#items .slide').length === ${n6} && ${n6}`);
+    ok(d6 === n6, `«${cancion.ti}» (estrofa de ${estrofaMax(cancion)} líneas) → ${n6} diapositivas con 6 líneas · panel: ${await js(`document.querySelectorAll('#items .slide').length`)}`);
+    const sucias = await js(`[...document.querySelectorAll('#items .slide')].filter(s => /\\/\\/|\\n /.test(s.textContent)).length`);
+    ok(sucias === 0, `Sin // ni espacios al inicio en las diapositivas del panel (${sucias})`);
+    await fetch(`http://127.0.0.1:${puerto}/api/estilo`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lineasMax: 4 }) });
+    const d4 = await esperar(`document.querySelectorAll('#items .slide').length === ${n4} && ${n4}`);
+    ok(d4 === n4, `Con «Líneas por diapositiva» = 4 se recalcula sola → ${n4} diapositivas · panel: ${await js(`document.querySelectorAll('#items .slide').length`)}`);
+    const rango = await js(`(() => { const r = document.querySelector('#formEstilo [data-k="lineasMax"]'); return r && r.min + '-' + r.max + '=' + r.value; })()`);
+    ok(rango === '2-12=4', `Ajuste «Líneas por diapositiva» en Estilo (2–12) muestra el valor → ${rango}`);
   } finally { srv.kill(); }
   console.log(fallos ? `\n✘ ${fallos} prueba(s) fallaron` : '\n✔ Mismo tamaño en todas las canciones');
   app.exit(fallos ? 1 : 0);

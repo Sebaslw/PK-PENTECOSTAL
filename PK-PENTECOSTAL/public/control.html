@@ -196,8 +196,9 @@
           <label><input type="checkbox" data-k="contorno"> Contorno</label>
           <label><input type="checkbox" data-k="mayusculas"> MAYÚSCULAS</label>
           <label><input type="checkbox" data-k="mostrarRef"> Mostrar referencia</label>
-          <label title="Toda la canción (o el capítulo) se proyecta con el mismo tamaño de letra"><input type="checkbox" data-k="tamUniforme"> Mismo tamaño de letra</label>
+          <label title="Los versículos de un capítulo se proyectan con el mismo tamaño de letra"><input type="checkbox" data-k="tamUniforme"> Mismo tamaño de letra</label>
         </div>
+        <div class="f"><label title="Una estrofa más larga se reparte en varias diapositivas para que todas las canciones salgan del mismo tamaño">Líneas por diapositiva <output></output></label><input type="range" min="2" max="12" data-k="lineasMax"></div>
         <div class="f"><label>Transición (ms) <output></output></label><input type="range" min="0" max="1500" step="50" data-k="transicion"></div>
 
         <h4>Tercio inferior (OBS)</h4>
@@ -778,6 +779,7 @@
 
 <script src="/libros.js"></script>
 <script src="/miniaturas.js"></script>
+<script src="/letra.js"></script>
 <script src="/control.js"></script>
 <script src="/efectos.js"></script>
 <script src="/obs/obsws.js"></script>

@@ -289,8 +289,10 @@
   });
   $('#listaCanciones').addEventListener('dblclick', (e) => { if (e.target.closest('.list-item') && ctx?.items.length) proyectarSlide(0); });
 
+  // Letra limpia (sin espacios ni marcas //) y repartida en diapositivas de máximo N renglones (letra.js):
+  // así todas las canciones se proyectan con el mismo tamaño de letra
   function estrofas(le) {
-    return le.replace(/\r\n?/g, '\n').split(/\n\s*\n/).map((b) => b.split('\n').map((l) => l.trim()).filter(Boolean).join('\n')).filter(Boolean);
+    return window.PKLetra.estrofas(le, (estado && estado.estilo && estado.estilo.lineasMax) || 6);
   }
   function abrirCancion(s) {
     CAN.actual = s;
@@ -731,7 +733,10 @@
   // ================================================================ Conexión en tiempo real
   function onEstado(st) {
     const cambioEstilo = !estado || JSON.stringify(estado.estilo) !== JSON.stringify(st.estilo);
+    const cambioLineas = !!estado && (estado.estilo || {}).lineasMax !== (st.estilo || {}).lineasMax;
     estado = st;
+    // «Líneas por diapositiva» cambió: la canción abierta se vuelve a repartir
+    if (cambioLineas && ctx && ctx.tipo === 'cancion' && CAN.actual) abrirCancion(CAN.actual);
     if (st.idioma && window.I18N && st.idioma !== window.I18N.idioma) window.I18N.set(st.idioma);
     $('#btnNegro').classList.toggle('on', !!st.negro);
     $('#btnOcultar').classList.toggle('on', !!st.ocultarTexto);
