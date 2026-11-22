@@ -178,6 +178,9 @@ const DEFAULT_STYLE = {
   pantalla: '3200x1440', ajusteFondo: 'completa',
   // Mismo tamaño de letra en todas las diapositivas de una canción (y en los versículos de un capítulo)
   tamUniforme: true,
+  // Canciones: máximo de renglones por diapositiva; una estrofa más larga se reparte en varias (todas las
+  // canciones salen del mismo tamaño de letra)
+  lineasMax: 6,
   refColor: '#ffffff', mostrarRef: true, oscurecerFondo: 15,
   fondo: { tipo: 'imagen', valor: '/fondos/IMAGENES/Bokeh%20verde.png' },
   transicion: 400,

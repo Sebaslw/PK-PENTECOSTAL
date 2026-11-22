@@ -57,7 +57,8 @@
   .txt .l { display: block; }
   .txt .l.vacia { height: .5em; }
   .txt .ng { white-space: nowrap; }
-  .txt.cancion .l { white-space: nowrap; }
+  /* Canciones: la línea larga pasa al renglón siguiente (ya se contó como dos al repartir la estrofa) */
+  .txt.cancion .l { white-space: normal; text-wrap: balance; }
 </style>
 </head>
 <body>
@@ -220,6 +221,32 @@
     ajustar(txtEl, cont, tamUniforme(vivo, est, txtEl, cont, maxPx, minPx), minPx);
   }
 
+  // ---------- Canciones: UN solo tamaño para TODAS las canciones ----------
+  // El panel ya repartió cada estrofa en diapositivas de máximo N renglones (Estilo → Líneas por
+  // diapositiva). Aquí el tamaño es el que le sirve a una diapositiva de referencia de N renglones
+  // normales (42 letras) en esta salida: no depende de la canción, así todas se ven iguales.
+  const REF_LINEA = 'Cantaré de tu amor por siempre, oh Señor mío'.slice(0, 42);
+  function tamCancion(est, txtEl, cont, maxPx, minPx) {
+    const n = Math.max(2, Math.min(12, +est.lineasMax || 6));
+    const key = ['cancion', cont.clientWidth, cont.clientHeight, maxPx, n, JSON.stringify(est)].join('|');
+    if (tamCache.has(key)) return tamCache.get(key);
+    const original = txtEl.innerHTML, ref = txtEl.querySelector('.ref');
+    txtEl.innerHTML = Array.from({ length: n }, () => `<span class="l" style="white-space:nowrap">${REF_LINEA}</span>`).join('');
+    if (ref) txtEl.appendChild(ref.cloneNode(true));
+    ajustar(txtEl, cont, maxPx, minPx);
+    const r = parseFloat(txtEl.style.fontSize);
+    txtEl.innerHTML = original;
+    if (tamCache.size > 30) tamCache.clear();
+    tamCache.set(key, r);
+    return r;
+  }
+  const cabe = (cont) => cont.scrollHeight <= cont.clientHeight + 1 && cont.scrollWidth <= cont.clientWidth + 1;
+  function ajustarCancion(est, txtEl, cont, maxPx, minPx) {
+    const t = tamCancion(est, txtEl, cont, maxPx, minPx);
+    txtEl.style.fontSize = t + 'px';
+    if (!cabe(cont)) ajustar(txtEl, cont, t, minPx); // red de seguridad: solo si esta diapositiva no cabe
+  }
+
   function construir(vivo, est) {
     const slide = document.createElement('div');
     const escala = (lienzo.clientHeight || innerHeight) / 1080;
@@ -243,7 +270,9 @@
         txt.appendChild(ref);
       }
       box.appendChild(txt); slide.appendChild(box); stage.appendChild(slide);
-      slide._fit = () => ajustarIgual(vivo, est, txt, box, (est.tamMax || 90) * escala, 14); slide._fam = est.fuente; slide._fit();
+      slide._fit = vivo.tipo === 'cancion' ? () => ajustarCancion(est, txt, box, (est.tamMax || 90) * escala, 14)
+        : () => ajustarIgual(vivo, est, txt, box, (est.tamMax || 90) * escala, 14);
+      slide._fam = est.fuente; slide._fit();
     } else {
       const o = est.obs || {};
       slide.className = 'slide lower ' + (o.posicion || 'abajo');
@@ -267,7 +296,9 @@
       txt.className = 'txt';
       txt.innerHTML = formatear(vivo.texto);
       wrap.appendChild(txt); card.appendChild(wrap); slide.appendChild(card); stage.appendChild(slide);
-      slide._fit = () => ajustarIgual(vivo, est, txt, wrap, (o.tamMax || 54) * escala, 12); slide._fam = o.fuente; slide._fit();
+      slide._fit = vivo.tipo === 'cancion' ? () => ajustarCancion(Object.assign({ lineasMax: est.lineasMax }, o), txt, wrap, (o.tamMax || 54) * escala, 12)
+        : () => ajustarIgual(vivo, est, txt, wrap, (o.tamMax || 54) * escala, 12);
+      slide._fam = o.fuente; slide._fit();
     }
     return slide;
   }

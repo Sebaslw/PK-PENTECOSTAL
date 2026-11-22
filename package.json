@@ -14,6 +14,7 @@
     "probar": "node electron/pruebas.js",
     "probar-obs": "node electron/prueba-obs.js",
     "probar-letra": "node electron/prueba-letra.js",
+    "probar-tamano": "electron electron/prueba-tamano.js",
     "miniaturas": "electron electron/miniaturas-fabrica.js",
     "dist": "electron electron/miniaturas-fabrica.js && electron-builder --win --x64 --publish never"
   },
