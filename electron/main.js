@@ -161,6 +161,12 @@ const PORTABLE = !!process.env.PORTABLE_EXECUTABLE_DIR;
 const PRUEBA_ACT = process.env.PK_UPDATE_PRUEBA === '1';
 const VERSION_FILE = path.join(DATOS, 'BSPK', 'version.json');
 let autoUpdater = null, actEstado = 'nada', actManual = false, actInfo = null, preguntando = false;
+// Versión con la que se abrió la última vez. Se lee AL ARRANCAR (antes de iniciar el servidor, que crea
+// config.json): así una instalación nueva no se confunde con una actualización.
+const VERSION_ANTES = (() => {
+  try { return JSON.parse(fs.readFileSync(VERSION_FILE, 'utf8')).version; }
+  catch (_) { return fs.existsSync(path.join(DATOS, 'BSPK', 'config.json')) ? 'anterior' : null; } // venía de la 2.0.2 o antes
+})();
 
 function notificar(titulo, cuerpo) {
   try { if (Notification.isSupported()) new Notification({ title: titulo, body: cuerpo, icon: ICONO }).show(); } catch (e) { log('[notificación]', e); }
@@ -267,9 +273,7 @@ function compararVersiones(a, b) {
 }
 function avisoSiSeActualizo() {
   const ahora = app.getVersion();
-  let antes = null;
-  try { antes = JSON.parse(fs.readFileSync(VERSION_FILE, 'utf8')).version; }
-  catch (_) { if (fs.existsSync(path.join(DATOS, 'BSPK', 'config.json'))) antes = 'anterior'; } // venía de la 2.0.2 o antes
+  const antes = VERSION_ANTES;
   try { fs.writeFileSync(VERSION_FILE, JSON.stringify({ version: ahora, fecha: new Date().toISOString() })); } catch (e) { log('[act] version.json', e); }
   if (!antes || antes === ahora || (antes !== 'anterior' && compararVersiones(ahora, antes) <= 0)) return;
   log('[act] actualizado', antes, '→', ahora);
