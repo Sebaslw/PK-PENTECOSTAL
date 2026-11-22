@@ -98,7 +98,12 @@ OBS STUDIO
     En OBS: Herramientas > Ajustes del servidor WebSocket > Habilitar.
     En el panel: OBS > Conectar. Con OBS en este mismo computador, el
     programa lee solo el puerto y la contraseña de OBS (desde la 2.0.4).
-    OBS en otro computador: engranaje ⚙ > IP, puerto y contraseña > Conectar.
+    OBS en otro computador: engranaje ⚙ > Buscar OBS en la red (o la IP) >
+    contraseña > Guardar y conectar. La capa y el stinger se crean en OBS con
+    la IP de este computador. Permita OBS en el Firewall de ese equipo.
+
+  Canciones: todas salen con el mismo tamaño de letra. Una estrofa larga se
+  reparte en varias diapositivas (Estilo > Líneas por diapositiva, 6).
     Permite: estado y botón TRANSMITIR, escenas con miniaturas, cambio con
     Stinger, transiciones, cambio automático de escena, cámaras, audio
     (volumen, silencio, vúmetros, añadir fuentes).

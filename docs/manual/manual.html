@@ -385,7 +385,8 @@
   <tr><td><b>Sombra / Contorno</b></td><td>Sombra o borde negro alrededor de las letras (mejora la lectura sobre fondos claros).</td></tr>
   <tr><td><b>Negrita / MAYÚSCULAS</b></td><td>Letra gruesa / todo en mayúsculas.</td></tr>
   <tr><td><b>Mostrar referencia</b></td><td>Muestra u oculta la cita bíblica o el título de la canción.</td></tr>
-  <tr><td><b>Mismo tamaño de letra</b></td><td>(Activado por defecto) Toda la canción se proyecta con <b>el mismo tamaño de letra</b>: un coro corto ya no sale gigante y una estrofa larga diminuta. En la Biblia, los versículos de un capítulo salen parejos; solo un versículo muy largo se achica para caber.</td></tr>
+  <tr><td><b>Mismo tamaño de letra</b></td><td>(Activado por defecto) En la Biblia, los versículos de un capítulo salen con el mismo tamaño; solo un versículo muy largo se achica para caber.</td></tr>
+  <tr><td><b>Líneas por diapositiva</b><span class="novedad">NUEVO</span></td><td>(6 por defecto) <b>Todas las canciones salen con el mismo tamaño de letra.</b> Si una estrofa tiene más líneas, se reparte sola en varias diapositivas parejas (una de 8 líneas queda en 4 + 4) en vez de achicarse. Una línea muy larga pasa al renglón siguiente. Con menos líneas la letra sale más grande. Además, al proyectar se quitan los espacios sobrantes y las marcas de repetición <code>//</code>.</td></tr>
   <tr><td><b>Transición (ms)</b></td><td>Duración del efecto al cambiar de diapositiva (0 = cambio instantáneo).</td></tr>
 </table>
 <div class="tip"><b>¿Cuándo subir o bajar el texto?</b>Si el púlpito, los músicos o las cabezas de los hermanos tapan la parte baja de la pantalla, suba el texto. Si la parte de arriba del proyector queda cortada, bájelo.</div>
@@ -468,7 +469,14 @@
   <li>Pulse <span class="btn">＋ Añadir la capa de rótulos/banner a la escena actual</span> para que el programa cree la fuente en OBS automáticamente.</li>
 </ol>
 <div class="tip"><b>No hace falta copiar la contraseña</b>Desde la versión <b>2.0.4</b>, si OBS está en el mismo computador, el programa lee solo el puerto y la contraseña de OBS. Si los datos guardados en el panel ya no coinciden (por ejemplo, porque cambió la contraseña en OBS), los corrige, los guarda y muestra «Conectado con OBS · se corrigieron puerto y contraseña». La contraseña nunca sale del computador: los celulares no pueden verla.</div>
-<div class="nota"><b>OBS en otro computador</b>Si OBS está en otra máquina de la red, pulse el engranaje <span class="btn">⚙</span> y escriba la <b>IP</b> de ese computador, el <b>puerto</b> (normalmente <code>4455</code>) y la <b>contraseña</b>. Los ve en OBS: <b>Herramientas → Ajustes del servidor WebSocket → Mostrar información de conexión</b>.</div>
+<h3>OBS en otro computador<span class="novedad">NUEVO</span></h3>
+<p>PK-PENTECOSTAL puede estar en un computador y OBS en otro de la <b>misma red</b> (mismo Wi-Fi o cable).</p>
+<ol class="pasos">
+  <li>En el computador de OBS: <b>Herramientas → Ajustes del servidor WebSocket</b> → <b>Habilitar servidor WebSocket</b>. Pulse <b>Mostrar información de conexión</b> para ver la contraseña.</li>
+  <li>En el panel: <b>📡 OBS → OVERLAY</b>, engranaje <span class="btn">⚙</span> → <span class="btn">🔎 Buscar OBS en la red</span>. Toque la IP que aparece (o escríbala), ponga la <b>contraseña</b> y pulse <span class="btn">Guardar y conectar</span>.</li>
+  <li>Pulse <span class="btn">＋ Añadir la capa…</span> y, en Stingers, <span class="btn">Añadir el stinger a todas las escenas</span>. El programa las crea en OBS con la <b>dirección de red de este computador</b> (por ejemplo <code>http://192.168.0.12:8888/capa</code>), así OBS las ve desde el otro equipo. Si ya existían con la dirección anterior, se corrigen solas.</li>
+</ol>
+<div class="ojo"><b>Si no conecta</b>El panel dice qué revisar. En el computador de OBS: que OBS esté abierto, el servidor WebSocket habilitado y OBS <b>permitido en el Firewall de Windows</b> (la primera vez Windows pregunta: elija <b>Redes privadas</b>). En el computador de PK-PENTECOSTAL, permita también el programa en el Firewall para que OBS pueda cargar la capa.</div>
 <p>Ya conectado, puede:</p>
 <ul>
   <li>Iniciar o detener la transmisión con <span class="btn rojo">● TRANSMITIR</span>.</li>

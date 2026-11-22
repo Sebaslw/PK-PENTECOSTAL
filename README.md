@@ -67,7 +67,8 @@ Todo corre en **un solo computador**, se maneja desde el **navegador** y **no ne
 - **6 cancioneros** incluidos: Corario IPUC Castilla, Himnario Lluvias de Bendición, Infantiles, Mi Cancionero, Manantial de Inspiración y Canciones.
 - Editor de canciones integrado con **respaldo automático** antes de cada cambio.
 - Teclas **1..9** para saltar a la estrofa que quiera.
-- Respeta repeticiones `//así//`, coros y estrofas numeradas.
+- Respeta coros y estrofas numeradas; al proyectar quita las marcas de repetición `//así//` y los espacios sobrantes.
+- **Todas las canciones con el mismo tamaño de letra**: una estrofa larga se reparte sola en diapositivas parejas (*Estilo → Líneas por diapositiva*, 6 por defecto).
 
 </td>
 </tr>
@@ -327,7 +328,7 @@ Instala la librería en la carpeta privada `BSPK/` y descarga **una sola vez** e
 
 > ⏳ **Cuenta regresiva** "EMPEZAMOS EN…" (OBS → Overlay) · 🎞 **Banners laterales** de ProyectoRP y versión PK (OBS → Banner → Diseño) · ⌨️ **S** = stinger · 💾 **Respaldo** completo en un .zip · ⬆ **Aviso de versión nueva** (pie de página).
 
-> 💡 **Control de OBS desde el panel (OBS 28+):** en OBS vaya a *Herramientas → Ajustes del servidor WebSocket → Habilitar*. En el panel: pestaña **OBS → Conectar**. Desde la **2.0.4**, si OBS está en el mismo computador, el programa lee solo el puerto y la contraseña de OBS (y corrige los guardados si ya no coinciden); la contraseña nunca sale del PC. Para un OBS en otra máquina: **⚙ → IP, puerto y contraseña**. También puede pulsar *"Añadir la capa…"* para que se cree sola.
+> 💡 **Control de OBS desde el panel (OBS 28+):** en OBS vaya a *Herramientas → Ajustes del servidor WebSocket → Habilitar*. En el panel: pestaña **OBS → Conectar**. Desde la **2.0.4**, si OBS está en el mismo computador, el programa lee solo el puerto y la contraseña de OBS (y corrige los guardados si ya no coinciden); la contraseña nunca sale del PC. Para un OBS en **otra máquina** de la red: **⚙ → 🔎 Buscar OBS en la red** (o escriba la IP) → contraseña → *Guardar y conectar*; la capa y el stinger se crean en OBS con la IP de este computador (`http://192.168.x.x:8888/capa`). Permita OBS en el Firewall de Windows de ese equipo. También puede pulsar *"Añadir la capa…"* para que se cree sola.
 
 ---
 
