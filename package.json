@@ -1,7 +1,7 @@
 {
   "name": "pk-pentecostal",
   "productName": "PK-PENTECOSTAL",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "Biblia y canciones en vivo para proyector, OBS y celulares",
   "author": "Sebastian Lopez · IPUC Natania 6° Etapa",
   "homepage": "https://sebaslw.github.io/pk-pentecostal.io/",
@@ -12,6 +12,7 @@
     "start": "electron .",
     "servidor": "node PK-PENTECOSTAL/server.js --abrir",
     "probar": "node electron/pruebas.js",
+    "probar-obs": "node electron/prueba-obs.js",
     "miniaturas": "electron electron/miniaturas-fabrica.js",
     "dist": "electron electron/miniaturas-fabrica.js && electron-builder --win --x64 --publish never"
   },

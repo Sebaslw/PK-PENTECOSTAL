@@ -150,7 +150,7 @@ const urlProyector = () => (webActiva ? `http://proyector.${DOMINIO}${sufijoWeb(
 // hacia la dirección nueva. Solo vive en memoria y se entrega una vez.
 let almacenPendiente = null;
 const APP_NOMBRE = 'PK-PENTECOSTAL';
-const APP_VERSION = process.env.PK_VERSION || '2.0.3';
+const APP_VERSION = process.env.PK_VERSION || '2.0.4';
 const ABRIR = process.argv.includes('--abrir');
 
 if (parseInt(process.versions.node, 10) < 16) {
@@ -1541,6 +1541,10 @@ async function handle(req, res) {
     almacenPendiente = null;
     return sendJSON(res, { datos });
   }
+  if (p === '/api/obs/local') { // contiene la contraseña de OBS: solo para el panel abierto en este mismo equipo
+    if (!equipo) return sendJSON(res, { encontrado: false, error: 'Solo desde el computador' }, 403);
+    return sendJSON(res, obsLocal());
+  }
   if (p === '/api/info') return sendJSON(res, { app: APP_NOMBRE, version: APP_VERSION, url: urlPanel(), urlProyector: urlProyector(), puertoProyector: PORT_PROY, autor: 'Hecho por Sebastian Lopez · IPUC Natania 6° Etapa', zona: 'Zona Especial Misionera – Archipiélago de San Andrés, Providencia y Santa Catalina', puerto: PORT, ips: localIPs(), sistema: process.platform, datos: ID_DATOS, escritorio: EN_ELECTRON });
   if (p === '/api/apagar' && req.method === 'POST') {
     // Solo desde este mismo equipo (no desde celulares/tabletas de la red)
@@ -1612,6 +1616,31 @@ function paginaSalto() {
   location.replace(destino + '/' + extra + location.hash);
 })();
 </script></body></html>`;
+}
+// Ajustes del servidor WebSocket de OBS instalado en ESTE equipo (OBS 28+: plugin_config/obs-websocket/config.json;
+// versiones antiguas: sección [OBSWebSocket] de global.ini). El panel los usa cuando el puerto o la contraseña
+// guardados no sirven, para que la conexión no dependa de copiarlos a mano.
+function carpetaOBS() {
+  if (process.env.PK_OBS_DIR) return process.env.PK_OBS_DIR; // solo para pruebas automáticas
+  if (process.platform === 'win32') return path.join(process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'), 'obs-studio');
+  if (process.platform === 'darwin') return path.join(os.homedir(), 'Library', 'Application Support', 'obs-studio');
+  return path.join(process.env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config'), 'obs-studio');
+}
+function obsLocal() {
+  const dir = carpetaOBS();
+  try {
+    const c = JSON.parse(fs.readFileSync(path.join(dir, 'plugin_config', 'obs-websocket', 'config.json'), 'utf8'));
+    return { encontrado: true, habilitado: c.server_enabled !== false, puerto: +c.server_port || 4455, clave: c.auth_required === false ? '' : String(c.server_password || '') };
+  } catch (_) { /* sin config.json */ }
+  try {
+    const ini = fs.readFileSync(path.join(dir, 'global.ini'), 'utf8');
+    const sec = (ini.match(/\[OBSWebSocket\]([\s\S]*?)(?:\n\[|$)/) || [])[1];
+    if (sec) {
+      const v = (k) => ((sec.match(new RegExp('^' + k + '=(.*)$', 'mi')) || [])[1] || '').trim();
+      return { encontrado: true, habilitado: v('ServerEnabled') !== 'false', puerto: +v('ServerPort') || 4455, clave: v('AuthRequired') === 'false' ? '' : v('ServerPassword') };
+    }
+  } catch (_) { /* sin global.ini */ }
+  return { encontrado: false };
 }
 function esLocal(req) {
   const a = req.socket.remoteAddress || '';

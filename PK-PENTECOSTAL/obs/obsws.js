@@ -63,6 +63,24 @@
       });
     }
 
+    // Conecta con los datos guardados; si fallan (puerto o contraseña que ya no coinciden con OBS), pide a
+    // detectar() la configuración real del OBS de este equipo ({encontrado, habilitado, puerto, clave}) y
+    // reintenta con ella. Devuelve { usada, corregida } para que el panel guarde los datos buenos.
+    async conectarAuto(cfg, detectar) {
+      try { await this.conectar(cfg); return { usada: cfg, corregida: false }; } catch (e1) {
+        let loc = null;
+        try { loc = detectar ? await detectar() : null; } catch (_) { /* sin detección */ }
+        if (!loc || !loc.encontrado) throw e1;
+        if (loc.habilitado === false) throw new Error('El servidor WebSocket de OBS está desactivado. En OBS: Herramientas → Ajustes del servidor WebSocket → marque «Habilitar servidor WebSocket»');
+        const otra = Object.assign({}, cfg, { host: 'localhost', puerto: +loc.puerto || 4455, clave: loc.clave || '' });
+        if (otra.host === cfg.host && otra.puerto === +cfg.puerto && otra.clave === cfg.clave) throw e1;
+        try { await this.conectar(otra); return { usada: otra, corregida: true }; } catch (e2) {
+          if (/contraseña/i.test(e2.message)) throw e2;
+          throw new Error(`No se pudo conectar con OBS (puerto ${otra.puerto}). ¿Está OBS abierto?`);
+        }
+      }
+    }
+
     desconectar(silencioso) {
       if (this.ws) { const w = this.ws; this.ws = null; if (silencioso) w.onclose = null; try { w.close(); } catch (_) { /* ya cerrado */ } }
       this.conectado = false;

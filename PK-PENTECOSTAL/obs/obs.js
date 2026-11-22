@@ -410,8 +410,17 @@
     clearTimeout(reintento);
     const c = cfg();
     estadoOBS('wait', 'Conectando con OBS…', `ws://${c.host}:${c.puerto}`);
+    // OBS en este mismo equipo: si el puerto o la contraseña guardados no sirven, se usan los que tiene OBS
+    const local = ['localhost', '127.0.0.1', '::1', location.hostname].includes(c.host) || /\.localhost$/.test(c.host);
+    const detectar = local ? () => api('/api/obs/local') : null;
+    let corregida = false;
     try {
-      await obs.conectar({ host: c.host, puerto: c.puerto, clave: c.clave });
+      const r = await obs.conectarAuto({ host: c.host, puerto: c.puerto, clave: c.clave }, detectar);
+      if (r.corregida) {
+        corregida = true;
+        store.set('obs', Object.assign({}, c, { host: r.usada.host, puerto: r.usada.puerto, clave: r.usada.clave }));
+        toast(`Conectado con OBS · se corrigieron puerto y contraseña con los de OBS (puerto ${r.usada.puerto})`);
+      }
     } catch (e) {
       estadoOBS('off', 'OBS desconectado', e.message);
       if (manual) toast('OBS: ' + e.message);
@@ -421,7 +430,7 @@
     const v = await obs.call('GetVersion').catch(() => ({}));
     plataforma = v.platform || 'windows';
     estadoOBS('ok', 'OBS conectado', `OBS ${v.obsVersion || ''} · WebSocket ${v.obsWebSocketVersion || ''}`);
-    if (manual) toast('Conectado con OBS');
+    if (manual && !corregida) toast('Conectado con OBS');
     await Promise.all([cargarEscenas(), actualizarStream(), cargarEntradas()]);
     iniciarMiniaturas();
   }
