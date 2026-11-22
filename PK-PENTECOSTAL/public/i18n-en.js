@@ -133,6 +133,8 @@ window.I18N_EN = {
   'Contorno': 'Outline',
   'MAYÚSCULAS': 'UPPERCASE',
   'Mostrar referencia': 'Show reference',
+  'Mismo tamaño de letra': 'Same text size',
+  'Toda la canción (o el capítulo) se proyecta con el mismo tamaño de letra': 'The whole song (or chapter) is shown with the same text size',
   'Transición (ms)': 'Transition (ms)',
   'Tercio inferior (OBS)': 'Lower third (OBS)',
   'Posición': 'Position',

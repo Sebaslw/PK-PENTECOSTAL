@@ -1,17 +1,29 @@
 /* PK-PENTECOSTAL · Hecho por Sebastian Lopez · IPUC Natania 6° Etapa
- * Miniaturas livianas de videos.
- * Antes cada miniatura era un <video> abierto (un decodificador por video, incluso los 4K).
- * Ahora: se captura UNA imagen pequeña de cada video solo cuando se ve en pantalla,
- * de a un video a la vez, se guarda en memoria y el <video> se libera.
- * Al pasar el mouse se reproduce una vista previa temporal que se elimina al salir.
- * Uso en HTML:  <img class="mini-video" data-video="URL" data-t="2" alt="">  */
+ * Miniaturas de fondos (imágenes y videos) que se ven apenas se abre el programa.
+ *  · Los fondos de fábrica traen su miniatura lista (fondos-miniaturas/, se crean con npm run miniaturas).
+ *  · Si un fondo no tiene miniatura (p. ej. uno subido), se genera UNA vez en segundo plano, apenas abre
+ *    el panel (sin esperar a que se abra la pestaña Fondos), y se guarda en BSPK/miniaturas: la próxima
+ *    vez aparece al instante.
+ *  · Se genera de a un archivo a la vez y el <video> se libera enseguida (no se abren decodificadores 4K).
+ *  · Al pasar el mouse se reproduce una vista previa temporal que se elimina al salir.
+ * Uso en HTML:
+ *   <img class="mini-video" data-video="URL" data-t="2" data-clave="CLAVE" alt="">   (video)
+ *   <img class="mini-imagen" data-imagen="URL" data-clave="CLAVE" alt="">            (imagen)  */
 (function () {
   const cache = new Map();      // url -> dataURL (o '' si falló)
   const cola = [];              // imágenes esperando captura
   let ocupado = false;
   const VACIO = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+  const ANCHO = 320;
 
-  function capturar(url, t) {
+  function aJpeg(fuente, w0, h0) {
+    const w = ANCHO, h = Math.max(1, Math.round(w * (h0 || 9) / (w0 || 16)));
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    c.getContext('2d').drawImage(fuente, 0, 0, w, h);
+    return c.toDataURL('image/jpeg', 0.74);
+  }
+
+  function capturarVideo(url, t) {
     return new Promise((resolve) => {
       const v = document.createElement('video');
       let listo = false;
@@ -20,57 +32,68 @@
         v.removeAttribute('src'); v.load(); // libera el decodificador
         resolve(dato);
       };
-      const limite = setTimeout(() => fin(''), 8000);
-      v.muted = true; v.preload = 'auto'; v.playsInline = true;
+      const limite = setTimeout(() => fin(''), 15000);
+      v.muted = true; v.preload = 'metadata'; v.playsInline = true;
       v.addEventListener('loadedmetadata', () => { v.currentTime = Math.min(t, Math.max(0, (v.duration || 0) - 0.1)); });
-      v.addEventListener('seeked', () => {
-        try {
-          const w = 320, h = Math.round(w * (v.videoHeight || 9) / (v.videoWidth || 16));
-          const c = document.createElement('canvas'); c.width = w; c.height = h;
-          c.getContext('2d').drawImage(v, 0, 0, w, h);
-          fin(c.toDataURL('image/jpeg', 0.72));
-        } catch (_) { fin(''); }
-      });
+      v.addEventListener('seeked', () => { try { fin(aJpeg(v, v.videoWidth, v.videoHeight)); } catch (_) { fin(''); } });
       v.addEventListener('error', () => fin(''));
       v.src = url;
     });
   }
+
+  function capturarImagen(url) {
+    return new Promise((resolve) => {
+      const im = new Image();
+      im.decoding = 'async';
+      im.onload = () => { try { resolve(aJpeg(im, im.naturalWidth, im.naturalHeight)); } catch (_) { resolve(''); } };
+      im.onerror = () => resolve('');
+      im.src = url;
+    });
+  }
+
+  // Guarda la miniatura en el servidor (BSPK/miniaturas) para las próximas veces
+  function guardar(clave, dato) {
+    if (!clave || !dato) return;
+    fetch('/api/miniatura', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clave, dato }) }).catch(() => {});
+  }
+
+  const urlDe = (img) => img.dataset.video || img.dataset.imagen;
 
   async function procesar() {
     if (ocupado) return;
     ocupado = true;
     while (cola.length) {
       const img = cola.shift();
-      if (!img.isConnected) continue;
-      const url = img.dataset.video;
-      if (!cache.has(url)) cache.set(url, await capturar(url, +img.dataset.t || 1));
+      if (!img.isConnected || img.classList.contains('mini-lista')) continue;
+      const url = urlDe(img);
+      if (!cache.has(url)) {
+        const dato = img.dataset.video ? await capturarVideo(url, +img.dataset.t || 1) : await capturarImagen(url);
+        cache.set(url, dato);
+        guardar(img.dataset.clave, dato);
+      }
       pintar(img);
     }
     ocupado = false;
   }
 
   function pintar(img) {
-    const d = cache.get(img.dataset.video);
-    img.src = d || VACIO;
+    const d = cache.get(urlDe(img));
+    // Si no se pudo generar, la imagen se muestra tal cual (los videos quedan con su etiqueta)
+    img.src = d || (img.dataset.imagen || VACIO);
     img.classList.add('mini-lista');
   }
 
-  const io = 'IntersectionObserver' in window ? new IntersectionObserver((ents) => {
-    for (const e of ents) {
-      if (!e.isIntersecting) continue;
-      io.unobserve(e.target);
-      if (cache.has(e.target.dataset.video)) pintar(e.target);
-      else { cola.push(e.target); procesar(); }
-    }
-  }, { rootMargin: '200px' }) : null;
-
-  /** Activa las miniaturas dentro de un contenedor recién pintado */
+  /** Activa las miniaturas dentro de un contenedor recién pintado.
+   *  Todas se ponen en cola de inmediato (también si la pestaña está oculta), las visibles primero. */
   function activar(cont) {
-    cont.querySelectorAll('img.mini-video:not(.mini-lista)').forEach((img) => {
-      if (cache.has(img.dataset.video)) pintar(img);
-      else if (io) io.observe(img);
-      else { cola.push(img); procesar(); }
-    });
+    const pend = [...cont.querySelectorAll('img.mini-video:not(.mini-lista), img.mini-imagen:not(.mini-lista)')];
+    const visibles = [], resto = [];
+    for (const img of pend) {
+      if (cache.has(urlDe(img))) { pintar(img); continue; }
+      (img.offsetParent ? visibles : resto).push(img);
+    }
+    cola.unshift(...visibles); cola.push(...resto);
+    if (cola.length) setTimeout(procesar, visibles.length ? 0 : 300);
   }
 
   /** Vista previa en movimiento al pasar el mouse (selector = tarjeta que contiene la miniatura) */
@@ -79,13 +102,13 @@
     const quitar = () => { if (actual) { actual.removeAttribute('src'); actual.load(); actual.remove(); actual = null; } };
     cont.addEventListener('mouseover', (e) => {
       const card = e.target.closest(selector); if (!card) return;
-      const img = card.querySelector('img.mini-video');
-      if (!img || (actual && actual._card === card)) return;
+      const src = card.dataset.tipo === 'video' ? card.dataset.url : card.querySelector('img.mini-video')?.dataset.video;
+      if (!src || (actual && actual._card === card)) return;
       quitar();
       const v = document.createElement('video');
-      Object.assign(v, { src: img.dataset.video, muted: true, loop: true, playsInline: true, autoplay: true });
+      Object.assign(v, { src, muted: true, loop: true, playsInline: true, autoplay: true });
       v.className = 'mini-hover'; v._card = card;
-      img.after(v); actual = v;
+      card.querySelector('img')?.after(v); actual = v;
     });
     cont.addEventListener('mouseout', (e) => {
       const card = e.target.closest(selector);

@@ -9,10 +9,10 @@
 =====================================================================
 
 VERSIÓN 2.0 PARA WINDOWS (recomendada) - NO NECESITA NODE.JS
-  · PK-PENTECOSTAL-Instalador-2.0.1.exe -> doble clic, "Siguiente".
+  · PK-PENTECOSTAL-Instalador-2.0.2.exe -> doble clic, "Siguiente".
       Crea accesos directos en el Escritorio y en el menú Inicio.
       Se desinstala desde Configuración -> Aplicaciones.
-  · PK-PENTECOSTAL-Portable-2.0.1.exe   -> no se instala (memoria USB).
+  · PK-PENTECOSTAL-Portable-2.0.2.exe   -> no se instala (memoria USB).
   Al abrirlo: si ya estaba abierto solo muestra la ventana; si el puerto
   8888 lo usa otro programa, elige otro libre (sin cerrar ese programa).
   Datos del usuario (se conservan al actualizar y al desinstalar):
@@ -24,7 +24,9 @@ VERSIÓN 2.0 PARA WINDOWS (recomendada) - NO NECESITA NODE.JS
 
 VERSIÓN DE CARPETA (código fuente: macOS, Linux o Windows con Node.js)
   Requisito: Node.js 16 o superior (gratis): https://nodejs.org -> "LTS".
-  Si no está instalado, los lanzadores lo avisan.
+  El .zip YA TRAE el instalador oficial en la carpeta NODEJS (Windows .msi
+  y macOS .pkg): si falta Node.js, los lanzadores ofrecen instalarlo.
+  Vea NODEJS\LEEME - Instalar Node.js.txt
 
 ---------------------------------------------------------------------
 ABRIR EL PROGRAMA

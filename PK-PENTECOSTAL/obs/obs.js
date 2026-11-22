@@ -326,7 +326,7 @@
     $('#bPag').textContent = `${bPagina + 1} / ${pags}`;
     $('#bGal').innerHTML = lista.slice(bPagina * POR_PAG, (bPagina + 1) * POR_PAG).map((f) => `
       <div class="bth ${uso === f.url ? 'uso' : ''}" data-url="${esc(f.url)}" title="${esc(f.nombre)}">
-        <div class="im">${f.tipo === 'video' ? `<img class="mini-video" data-video="${esc(f.url)}" data-t="1" alt="">` : `<img src="${esc(f.url)}" loading="lazy" decoding="async" alt="">`}</div>
+        <div class="im">${f.mini ? `<img src="${esc(f.mini)}" decoding="async" alt="">` : f.tipo === 'video' ? `<img class="mini-video" data-video="${esc(f.url)}" data-t="1" data-clave="${esc(f.clave || '')}" alt="">` : `<img class="mini-imagen" data-imagen="${esc(f.url)}" data-clave="${esc(f.clave || '')}" alt="">`}</div>
         ${f.tipo === 'video' ? '<span class="play">▶</span>' : ''}<div class="nm">${esc(f.nombre)}</div>
       </div>`).join('') || `<div class="vacio" style="grid-column:1/-1">No hay ${bTipo === 'video' ? 'videos' : 'imágenes'}. Use “Subir archivos…”.</div>`;
     window.Miniaturas?.activar($('#bGal'));

@@ -171,7 +171,8 @@
     const it = ctx.items.slice(a, b + 1);
     const texto = it.length > 1 ? it.map((x) => `[[${x.v}]] ${x.t}`).join(' ') : it[0].t;
     const ref = refTexto(a, b);
-    irAlAire({ tipo: 'biblia', titulo: ref, texto, ref: `${ref}  ·  ${versionCorta(BIB.nombre)}` });
+    // grupo = versículos del capítulo: la salida usa un tamaño de letra parejo para todo el capítulo
+    irAlAire({ tipo: 'biblia', titulo: ref, texto, ref: `${ref}  ·  ${versionCorta(BIB.nombre)}`, grupo: ctx.items.map((x) => x.t) });
     marcar();
   }
 
@@ -306,17 +307,21 @@
     $('#items').innerHTML = `<div class="slides">${ctx.items.map((it, i) => `<div class="slide" data-i="${i}"><span class="num"><b>${i + 1}</b>${i < 9 ? ' · ' + (window.I18N ? window.I18N.t('tecla') : 'tecla') + ' ' + (i + 1) : ''}</span>${esc(it.texto)}</div>`).join('')}</div>`;
     $('#items').scrollTop = 0; liveIdx = -1; marcar();
   }
+  // Quita marcadores de himnario ("I", "II", "Coro", "Estrofa 2") de la primera línea
+  function sinMarcador(texto) {
+    const l = texto.split('\n');
+    if (l.length > 1 && /^(coro|estribillo|puente|[ivx]+|estrofa\s*\d+|chorus|refrain|bridge|verse\s*\d+)[.:)]?$/i.test(l[0].trim())) return l.slice(1).join('\n');
+    return texto;
+  }
   function proyectarSlide(i) {
     if (!ctx || !ctx.items[i]) return;
     liveIdx = i;
     const it = ctx.items[i];
-    // Quita marcadores de himnario ("I", "II", "Coro", "Estrofa 2") de la primera línea
-    let texto = it.texto;
-    if (ctx.tipo === 'cancion') {
-      const l = texto.split('\n');
-      if (l.length > 1 && /^(coro|estribillo|puente|[ivx]+|estrofa\s*\d+|chorus|refrain|bridge|verse\s*\d+)[.:)]?$/i.test(l[0].trim())) texto = l.slice(1).join('\n');
-    }
-    irAlAire({ tipo: ctx.tipo, titulo: it.titulo || '', texto, ref: it.ref || '' });
+    const cancion = ctx.tipo === 'cancion';
+    const texto = cancion ? sinMarcador(it.texto) : it.texto;
+    // grupo = todas las diapositivas: la salida usa UN solo tamaño de letra para toda la canción
+    irAlAire({ tipo: ctx.tipo, titulo: it.titulo || '', texto, ref: it.ref || '',
+      grupo: cancion ? ctx.items.map((x) => sinMarcador(x.texto)) : undefined });
     marcar();
   }
 
@@ -462,7 +467,9 @@
       fondosKey = key;
       $('#fondosGrid').innerHTML = lista.map((f) => `
       <div class="fondo" data-url="${esc(f.url)}" data-tipo="${f.tipo}" title="${esc(f.nombre)}">
-        ${f.tipo === 'video' ? `<img class="mini-video" data-video="${esc(f.url)}" data-t="2" alt=""><span class="tag">▶ video</span>` : `<img loading="lazy" decoding="async" src="${esc(f.url)}" alt="">`}
+        ${f.mini ? `<img decoding="async" src="${esc(f.mini)}" alt="">`
+          : f.tipo === 'video' ? `<img class="mini-video" data-video="${esc(f.url)}" data-t="2" data-clave="${esc(f.clave || '')}" alt="">`
+          : `<img class="mini-imagen" data-imagen="${esc(f.url)}" data-clave="${esc(f.clave || '')}" alt="">`}${f.tipo === 'video' ? '<span class="tag">▶ video</span>' : ''}
       </div>`).join('') || '<div class="empty">No hay fondos</div>';
       window.Miniaturas?.activar($('#fondosGrid'));
     }

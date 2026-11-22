@@ -4,7 +4,7 @@
 
 <br/>
 
-![Versión](https://img.shields.io/badge/versión-2.0.1-f59e0b?style=for-the-badge)
+![Versión](https://img.shields.io/badge/versión-2.0.2-f59e0b?style=for-the-badge)
 ![Windows](https://img.shields.io/badge/Windows-10%20%C2%B7%2011%20(64%20bits)-0078D4?style=for-the-badge&logo=windows&logoColor=white)
 ![Sin Node.js](https://img.shields.io/badge/no%20necesita-Node.js-339933?style=for-the-badge&logo=electron&logoColor=white)
 ![OBS Studio](https://img.shields.io/badge/OBS_Studio-28%2B-302E31?style=for-the-badge&logo=obsstudio&logoColor=white)
@@ -85,7 +85,8 @@ Todo corre en **un solo computador**, se maneja desde el **navegador** y **no ne
 
 ### 📽️ Proyector y pantallas
 - Botón **Proyectar**: abre sola la ventana en la 2ª pantalla a pantalla completa.
-- Fondos de **imagen o video** (y suba los suyos desde el panel).
+- Fondos de **imagen o video** (y suba los suyos desde el panel). **La galería se ve completa apenas abre el programa**: cada fondo trae su miniatura lista.
+- **Mismo tamaño de letra** en todas las diapositivas de una canción (y en los versículos de un capítulo): nada de estrofas gigantes y otras diminutas.
 - Estilo a su gusto: fuente, tamaño, sombra, contorno, mayúsculas, alineación y transiciones.
 - **Pantalla negra**, **ocultar texto** y **limpiar** con una tecla.
 
@@ -240,8 +241,8 @@ Descargue desde la **[página web](https://sebaslw.github.io/pk-pentecostal.io/)
 
 | Archivo | Para qué |
 |---|---|
-| **`PK-PENTECOSTAL-Instalador-2.0.1.exe`** | Doble clic → *Siguiente*. Crea el acceso directo en el **Escritorio** y en el **menú Inicio**. Se desinstala desde *Configuración → Aplicaciones*. |
-| **`PK-PENTECOSTAL-Portable-2.0.1.exe`** | No se instala: doble clic y listo. Ideal para una memoria USB. |
+| **`PK-PENTECOSTAL-Instalador-2.0.2.exe`** | Doble clic → *Siguiente*. Crea el acceso directo en el **Escritorio** y en el **menú Inicio**. Se desinstala desde *Configuración → Aplicaciones*. |
+| **`PK-PENTECOSTAL-Portable-2.0.2.exe`** | No se instala: doble clic y listo. Ideal para una memoria USB. |
 
 **No necesita Node.js** ni ningún otro programa. Al abrirlo:
 
@@ -270,6 +271,8 @@ Abra PK-PENTECOSTAL → **Alt → Archivo → Importar datos de una versión ant
 
 Requiere **[Node.js](https://nodejs.org) 16 o superior**. Descargue el `.zip` del código fuente (Releases) o `git clone`, y:
 
+> 📦 **El `.zip` ya trae Node.js:** la carpeta **`NODEJS/`** incluye los instaladores **oficiales** de Node.js LTS para **Windows** (`.msi`) y **macOS** (`.pkg`), con sus huellas SHA-256 (`SHASUMS256.txt`). No hay que buscar nada en internet: si falta Node.js, `PK-PENTECOSTAL.vbs`, `PK-PENTECOSTAL.bat` e `iniciar-mac.command` ofrecen abrir ese instalador. Instrucciones en `NODEJS/LEEME - Instalar Node.js.txt`.
+
 | Sistema | Cómo abrirlo |
 |---|---|
 | 🪟 **Windows** | Doble clic en **`PK-PENTECOSTAL.vbs`** (sin ventana negra) o **`PK-PENTECOSTAL.bat`** (muestra las direcciones y los errores). |
@@ -286,6 +289,7 @@ El panel se abre en el navegador en **http://pkipuc.localhost**. En este modo lo
 npm install          # Electron y electron-builder (solo para compilar)
 npm start            # abre la app de escritorio
 npm run probar       # pruebas del servidor (primer inicio, puertos, instancias)
+npm run miniaturas   # crea las miniaturas de fondos/ (fondos-miniaturas/) — también lo hace npm run dist
 npm run dist         # crea dist/PK-PENTECOSTAL-Instalador-x.y.z.exe y dist/PK-PENTECOSTAL-Portable-x.y.z.exe
 powershell -ExecutionPolicy Bypass -File web\crear-zip.ps1   # .zip del código fuente + datos de la página web
 ```
@@ -390,6 +394,8 @@ PK-PENTECOSTAL/
 ├── biblias/                       ← Versiones de la Biblia
 ├── cancioneros/                   ← Cancioneros + traducciones al inglés
 ├── fondos/                        ← Imágenes y videos de fondo
+├── fondos-miniaturas/             ← Miniaturas listas de los fondos (npm run miniaturas)
+├── NODEJS/                        ← Instaladores oficiales de Node.js (solo en el .zip)
 ├── css/font/                      ← Tipografías
 ├── Imagenes/                      ← Fondos de pantalla y ejemplos
 └── docs/                          ← Manual (HTML → PDF) y documentos de diseño

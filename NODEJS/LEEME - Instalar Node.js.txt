@@ -1,0 +1,46 @@
+PK-PENTECOSTAL · Carpeta NODEJS
+Hecho por Sebastian Lopez · IPUC Natania 6° Etapa
+=====================================================================
+
+¿PARA QUÉ ES ESTA CARPETA?
+  La versión en .zip (código fuente) de PK-PENTECOSTAL funciona con Node.js,
+  un programa gratuito. Para que su iglesia NO tenga que buscarlo en internet,
+  aquí ya viene el instalador oficial (versión LTS = la estable y recomendada).
+
+  ¿Usa el INSTALADOR de Windows (PK-PENTECOSTAL-Instalador-x.x.x.exe)?
+  Entonces NO necesita esta carpeta: ese ya trae todo adentro.
+
+---------------------------------------------------------------------
+ WINDOWS 10 / 11
+---------------------------------------------------------------------
+  1. Doble clic en  node-v24.22.3-x64.msi
+  2. Siguiente > Acepto > Siguiente ... > Instalar  (deje todo como viene)
+  3. Al terminar, doble clic en  PK-PENTECOSTAL.bat  (en la carpeta de arriba).
+
+  Atajo: si abre PK-PENTECOSTAL.bat sin tener Node.js, él mismo le ofrece
+  abrir este instalador.
+
+---------------------------------------------------------------------
+ macOS (Intel y Apple Silicon M1/M2/M3/M4)
+---------------------------------------------------------------------
+  1. Doble clic en  node-v24.22.3.pkg  y siga los pasos.
+  2. Doble clic en  iniciar-mac.command  (en la carpeta de arriba).
+     Si macOS no lo deja abrir: clic derecho > Abrir.
+
+---------------------------------------------------------------------
+ LINUX (Ubuntu, Debian, Mint…)
+---------------------------------------------------------------------
+  Abra la Terminal y escriba:
+      sudo apt install nodejs
+  Luego:  ./iniciar-linux.sh
+
+---------------------------------------------------------------------
+ ¿ES SEGURO?
+---------------------------------------------------------------------
+  Sí. Son los instaladores OFICIALES de https://nodejs.org (licencia MIT,
+  libre de redistribuir), sin modificar. Puede comprobarlo: el archivo
+  SHASUMS256.txt trae las huellas SHA-256 publicadas por Node.js.
+  En PowerShell:   Get-FileHash .\node-v24.22.3-x64.msi
+  y compare el resultado con la línea correspondiente de SHASUMS256.txt.
+
+  ¿Ya tiene Node.js 16 o superior? No instale nada: PK-PENTECOSTAL ya funciona.

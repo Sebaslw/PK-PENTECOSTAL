@@ -189,6 +189,37 @@
     txtEl.style.fontSize = best + 'px';
   }
 
+  // ---------- Mismo tamaño de letra en todas las diapositivas ----------
+  // Antes cada diapositiva se ajustaba sola: las cortas salían enormes y las largas pequeñas.
+  // Ahora se mide TODA la canción (vivo.grupo) y se usa el tamaño que le sirve a la diapositiva más larga.
+  // En la Biblia se usa el tamaño que le sirve al 90 % de los versículos del capítulo (un versículo
+  // excepcionalmente largo se achica solo él, para no dejar todo el capítulo diminuto).
+  const tamCache = new Map();
+  function tamUniforme(vivo, est, txtEl, cont, maxPx, minPx) {
+    const g = vivo.grupo;
+    if (est.tamUniforme === false || !Array.isArray(g) || g.length < 2) return maxPx;
+    const key = [vivo.tipo, cont.clientWidth, cont.clientHeight, maxPx, JSON.stringify(est), g.join('\u0001')].join('|');
+    if (tamCache.has(key)) return tamCache.get(key);
+    const original = txtEl.innerHTML, ref = txtEl.querySelector('.ref');
+    const tams = [];
+    for (const t of new Set(g)) {
+      if (!String(t).trim()) continue;
+      txtEl.innerHTML = formatear(String(t));
+      if (ref) txtEl.appendChild(ref.cloneNode(true));
+      ajustar(txtEl, cont, maxPx, minPx);
+      tams.push(parseFloat(txtEl.style.fontSize));
+    }
+    txtEl.innerHTML = original;
+    tams.sort((a, b) => a - b);
+    const r = !tams.length ? maxPx : vivo.tipo === 'biblia' ? tams[Math.floor((tams.length - 1) * 0.1)] : tams[0];
+    if (tamCache.size > 30) tamCache.clear();
+    tamCache.set(key, r);
+    return r;
+  }
+  function ajustarIgual(vivo, est, txtEl, cont, maxPx, minPx) {
+    ajustar(txtEl, cont, tamUniforme(vivo, est, txtEl, cont, maxPx, minPx), minPx);
+  }
+
   function construir(vivo, est) {
     const slide = document.createElement('div');
     const escala = (lienzo.clientHeight || innerHeight) / 1080;
@@ -212,7 +243,7 @@
         txt.appendChild(ref);
       }
       box.appendChild(txt); slide.appendChild(box); stage.appendChild(slide);
-      slide._fit = () => ajustar(txt, box, (est.tamMax || 90) * escala); slide._fam = est.fuente; slide._fit();
+      slide._fit = () => ajustarIgual(vivo, est, txt, box, (est.tamMax || 90) * escala, 14); slide._fam = est.fuente; slide._fit();
     } else {
       const o = est.obs || {};
       slide.className = 'slide lower ' + (o.posicion || 'abajo');
@@ -236,7 +267,7 @@
       txt.className = 'txt';
       txt.innerHTML = formatear(vivo.texto);
       wrap.appendChild(txt); card.appendChild(wrap); slide.appendChild(card); stage.appendChild(slide);
-      slide._fit = () => ajustar(txt, wrap, (o.tamMax || 54) * escala, 12); slide._fam = o.fuente; slide._fit();
+      slide._fit = () => ajustarIgual(vivo, est, txt, wrap, (o.tamMax || 54) * escala, 12); slide._fam = o.fuente; slide._fit();
     }
     return slide;
   }

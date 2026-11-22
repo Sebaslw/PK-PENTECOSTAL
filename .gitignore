@@ -35,3 +35,8 @@ web/descargas/*.zip
 
 # App de escritorio: compilados (el instalador y el portable se publican como Release)
 dist/
+
+# Carpeta NODEJS: los instaladores de Node.js (más de 100 MB) NO se suben a git;
+# web/crear-zip.ps1 los descarga de nodejs.org, verifica su SHA-256 y los mete en el .zip.
+NODEJS/node-v*
+NODEJS/SHASUMS256.txt

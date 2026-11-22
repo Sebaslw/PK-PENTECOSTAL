@@ -16,6 +16,31 @@ $urlRelease = "https://github.com/$repoGitHub/releases/download/v$version"
 $destDir = Join-Path $web 'descargas'
 New-Item -ItemType Directory -Force $destDir | Out-Null
 
+# ---------- Carpeta NODEJS: instaladores oficiales de Node.js LTS (Windows .msi y macOS .pkg)
+# Así la iglesia que baje el .zip no tiene que buscar Node.js en internet. No se suben a git (pesan);
+# si faltan se descargan de nodejs.org y se comprueba su huella SHA-256 con SHASUMS256.txt oficial.
+$nodeVer = 'v24.22.3'
+$nodeDir = Join-Path $raiz 'NODEJS'
+New-Item -ItemType Directory -Force $nodeDir | Out-Null
+$nodeArch = @("node-$nodeVer-x64.msi", "node-$nodeVer.pkg")
+$shaFile = Join-Path $nodeDir 'SHASUMS256.txt'
+$ProgressPreference = 'SilentlyContinue'
+if (-not (Test-Path -LiteralPath $shaFile) -or -not (Select-String -LiteralPath $shaFile -SimpleMatch $nodeArch[0] -Quiet)) {
+  Invoke-WebRequest "https://nodejs.org/dist/$nodeVer/SHASUMS256.txt" -OutFile $shaFile -UseBasicParsing
+}
+foreach ($f in $nodeArch) {
+  $ruta = Join-Path $nodeDir $f
+  if (-not (Test-Path -LiteralPath $ruta)) {
+    Write-Host "  Descargando $f ..."
+    Invoke-WebRequest "https://nodejs.org/dist/$nodeVer/$f" -OutFile $ruta -UseBasicParsing
+  }
+  $esperado = ((Select-String -LiteralPath $shaFile -Pattern ([regex]::Escape($f) + '$')).Line -split '\s+')[0]
+  $real = (Get-FileHash -LiteralPath $ruta -Algorithm SHA256).Hash.ToLower()
+  if (-not $esperado -or $real -ne $esperado) { Remove-Item -LiteralPath $ruta -Force; throw "La huella SHA-256 de $f no coincide con la oficial. Se borró: vuelva a ejecutar el script." }
+}
+# Quita instaladores de versiones anteriores de Node.js
+Get-ChildItem -LiteralPath $nodeDir -File | Where-Object { $_.Name -match '^node-v' -and $nodeArch -notcontains $_.Name } | Remove-Item -Force
+
 # ---------- .zip del código fuente
 $nombreZip = "PK-PENTECOSTAL-$version-codigo-fuente.zip"
 $dest = Join-Path $destDir $nombreZip
@@ -24,6 +49,8 @@ $lista = git -C $raiz -c core.quotepath=false ls-files -co --exclude-standard -z
 $archivos = ($lista -join '') -split "`0" | Where-Object {
   $_ -and $_ -notmatch '^(web/|BSPK/|dist/|node_modules/|\.git/)' -and $_ -notmatch '(^|/)\.claude/'
 }
+# Los instaladores de Node.js están en .gitignore: se agregan aparte
+$archivos = @($archivos) + @($nodeArch + 'SHASUMS256.txt' | ForEach-Object { "NODEJS/$_" })
 Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
 $zip = [System.IO.Compression.ZipFile]::Open($dest, 'Create')
 $carpeta = "PK-PENTECOSTAL $version"

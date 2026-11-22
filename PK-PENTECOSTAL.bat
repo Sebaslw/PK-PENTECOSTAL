@@ -8,9 +8,20 @@ if errorlevel 1 (
   echo.
   echo  ============================================================
   echo   PK-PENTECOSTAL necesita Node.js ^(gratis^).
+  echo  ============================================================
+  echo.
+  rem El .zip trae el instalador oficial en la carpeta NODEJS: no hace falta internet
+  for %%F in ("%~dp0NODEJS\node-*-x64.msi") do (
+    echo   Se abrira el instalador de Node.js incluido en la carpeta NODEJS.
+    echo   Deje todo como viene ^(Siguiente, Siguiente, Instalar^)
+    echo   y al terminar vuelva a abrir PK-PENTECOSTAL.
+    echo.
+    start "" "%%~fF"
+    pause
+    exit /b 1
+  )
   echo   Se abrira la pagina de descarga: instale la version LTS
   echo   y vuelva a abrir PK-PENTECOSTAL.
-  echo  ============================================================
   echo.
   start "" "https://nodejs.org/es/download"
   pause

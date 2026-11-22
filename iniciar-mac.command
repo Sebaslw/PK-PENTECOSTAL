@@ -9,9 +9,18 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 if ! command -v node >/dev/null 2>&1; then
   echo
   echo "  PK-PENTECOSTAL necesita Node.js 16 o superior."
-  echo "  Descárguelo (instalador .pkg) de: https://nodejs.org"
-  echo
-  open "https://nodejs.org/es/download"
+  PKG=$(ls ../NODEJS/node-*.pkg 2>/dev/null | head -1)
+  if [ -n "$PKG" ]; then
+    # El .zip trae el instalador oficial en la carpeta NODEJS: no hace falta internet
+    echo "  Se abrirá el instalador incluido en la carpeta NODEJS."
+    echo "  Siga los pasos y vuelva a abrir iniciar-mac.command."
+    echo
+    open "$PKG"
+  else
+    echo "  Descárguelo (instalador .pkg) de: https://nodejs.org"
+    echo
+    open "https://nodejs.org/es/download"
+  fi
   read -r -p "Presione Enter para salir" _
   exit 1
 fi

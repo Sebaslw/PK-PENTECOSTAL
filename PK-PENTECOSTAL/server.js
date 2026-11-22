@@ -46,6 +46,7 @@ const PRIV = {
   obs: path.join(BSPK, 'obs'),       // solo para mudar instalaciones anteriores
   respaldos: path.join(BSPK, 'respaldos'),
   fondos: path.join(BSPK, 'fondos'),
+  miniaturas: path.join(BSPK, 'miniaturas'), // miniaturas de fondos generadas en este equipo
   logs: path.join(BSPK, 'logs'),
   puerto: path.join(BSPK, 'puerto.json'), // puerto en uso (lo leen PK-PENTECOSTAL.vbs y la app de escritorio)
 };
@@ -149,7 +150,7 @@ const urlProyector = () => (webActiva ? `http://proyector.${DOMINIO}${sufijoWeb(
 // hacia la dirección nueva. Solo vive en memoria y se entrega una vez.
 let almacenPendiente = null;
 const APP_NOMBRE = 'PK-PENTECOSTAL';
-const APP_VERSION = process.env.PK_VERSION || '2.0.1';
+const APP_VERSION = process.env.PK_VERSION || '2.0.2';
 const ABRIR = process.argv.includes('--abrir');
 
 if (parseInt(process.versions.node, 10) < 16) {
@@ -175,6 +176,8 @@ const DEFAULT_STYLE = {
   mayusculas: false, alineacion: 'center', negrita: true, margen: 8, posicionV: 0,
   // Resolución de la pantalla del proyector / LED ('auto' = la de la ventana) y ajuste de la imagen de fondo
   pantalla: '3200x1440', ajusteFondo: 'completa',
+  // Mismo tamaño de letra en todas las diapositivas de una canción (y en los versículos de un capítulo)
+  tamUniforme: true,
   refColor: '#ffffff', mostrarRef: true, oscurecerFondo: 15,
   fondo: { tipo: 'imagen', valor: '/fondos/IMAGENES/Bokeh%20verde.png' },
   transicion: 400,
@@ -641,6 +644,17 @@ function archivoFondo(rel) {
   if (priv && fs.existsSync(priv)) return priv;
   return safeJoin(DIRS.fondos, rel);
 }
+// Miniaturas de fondos: imagen JPG pequeña (320 px) guardada en disco, para que la galería se vea
+// completa apenas se abre el programa. Las de fábrica vienen en fondos-miniaturas/ (se crean con
+// npm run miniaturas); las de fondos subidos se crean en este equipo y quedan en BSPK/miniaturas/.
+// Clave = ruta relativa + tamaño del archivo (si el archivo cambia, se crea otra miniatura).
+const MINI_FABRICA = path.join(RES_ROOT, 'fondos-miniaturas');
+const miniClave = (rel, size) => crypto.createHash('sha1').update(rel + '|' + size).digest('hex').slice(0, 20);
+function archivoMini(clave) {
+  if (!/^[0-9a-f]{20}$/.test(clave)) return null;
+  for (const d of [MINI_FABRICA, PRIV.miniaturas]) { const f = path.join(d, clave + '.jpg'); if (fs.existsSync(f)) return f; }
+  return null;
+}
 function listBackgrounds() {
   const out = [];
   const vistos = new Set();
@@ -651,7 +665,10 @@ function listBackgrounds() {
         const ext = path.extname(e.name).toLowerCase();
         if ((IMG_EXT.includes(ext) || VID_EXT.includes(ext)) && !vistos.has(rel + '/' + e.name)) {
           vistos.add(rel + '/' + e.name);
-          out.push({ categoria: rel.split('/')[1] || 'General', nombre: e.name, url: '/fondos' + rel + '/' + encodeURIComponent(e.name), tipo: VID_EXT.includes(ext) ? 'video' : 'imagen' });
+          let size = 0; try { size = fs.statSync(path.join(dir, e.name)).size; } catch (_) { /* nada */ }
+          const clave = miniClave(decodeURIComponent(rel.slice(1)) + '/' + e.name, size);
+          out.push({ categoria: rel.split('/')[1] || 'General', nombre: e.name, url: '/fondos' + rel + '/' + encodeURIComponent(e.name), tipo: VID_EXT.includes(ext) ? 'video' : 'imagen',
+            clave, mini: archivoMini(clave) ? '/miniatura/' + clave + '.jpg' : '' });
         }
       }
     }
@@ -666,7 +683,10 @@ function listBackgrounds() {
     try { lista = fs.readdirSync(path.join(OBS_LIB, c)); } catch (_) { continue; }
     for (const f of lista) {
       if (nombre ? f !== nombre : !IMG_EXT.includes(path.extname(f).toLowerCase())) continue;
-      out.push({ categoria: 'OBS · Rótulos', nombre: f, url: `/obs-lib/${c}/${encodeURIComponent(f)}`, tipo: 'imagen' });
+      let size = 0; try { size = fs.statSync(path.join(OBS_LIB, c, f)).size; } catch (_) { /* nada */ }
+      const clave = miniClave(`obs-lib/${c}/${f}`, size);
+      out.push({ categoria: 'OBS · Rótulos', nombre: f, url: `/obs-lib/${c}/${encodeURIComponent(f)}`, tipo: 'imagen',
+        clave, mini: archivoMini(clave) ? '/miniatura/' + clave + '.jpg' : '' });
     }
   }
   return out.map((b) => ({ ...b, categoria: decodeURIComponent(b.categoria) }));
@@ -1313,6 +1333,9 @@ async function handle(req, res) {
     if (b.vivo === null) v.vivo = null;
     else if (b.vivo) {
       v.vivo = { tipo: String(b.vivo.tipo || 'texto'), titulo: String(b.vivo.titulo || ''), texto: String(b.vivo.texto || ''), ref: String(b.vivo.ref || ''), id: Date.now() };
+      // Textos de todas las diapositivas de la canción / versículos del capítulo: la salida calcula con ellos
+      // UN solo tamaño de letra, así todas se ven iguales
+      if (Array.isArray(b.vivo.grupo)) v.vivo.grupo = b.vivo.grupo.slice(0, 400).map((x) => String(x).slice(0, 4000));
       v.ocultarTexto = false;
       if (b.vivo.tipo === 'biblia' && b.vivo.ref) {
         config.historial = [{ ref: b.vivo.ref, texto: b.vivo.texto, t: Date.now() }, ...config.historial.filter((h) => h.ref !== b.vivo.ref)].slice(0, 60);
@@ -1460,6 +1483,17 @@ async function handle(req, res) {
     }
   }
   if (p === '/api/fondos') return sendJSON(res, listBackgrounds());
+  if (p === '/api/miniatura' && req.method === 'POST') { // el panel guarda la miniatura que generó
+    const b = await readBody(req, 600 * 1024);
+    const m = /^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/.exec(String(b.dato || ''));
+    if (!/^[0-9a-f]{20}$/.test(String(b.clave || '')) || !m) return sendJSON(res, { error: 'Formato inválido' }, 400);
+    const buf = Buffer.from(m[1], 'base64');
+    if (buf.length < 200 || buf[0] !== 0xff || buf[1] !== 0xd8) return sendJSON(res, { error: 'Formato inválido' }, 400);
+    fs.mkdirSync(PRIV.miniaturas, { recursive: true });
+    const dest = path.join(PRIV.miniaturas, b.clave + '.jpg');
+    fs.writeFileSync(dest + '.tmp', buf); fs.renameSync(dest + '.tmp', dest);
+    return sendJSON(res, { ok: true, mini: '/miniatura/' + b.clave + '.jpg' });
+  }
   if (/^\/api\/(laterales|cuenta|bspk\/|actualizacion)/.test(p)) { const r = await rutasIdeas(req, res, p, url, equipo); if (r !== false) return; }
   if (p.startsWith('/api/overlays')) { const r = await rutasOverlays(req, res, p, url); if (r !== false) return; }
   if (p.startsWith('/api/stinger')) { const r = await rutasStinger(req, res, p, url, equipo); if (r !== false) return; }
@@ -1507,6 +1541,11 @@ async function handle(req, res) {
   if (p === '/fuentes.css') return send(res, 200, FONTS.css, 'text/css; charset=utf-8');
 
   // --- Archivos
+  if (p.startsWith('/miniatura/')) { // miniaturas de fondos (no cambian nunca: caché larga)
+    const f = archivoMini(p.slice(11).replace(/\.jpg$/, ''));
+    if (!f) return send(res, 404, 'No encontrado', 'text/plain');
+    return fs.readFile(f, (e, d) => { if (e) return send(res, 404, 'No encontrado', 'text/plain'); res.writeHead(200, { 'Content-Type': 'image/jpeg', 'Content-Length': d.length, 'Cache-Control': 'max-age=31536000, immutable' }); res.end(d); });
+  }
   if (p.startsWith('/fondos/')) { const f = archivoFondo(p.slice(8)); return f ? serveFile(req, res, f) : send(res, 403, 'Prohibido', 'text/plain'); }
   if (p.startsWith('/fuentes/')) { const f = archivoFuente(p.slice(9)); return f ? serveFile(req, res, f) : send(res, 403, 'Prohibido', 'text/plain'); }
   // Dirección antigua (localhost:8888) en este equipo → salto a http://pkipuc.localhost llevando los
