@@ -78,6 +78,25 @@ app.whenReady().then(async () => {
       ok(distintas.length === 0, `${tams.length} diapositivas con el mismo tamaño (${comun.toFixed(1)} px) · distintas: ${distintas.length}${distintas.length ? ' → ' + distintas.map((v) => v.toFixed(1)).join(', ') : ''}`);
     }
 
+    // Fuente recién elegida: el tamaño no debe quedar calculado con la fuente de respaldo (antes de que cargue)
+    console.log('\nFuente recién elegida (aún sin cargar)');
+    const post = (ruta, body) => fetch(`http://127.0.0.1:${puerto}${ruta}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const [, { x: cf }] = casos[3];
+    const dcf = L.estrofas(cf.le, 6);
+    await win.loadURL(`http://127.0.0.1:${puerto}/salida?modo=pantalla&quedarse=1`).catch(() => {});
+    await post('/api/estilo', { fuente: 'Tangerine' });
+    await post('/api/vivo', { vivo: { tipo: 'cancion', titulo: 'F', texto: dcf[0], ref: 'F', grupo: dcf } });
+    await sleep(3000);
+    const tamA = parseFloat(await win.webContents.executeJavaScript(`getComputedStyle([...document.querySelectorAll('.slide')].pop().querySelector('.txt')).fontSize`));
+    await win.loadURL(`http://127.0.0.1:${puerto}/salida?modo=pantalla&quedarse=1`).catch(() => {});
+    await win.webContents.executeJavaScript(`document.fonts.load("800 40px 'Tangerine'").then(() => document.fonts.ready).then(() => 1)`).catch(() => {});
+    await sleep(500);
+    await post('/api/vivo', { vivo: { tipo: 'cancion', titulo: 'F2', texto: dcf[0], ref: 'F2', grupo: dcf } });
+    await sleep(1500);
+    const tamB = parseFloat(await win.webContents.executeJavaScript(`getComputedStyle([...document.querySelectorAll('.slide')].pop().querySelector('.txt')).fontSize`));
+    ok(Math.abs(tamA - tamB) <= 0.5, `Mismo tamaño proyectando antes y después de cargar la fuente → ${tamA.toFixed(1)} px / ${tamB.toFixed(1)} px`);
+    await post('/api/estilo', { reset: true });
+
     // Panel: la canción se reparte con «Líneas por diapositiva» y se recalcula al cambiar el ajuste
     console.log('\nPanel');
     const libro = 'Corario IPUC castilla';

@@ -316,7 +316,12 @@
     const s = construir(vivo, est);
     s.style.transitionDuration = dur + 'ms';
     current = s;
-    if (document.fonts && s._fam) document.fonts.load(`${est.peso || 400} 40px '${s._fam}'`).then(() => { if (s.isConnected) s._fit(); }).catch(() => {});
+    if (document.fonts && s._fam) {
+      const spec = `${est.peso || 400} 40px '${s._fam}'`;
+      const yaCargada = document.fonts.check(spec);
+      // Si la fuente aún no había cargado, los tamaños guardados se midieron con la de respaldo: se olvidan
+      document.fonts.load(spec).then(() => { if (!yaCargada) tamCache.clear(); if (s.isConnected) s._fit(); }).catch(() => {});
+    }
     requestAnimationFrame(() => requestAnimationFrame(() => s.classList.add('in')));
   }
 
