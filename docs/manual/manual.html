@@ -460,14 +460,15 @@
 </table>
 <figure style="width:50%"><img src="img/10-salida-obs.png" alt=""><figcaption>Figura 10. Tercio inferior clásico (fondo transparente en OBS).</figcaption></figure>
 
-<h2>12.2 Conectar el panel con OBS (control remoto)</h2>
+<h2>12.2 Conectar el panel con OBS (control remoto)<span class="novedad">NUEVO</span></h2>
 <p>Permite manejar OBS desde el panel: botón TRANSMITIR, escenas, cámaras y audio. Requiere OBS 28 o superior.</p>
 <ol class="pasos">
-  <li>En OBS: menú <b>Herramientas → Ajustes del servidor WebSocket</b>. Marque <b>Habilitar servidor WebSocket</b>. Pulse <b>Mostrar información de conexión</b> y copie la contraseña.</li>
-  <li>En el panel: <b>📡 OBS → OVERLAY</b>, en el cuadro “OBS desconectado” pulse el engranaje <span class="btn">⚙</span>.</li>
-  <li>Pegue la contraseña y pulse <span class="btn">Conectar</span>. El punto se pone verde.</li>
+  <li>En OBS: menú <b>Herramientas → Ajustes del servidor WebSocket</b>. Marque <b>Habilitar servidor WebSocket</b> y pulse <b>Aceptar</b>. Solo hay que hacerlo una vez.</li>
+  <li>Deje OBS abierto. En el panel: <b>📡 OBS → OVERLAY</b>, en el cuadro “OBS desconectado” pulse <span class="btn">Conectar</span>. El punto se pone verde.</li>
   <li>Pulse <span class="btn">＋ Añadir la capa de rótulos/banner a la escena actual</span> para que el programa cree la fuente en OBS automáticamente.</li>
 </ol>
+<div class="tip"><b>No hace falta copiar la contraseña</b>Desde la versión <b>2.0.4</b>, si OBS está en el mismo computador, el programa lee solo el puerto y la contraseña de OBS. Si los datos guardados en el panel ya no coinciden (por ejemplo, porque cambió la contraseña en OBS), los corrige, los guarda y muestra «Conectado con OBS · se corrigieron puerto y contraseña». La contraseña nunca sale del computador: los celulares no pueden verla.</div>
+<div class="nota"><b>OBS en otro computador</b>Si OBS está en otra máquina de la red, pulse el engranaje <span class="btn">⚙</span> y escriba la <b>IP</b> de ese computador, el <b>puerto</b> (normalmente <code>4455</code>) y la <b>contraseña</b>. Los ve en OBS: <b>Herramientas → Ajustes del servidor WebSocket → Mostrar información de conexión</b>.</div>
 <p>Ya conectado, puede:</p>
 <ul>
   <li>Iniciar o detener la transmisión con <span class="btn rojo">● TRANSMITIR</span>.</li>
@@ -703,7 +704,7 @@
   <tr><td>Una traducción automática tiene errores</td><td>Corríjala en el editor, en <b>Letra en inglés</b>, y guarde. Pasa a ser traducción revisada (<span class="tag en">EN</span>).</td></tr>
   <tr><td>El celular no abre la página</td><td>Mismo Wi-Fi (no datos móviles). En la ventana del QR pruebe otra opción en <b>Red:</b>. Permita Node.js en el Firewall de Windows; si hace falta, en PowerShell como administrador: <code>New-NetFirewallRule -DisplayName "PK-PENTECOSTAL" -Direction Inbound -Protocol TCP -LocalPort 8888 -RemoteAddress LocalSubnet -Action Allow</code>. Si se queda <b>cargando</b> (hoteles, redes de invitados), use <b>🛜 Wi-Fi propio</b> (capítulo 13).</td></tr>
   <tr><td>El celular dice “Vincule este teléfono”</td><td>Ese teléfono no está vinculado o se pulsó <b>Desvincular todos</b>. Escanee de nuevo el código QR (botón <span class="btn">📱 Celular</span> en el computador).</td></tr>
-  <tr><td>OBS no se conecta</td><td>Active el servidor WebSocket en OBS (Herramientas) y revise la contraseña. Requiere OBS 28 o superior.</td></tr>
+  <tr><td>OBS no se conecta</td><td>Abra OBS y espere a que cargue del todo. Revise que esté marcado <b>Herramientas → Ajustes del servidor WebSocket → Habilitar servidor WebSocket</b>; si no lo está, el panel lo avisa. Requiere OBS 28 o superior. Si OBS está en <b>otro computador</b>, escriba su IP, puerto y contraseña en el engranaje <span class="btn">⚙</span>.</td></tr>
   <tr><td>En OBS no se ve nada</td><td>Revise la URL de la fuente Navegador y el tamaño 1920×1080. Con la fuente seleccionada pulse <b>Actualizar</b> (refrescar caché).</td></tr>
 </table>
 
@@ -719,7 +720,7 @@
   <li>¿Hay visitantes que hablan inglés? Revise en <b>🌐 Idiomas</b> que las canciones del día tengan buena traducción.</li>
   <li>Prepare los <b>anuncios</b> en Texto / Anuncios y guárdelos.</li>
   <li>Busque y deje listas las <b>canciones</b> de la alabanza.</li>
-  <li>Si hay transmisión: abra OBS, conecte el panel (📡 OBS → ⚙ → Conectar) y revise los <b>rótulos</b> con los nombres del día.</li>
+  <li>Si hay transmisión: abra OBS, conecte el panel (📡 OBS → Conectar) y revise los <b>rótulos</b> con los nombres del día.</li>
   <li>Si va a manejar desde el teléfono: pulse <span class="btn">📱 Celular</span> y escanee el código QR (solo la primera vez).</li>
   <li>Pulse <kbd>Esc</kbd> para dejar la pantalla limpia hasta que empiece el culto.</li>
 </ol>

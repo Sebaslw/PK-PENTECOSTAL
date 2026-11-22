@@ -327,7 +327,7 @@ Instala la librería en la carpeta privada `BSPK/` y descarga **una sola vez** e
 
 > ⏳ **Cuenta regresiva** "EMPEZAMOS EN…" (OBS → Overlay) · 🎞 **Banners laterales** de ProyectoRP y versión PK (OBS → Banner → Diseño) · ⌨️ **S** = stinger · 💾 **Respaldo** completo en un .zip · ⬆ **Aviso de versión nueva** (pie de página).
 
-> 💡 **Control de OBS desde el panel (OBS 28+):** en OBS vaya a *Herramientas → Ajustes del servidor WebSocket → Habilitar*. En el panel: pestaña **OBS → ⚙ → contraseña → Conectar**. También puede pulsar *"Añadir la capa…"* para que se cree sola.
+> 💡 **Control de OBS desde el panel (OBS 28+):** en OBS vaya a *Herramientas → Ajustes del servidor WebSocket → Habilitar*. En el panel: pestaña **OBS → Conectar**. Desde la **2.0.4**, si OBS está en el mismo computador, el programa lee solo el puerto y la contraseña de OBS (y corrige los guardados si ya no coinciden); la contraseña nunca sale del PC. Para un OBS en otra máquina: **⚙ → IP, puerto y contraseña**. También puede pulsar *"Añadir la capa…"* para que se cree sola.
 
 ---
 

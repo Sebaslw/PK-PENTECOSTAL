@@ -96,7 +96,9 @@ OBS STUDIO
 
   Control de OBS desde el panel (OBS 28 o superior):
     En OBS: Herramientas > Ajustes del servidor WebSocket > Habilitar.
-    En el panel: OBS > engranaje ⚙ > escriba la contraseña > Conectar.
+    En el panel: OBS > Conectar. Con OBS en este mismo computador, el
+    programa lee solo el puerto y la contraseña de OBS (desde la 2.0.4).
+    OBS en otro computador: engranaje ⚙ > IP, puerto y contraseña > Conectar.
     Permite: estado y botón TRANSMITIR, escenas con miniaturas, cambio con
     Stinger, transiciones, cambio automático de escena, cámaras, audio
     (volumen, silencio, vúmetros, añadir fuentes).
