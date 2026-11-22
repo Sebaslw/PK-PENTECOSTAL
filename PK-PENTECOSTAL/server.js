@@ -150,7 +150,7 @@ const urlProyector = () => (webActiva ? `http://proyector.${DOMINIO}${sufijoWeb(
 // hacia la dirección nueva. Solo vive en memoria y se entrega una vez.
 let almacenPendiente = null;
 const APP_NOMBRE = 'PK-PENTECOSTAL';
-const APP_VERSION = process.env.PK_VERSION || '2.0.2';
+const APP_VERSION = process.env.PK_VERSION || '2.0.3';
 const ABRIR = process.argv.includes('--abrir');
 
 if (parseInt(process.versions.node, 10) < 16) {
@@ -1161,9 +1161,17 @@ async function rutasIdeas(req, res, p, url, equipo) {
     try { const r = importarRespaldo(Buffer.concat(trozos)); broadcast(); return sendJSON(res, { ok: true, ...r, reiniciar: true }); }
     catch (e) { return sendJSON(res, { error: e.message }, 400); }
   }
+  // La app de escritorio instalada se actualiza sola (electron/main.js): el panel solo se lo pide
+  const autoActualiza = EN_ELECTRON && !process.env.PORTABLE_EXECUTABLE_DIR;
   if (p === '/api/actualizacion' && req.method === 'GET') {
-    try { return sendJSON(res, await buscarActualizacion(url.searchParams.get('forzar') === '1')); }
-    catch (e) { return sendJSON(res, { actual: APP_VERSION, hay: false, error: 'No se pudo consultar GitHub: ' + e.message }); }
+    try { return sendJSON(res, { ...(await buscarActualizacion(url.searchParams.get('forzar') === '1')), autoActualiza }); }
+    catch (e) { return sendJSON(res, { actual: APP_VERSION, hay: false, autoActualiza, error: 'No se pudo consultar GitHub: ' + e.message }); }
+  }
+  if (p === '/api/actualizacion/buscar' && req.method === 'POST') {
+    if (!equipo) return sendJSON(res, { error: 'Solo desde el computador' }, 403);
+    if (!autoActualiza) return sendJSON(res, { ok: false, autoActualiza });
+    avisarPadre({ tipo: 'buscar-actualizacion' });
+    return sendJSON(res, { ok: true, autoActualiza });
   }
   return false;
 }
@@ -1425,9 +1433,14 @@ async function handle(req, res) {
   }
   if (p === '/api/fondo' && req.method === 'DELETE') {
     const u = url.searchParams.get('url') || '';
-    const f = u.startsWith('/fondos/') ? archivoFondo(decodeURIComponent(u.slice(8))) : null;
-    if (!f || !fs.existsSync(f) || !fs.statSync(f).isFile()) return sendJSON(res, { error: 'Archivo no encontrado' }, 404);
+    // Solo se pueden quitar los fondos que añadió el usuario («Mis fondos» = BSPK/fondos/Subidos);
+    // los de fábrica vienen dentro del programa y no se borran.
+    const rel = u.startsWith('/fondos/Subidos/') ? decodeURIComponent(u.slice(8)) : null;
+    const f = rel ? safeJoin(path.join(PRIV.fondos, 'Subidos'), rel.slice('Subidos/'.length)) : null;
+    if (!f || !fs.existsSync(f) || !fs.statSync(f).isFile()) return sendJSON(res, { error: u.startsWith('/fondos/') && !rel ? 'Los fondos incluidos en el programa no se pueden quitar' : 'Archivo no encontrado' }, 404);
+    const mini = path.join(PRIV.miniaturas, miniClave(rel, fs.statSync(f).size) + '.jpg');
     fs.unlinkSync(f);
+    try { fs.unlinkSync(mini); } catch (_) { /* no tenía miniatura */ }
     return sendJSON(res, { ok: true });
   }
 

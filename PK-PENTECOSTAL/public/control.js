@@ -450,12 +450,21 @@
   }
 
   // ================================================================ FONDOS
+  // Los fondos que añade el usuario se guardan en BSPK/fondos/Subidos (carpeta de datos: se conservan al
+  // cerrar, al actualizar y al reinstalar) y se muestran como «⭐ Mis fondos», siempre primero.
+  const MIS = 'Subidos';
+  const nomCat = (c) => (c === MIS ? '⭐ Mis fondos' : c);
   let FONDOS = [];
-  async function cargarFondos() {
+  async function cargarFondos(elegirCat) {
     FONDOS = await api('/api/fondos');
+    FONDOS.sort((a, b) => (b.categoria === MIS) - (a.categoria === MIS)); // Mis fondos primero
     const cats = [...new Set(FONDOS.map((f) => f.categoria))];
-    $('#fondoCat').innerHTML = `<option value="">Todas las categorías</option>` + cats.map((c) => `<option>${esc(c)}</option>`).join('');
-    $('#fondoCat').value = store.get('fondoCat', '');
+    if (!cats.includes(MIS)) cats.unshift(MIS); // la categoría aparece aunque todavía esté vacía
+    const nMis = FONDOS.filter((f) => f.categoria === MIS).length;
+    $('#fondoCat').innerHTML = `<option value="">Todas las categorías</option>` +
+      cats.map((c) => `<option value="${esc(c)}">${esc(nomCat(c))}${c === MIS ? ` (${nMis})` : ''}</option>`).join('');
+    $('#fondoCat').value = elegirCat ?? store.get('fondoCat', '');
+    if ($('#fondoCat').selectedIndex < 0) $('#fondoCat').value = '';
     pintarFondos();
   }
   let fondosKey = '';
@@ -465,16 +474,81 @@
     const key = cat + '|' + lista.map((f) => f.url).join('|');
     if (key !== fondosKey) { // solo se reconstruye si cambió la lista (no en cada cambio de estilo)
       fondosKey = key;
+      const vacio = cat === MIS
+        ? '<div class="empty"><span class="big">🖼️</span>Todavía no tiene fondos propios.<br>Pulse <b>➕ Añadir fondo</b> o arrastre aquí imágenes y videos.</div>'
+        : '<div class="empty">No hay fondos</div>';
       $('#fondosGrid').innerHTML = lista.map((f) => `
       <div class="fondo" data-url="${esc(f.url)}" data-tipo="${f.tipo}" title="${esc(f.nombre)}">
         ${f.mini ? `<img decoding="async" src="${esc(f.mini)}" alt="">`
           : f.tipo === 'video' ? `<img class="mini-video" data-video="${esc(f.url)}" data-t="2" data-clave="${esc(f.clave || '')}" alt="">`
           : `<img class="mini-imagen" data-imagen="${esc(f.url)}" data-clave="${esc(f.clave || '')}" alt="">`}${f.tipo === 'video' ? '<span class="tag">▶ video</span>' : ''}
-      </div>`).join('') || '<div class="empty">No hay fondos</div>';
+        ${f.categoria === MIS ? `<span class="mio">★ MÍO</span><button class="borrar" data-borrar="${esc(f.url)}" title="Quitar de Mis fondos">✕</button>` : ''}
+      </div>`).join('') || vacio;
       window.Miniaturas?.activar($('#fondosGrid'));
     }
     marcarFondoActivo();
   }
+
+  // ---------- Añadir fondo (botón o arrastrar): se guarda solo en Mis fondos ----------
+  const FONDO_EXT = /\.(jpe?g|png|webp|gif|mp4|webm)$/i;
+  function subirFondo(file, alProgreso) {
+    return new Promise((resolve, reject) => {
+      const x = new XMLHttpRequest();
+      x.open('PUT', '/api/subir?nombre=' + encodeURIComponent(file.name));
+      x.upload.onprogress = (e) => { if (e.lengthComputable) alProgreso(e.loaded / e.total); };
+      x.onload = () => { let d = {}; try { d = JSON.parse(x.responseText); } catch (_) { /* nada */ }
+        if (x.status >= 200 && x.status < 300) resolve(d); else reject(new Error(d.error || x.statusText)); };
+      x.onerror = () => reject(new Error('No se pudo conectar con el programa'));
+      x.send(file);
+    });
+  }
+  let subiendo = false;
+  async function añadirFondos(files) {
+    const lista = [...files].filter((f) => FONDO_EXT.test(f.name));
+    if (!lista.length) return toast('Use imágenes (.jpg .png .webp .gif) o videos (.mp4 .webm)');
+    if (subiendo) return toast('Espere a que termine de guardar los anteriores');
+    subiendo = true;
+    const prog = $('#fondoProg'), barra = prog.querySelector('i'), txt = prog.querySelector('span');
+    prog.classList.remove('hidden'); $('#btnAddFondo').disabled = true;
+    let ok = 0;
+    try {
+      for (let i = 0; i < lista.length; i++) {
+        const f = lista[i];
+        const pre = lista.length > 1 ? `(${i + 1}/${lista.length}) ` : '';
+        try {
+          await subirFondo(f, (p) => { barra.style.width = Math.round(p * 100) + '%'; txt.textContent = `${pre}Guardando «${f.name}»… ${Math.round(p * 100)} %`; });
+          ok++;
+        } catch (err) { toast(`No se pudo guardar «${f.name}»: ${err.message}`); }
+      }
+    } finally {
+      subiendo = false; $('#btnAddFondo').disabled = false;
+      prog.classList.add('hidden'); barra.style.width = '0';
+    }
+    if (ok) {
+      fondosKey = '';
+      await cargarFondos(MIS); // muestra Mis fondos con los nuevos
+      toast(ok === 1 ? '✔ Fondo guardado en ⭐ Mis fondos' : `✔ ${ok} fondos guardados en ⭐ Mis fondos`);
+    }
+  }
+  $('#btnAddFondo').addEventListener('click', () => $('#fondoFile').click());
+  $('#fondoFile').addEventListener('change', (e) => { const fs = e.target.files; if (fs.length) añadirFondos(fs); e.target.value = ''; });
+  // Arrastrar y soltar archivos sobre la galería
+  const gridF = $('#fondosGrid');
+  gridF.addEventListener('dragover', (e) => { if ([...(e.dataTransfer?.types || [])].includes('Files')) { e.preventDefault(); gridF.classList.add('soltar'); } });
+  gridF.addEventListener('dragleave', (e) => { if (!gridF.contains(e.relatedTarget)) gridF.classList.remove('soltar'); });
+  gridF.addEventListener('drop', (e) => { e.preventDefault(); gridF.classList.remove('soltar'); if (e.dataTransfer?.files?.length) añadirFondos(e.dataTransfer.files); });
+  // Quitar uno de Mis fondos (los de fábrica no se pueden borrar)
+  gridF.addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-borrar]'); if (!b) return;
+    e.stopPropagation();
+    const f = FONDOS.find((x) => x.url === b.dataset.borrar);
+    if (!confirm(`¿Quitar «${f ? f.nombre : 'este fondo'}» de Mis fondos?`)) return;
+    try {
+      await api('/api/fondo?url=' + encodeURIComponent(b.dataset.borrar), { method: 'DELETE' });
+      if (estado?.estilo?.fondo?.valor === b.dataset.borrar) guardarEstilo({ fondo: { tipo: 'color', valor: '#000000' } }, true);
+      fondosKey = ''; await cargarFondos(MIS); toast('Fondo quitado');
+    } catch (err) { toast('Error: ' + err.message); }
+  }, true);
   function marcarFondoActivo() {
     const aj = $('#fondoAjuste'); if (aj && document.activeElement !== aj) aj.value = estado?.estilo?.ajusteFondo || 'completa';
     const actual = estado?.estilo?.fondo?.valor;

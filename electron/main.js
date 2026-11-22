@@ -9,7 +9,7 @@
 //   4. El servidor elige un puerto libre (8888 o el siguiente disponible) y avisa cuando está listo.
 //   5. Abre el panel. Si el servidor se cae, lo vuelve a levantar solo.
 'use strict';
-const { app, BrowserWindow, Menu, dialog, shell, utilityProcess, session } = require('electron');
+const { app, BrowserWindow, Menu, dialog, shell, utilityProcess, session, Notification } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -67,6 +67,7 @@ function arrancar() {
     session.defaultSession.setPermissionCheckHandler((wc, permiso, origen) => esPropia(origen || (wc && wc.getURL()) || ''));
     mostrarSplash();
     iniciarServidor();
+    iniciarActualizaciones();
   });
   app.on('window-all-closed', () => salir());
   app.on('before-quit', () => { saliendo = true; detenerServidor(); });
@@ -103,6 +104,8 @@ function iniciarServidor() {
       urlPanel = m.url || m.urlLocal;
       log(`[servidor] ${m.tipo} en ${Date.now() - t0} ms →`, m);
       abrirPanel(urlPanel, m.urlLocal);
+    } else if (m.tipo === 'buscar-actualizacion') { // botón de versión del panel
+      buscarActualizacion(true);
     } else if (m.tipo === 'error') {
       clearTimeout(espera);
       fallo('No se pudo iniciar PK-PENTECOSTAL', m.codigo === 'SIN_PUERTO'
@@ -145,6 +148,140 @@ function salir() {
   setTimeout(() => { try { p.kill(); } catch (_) { /* ya cerrado */ } app.quit(); }, 4000);
 }
 
+// ---------------------------------------------------------------- Actualización automática
+// La versión instalada busca sola una versión nueva en las Releases de GitHub (al abrir y cada 6 horas),
+// la descarga en segundo plano y avisa con una notificación de Windows. La actualización se instala ENCIMA,
+// sin desinstalar: los datos del usuario viven aparte (%APPDATA%\PK-PENTECOSTAL) y se conservan.
+// · «Actualizar ahora»: se cierra unos segundos, se instala sola y se vuelve a abrir.
+// · «Al cerrar el programa»: se instala cuando el usuario cierre PK-PENTECOSTAL (útil en pleno culto).
+// Al abrir la versión nueva aparece «PK-PENTECOSTAL se actualizó». La versión portable no se puede
+// actualizar sola: avisa y da el enlace de descarga.
+// Pruebas: PK_UPDATE_URL=<carpeta http con latest.yml> usa ese origen; PK_UPDATE_PRUEBA=1 no muestra diálogos.
+const PORTABLE = !!process.env.PORTABLE_EXECUTABLE_DIR;
+const PRUEBA_ACT = process.env.PK_UPDATE_PRUEBA === '1';
+const VERSION_FILE = path.join(DATOS, 'BSPK', 'version.json');
+let autoUpdater = null, actEstado = 'nada', actManual = false, actInfo = null, preguntando = false;
+
+function notificar(titulo, cuerpo) {
+  try { if (Notification.isSupported()) new Notification({ title: titulo, body: cuerpo, icon: ICONO }).show(); } catch (e) { log('[notificación]', e); }
+}
+const textoPlano = (s) => String(s || '').replace(/<br\s*\/?>/gi, '\n').replace(/<\/(p|li|h\d)>/gi, '\n').replace(/<[^>]+>/g, '')
+  .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/\n{3,}/g, '\n\n').trim();
+function novedades(info) {
+  const n = textoPlano(Array.isArray(info && info.releaseNotes) ? info.releaseNotes.map((x) => x.note).join('\n') : info && info.releaseNotes);
+  // Solo las viñetas (la tabla de descargas y las huellas SHA-256 no le sirven al usuario)
+  const lineas = n.split('\n').map((l) => l.trim()).filter((l) => /^[-•*🖼🔠📦📘✅⬆]/u.test(l) && !/sha-?256/i.test(l)).slice(0, 8);
+  return lineas.length ? `\n\nNovedades:\n${lineas.join('\n').slice(0, 900)}` : '';
+}
+
+function iniciarActualizaciones() {
+  if ((!app.isPackaged && !PRUEBA_ACT) || PORTABLE) { log('[act] desactivada', { empaquetado: app.isPackaged, portable: PORTABLE }); return; }
+  try { ({ autoUpdater } = require('electron-updater')); } catch (e) { log('[act] no se pudo cargar electron-updater', e); return; }
+  autoUpdater.logger = { info: (m) => log('[act]', m), warn: (m) => log('[act:aviso]', m), error: (m) => log('[act:error]', m), debug: () => {} };
+  autoUpdater.autoDownload = true;            // se descarga sola, en segundo plano
+  autoUpdater.autoInstallOnAppQuit = !PRUEBA_ACT; // si no la instala ahora, se instala al cerrar (en pruebas, nunca)
+  autoUpdater.allowPrerelease = false;
+  autoUpdater.disableWebInstaller = true;
+  if (process.env.PK_UPDATE_URL) autoUpdater.setFeedURL({ provider: 'generic', url: process.env.PK_UPDATE_URL });
+  autoUpdater.on('update-available', (i) => {
+    actEstado = 'descargando'; actInfo = i;
+    log('[act] versión nueva disponible', i.version);
+    notificar(`⬆ Hay una nueva actualización: ${NOMBRE} ${i.version}`, 'Se está descargando en segundo plano. Puede seguir usando el programa con normalidad.');
+  });
+  autoUpdater.on('update-not-available', () => {
+    actEstado = 'nada';
+    if (actManual) dialog.showMessageBox(ventana, { type: 'info', title: NOMBRE, icon: ICONO, message: `Tiene la versión más reciente (${app.getVersion()})`, detail: 'PK-PENTECOSTAL busca actualizaciones solo cada vez que se abre.' });
+    actManual = false;
+  });
+  autoUpdater.on('download-progress', (p) => { try { if (ventana) ventana.setProgressBar(Math.max(0.01, p.percent / 100)); } catch (_) { /* nada */ } });
+  autoUpdater.on('update-downloaded', (i) => {
+    try { if (ventana) ventana.setProgressBar(-1); } catch (_) { /* nada */ }
+    actEstado = 'lista'; actInfo = i; actManual = false;
+    log('[act] descargada y verificada', i.version);
+    preguntarInstalar(i);
+  });
+  autoUpdater.on('error', (e) => {
+    try { if (ventana) ventana.setProgressBar(-1); } catch (_) { /* nada */ }
+    if (actEstado !== 'lista') actEstado = 'nada';
+    log('[act:error]', e && (e.stack || e.message));
+    if (actManual) dialog.showMessageBox(ventana, { type: 'warning', title: NOMBRE, icon: ICONO, message: 'No se pudo buscar la actualización', detail: 'Revise la conexión a internet e intente de nuevo.\nTambién puede descargarla de https://sebaslw.github.io/pk-pentecostal.io/ e instalarla encima (sin desinstalar).' });
+    actManual = false;
+  });
+  setTimeout(() => buscarActualizacion(false), PRUEBA_ACT ? 3000 : 20000);
+  setInterval(() => buscarActualizacion(false), 6 * 3600 * 1000);
+}
+
+function buscarActualizacion(manual) {
+  if (!autoUpdater) {
+    if (manual) dialog.showMessageBox(ventana, { type: 'info', title: NOMBRE, icon: ICONO, message: PORTABLE ? 'La versión portable no se actualiza sola' : 'Actualización automática no disponible',
+      detail: 'Descargue la versión nueva de https://sebaslw.github.io/pk-pentecostal.io/\nSus datos se conservan.', buttons: ['Abrir la página', 'Cerrar'] })
+      .then((r) => { if (r.response === 0) shell.openExternal('https://sebaslw.github.io/pk-pentecostal.io/'); });
+    return;
+  }
+  if (actEstado === 'lista') { if (manual) preguntarInstalar(actInfo); return; }
+  if (actEstado === 'descargando' || actEstado === 'buscando') {
+    if (manual) dialog.showMessageBox(ventana, { type: 'info', title: NOMBRE, icon: ICONO, message: actInfo ? `Descargando ${NOMBRE} ${actInfo.version}…` : 'Buscando actualizaciones…', detail: 'Le avisaremos cuando esté lista para instalar.' });
+    return;
+  }
+  actManual = !!manual; actEstado = 'buscando';
+  autoUpdater.checkForUpdates().then((r) => { if (!r && actEstado === 'buscando') actEstado = 'nada'; })
+    .catch((e) => { if (actEstado === 'buscando') actEstado = 'nada'; log('[act] búsqueda falló', e && e.message); });
+}
+
+async function preguntarInstalar(i) {
+  notificar(`✅ ${NOMBRE} ${i.version} está lista para instalar`, 'No hace falta desinstalar: sus canciones, fondos y ajustes se conservan.');
+  if (PRUEBA_ACT || preguntando) return;
+  preguntando = true;
+  try {
+    const r = await dialog.showMessageBox(ventana, {
+      type: 'info', title: NOMBRE, icon: ICONO, noLink: true,
+      message: `⬆ Nueva actualización: ${NOMBRE} ${i.version}`,
+      detail: `Usted tiene la versión ${app.getVersion()}. La actualización ya se descargó y se verificó.\n\n` +
+        'Se instala ENCIMA, sin desinstalar nada: sus canciones, fondos, ajustes y claves de los celulares se conservan.\n\n' +
+        '«Actualizar ahora»: el programa se cierra unos segundos, se actualiza y se vuelve a abrir solo.\n' +
+        '«Al cerrar el programa»: si está en pleno culto, se actualizará cuando lo cierre.' + novedades(i),
+      buttons: ['Actualizar ahora', 'Al cerrar el programa'], defaultId: 0, cancelId: 1,
+    });
+    if (r.response === 0) instalarYReiniciar();
+    else log('[act] se instalará al cerrar');
+  } finally { preguntando = false; }
+}
+
+function instalarYReiniciar() {
+  log('[act] instalando y reiniciando');
+  saliendo = true;
+  let hecho = false;
+  const fin = () => { if (hecho) return; hecho = true; try { autoUpdater.quitAndInstall(true, true); } catch (e) { log('[act] quitAndInstall', e); app.quit(); } };
+  const p = servidor; // primero se apaga el servidor en orden (guarda la configuración)
+  if (!p) return fin();
+  p.once('exit', fin);
+  try { p.postMessage({ tipo: 'apagar' }); } catch (_) { fin(); }
+  setTimeout(() => { try { p.kill(); } catch (_) { /* ya cerrado */ } fin(); }, 4000);
+}
+
+// Al abrir una versión más nueva que la de la última vez: «PK-PENTECOSTAL se actualizó»
+function compararVersiones(a, b) {
+  const pa = String(a).split(/[.-]/).map((x) => parseInt(x, 10) || 0), pb = String(b).split(/[.-]/).map((x) => parseInt(x, 10) || 0);
+  for (let k = 0; k < Math.max(pa.length, pb.length); k++) { const d = (pa[k] || 0) - (pb[k] || 0); if (d) return d; }
+  return 0;
+}
+function avisoSiSeActualizo() {
+  const ahora = app.getVersion();
+  let antes = null;
+  try { antes = JSON.parse(fs.readFileSync(VERSION_FILE, 'utf8')).version; }
+  catch (_) { if (fs.existsSync(path.join(DATOS, 'BSPK', 'config.json'))) antes = 'anterior'; } // venía de la 2.0.2 o antes
+  try { fs.writeFileSync(VERSION_FILE, JSON.stringify({ version: ahora, fecha: new Date().toISOString() })); } catch (e) { log('[act] version.json', e); }
+  if (!antes || antes === ahora || (antes !== 'anterior' && compararVersiones(ahora, antes) <= 0)) return;
+  log('[act] actualizado', antes, '→', ahora);
+  notificar(`✅ ${NOMBRE} se actualizó a la versión ${ahora}`, 'Sus canciones, fondos y ajustes se conservaron.');
+  if (PRUEBA_ACT) return;
+  dialog.showMessageBox(ventana, { type: 'info', title: NOMBRE, icon: ICONO, noLink: true,
+    message: `✅ ¡${NOMBRE} se actualizó!`,
+    detail: `${antes === 'anterior' ? '' : `Versión anterior: ${antes}\n`}Versión nueva: ${ahora}\n\nSus canciones, fondos, ajustes y claves de los celulares se conservaron.\n\nDesde ahora el programa se actualiza solo: cuando haya una versión nueva le llegará un aviso.`,
+    buttons: ['¡Listo!', 'Ver novedades'], defaultId: 0, cancelId: 0,
+  }).then((r) => { if (r.response === 1) shell.openExternal(`https://github.com/Sebaslw/PK-PENTECOSTAL/releases/tag/v${ahora}`); });
+}
+
 // ---------------------------------------------------------------- Ventanas
 function mostrarSplash() {
   splash = new BrowserWindow({ width: 520, height: 340, frame: false, resizable: false, show: false, center: true, backgroundColor: '#04162e', icon: ICONO, skipTaskbar: false, title: NOMBRE });
@@ -168,7 +305,7 @@ function abrirPanel(url, urlLocal) {
     // Si el nombre pkipuc.localhost no resuelve en este equipo, se usa localhost
     if (urlLocal && u && !u.startsWith(urlLocal)) ventana.loadURL(urlLocal + '?quedarse=1');
   });
-  ventana.once('ready-to-show', () => { cerrarSplash(); ventana.show(); ventana.focus(); });
+  ventana.once('ready-to-show', () => { cerrarSplash(); ventana.show(); ventana.focus(); setTimeout(avisoSiSeActualizo, 2500); });
   ventana.on('page-title-updated', (e) => { e.preventDefault(); ventana.setTitle(NOMBRE); });
   ventana.on('closed', () => { log('[ventana] panel cerrado'); ventana = null; salir(); }); // al cerrar el panel se cierra todo (también el proyector)
   ventana.loadURL(url);
@@ -288,6 +425,7 @@ function menu() {
     { label: 'Ayuda', submenu: [
       { label: 'Manual de PK-PENTECOSTAL', click: abrirManual },
       { label: 'Página web', click: () => shell.openExternal('https://sebaslw.github.io/pk-pentecostal.io/') },
+      { label: 'Buscar actualizaciones…', click: () => buscarActualizacion(true) },
       { type: 'separator' },
       { label: 'Acerca de PK-PENTECOSTAL', click: () => dialog.showMessageBox(ventana, { type: 'info', title: NOMBRE, icon: ICONO, message: `${NOMBRE} ${app.getVersion()}`, detail: 'Biblia y canciones en vivo para proyector, OBS y celulares.\n\nHecho por Sebastian Lopez · IPUC Natania 6° Etapa\nZona Especial Misionera – Archipiélago de San Andrés, Providencia y Santa Catalina\n\n«Por toda la tierra salió su voz, y hasta el extremo del mundo sus palabras.» Salmos 19:4\n\nDatos: ' + DATOS } ) },
     ] },

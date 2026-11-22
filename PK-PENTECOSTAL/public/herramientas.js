@@ -67,10 +67,16 @@
     const i = await revisar(true);
     if (!i) return pintarVersion();
     if (i.error) { toast(i.error); return pintarVersion(); }
+    // App de escritorio instalada: ella misma descarga e instala la actualización (sin desinstalar)
+    if (i.autoActualiza && /(^|\.)localhost$|^127\.0\.0\.1$/.test(location.hostname)) {
+      pintarVersion();
+      try { await api('/api/actualizacion/buscar', { method: 'POST' }); } catch (_) { /* nada */ }
+      return toast(i.hay ? `⬆ Descargando PK-PENTECOSTAL ${i.ultima}… le avisaremos cuando esté lista` : `Tiene la versión más reciente (${i.actual})`);
+    }
     if (!i.hay) return toast(`Tiene la versión más reciente (${i.actual})`);
     const r = await dialogo(`⬆ PK-PENTECOSTAL ${i.ultima} disponible`, `<p>Usted tiene la versión <b>${esc(i.actual)}</b>.</p>
       ${i.notas ? `<div class="hint" style="white-space:pre-wrap;max-height:40vh;overflow:auto">${esc(i.notas)}</div>` : ''}
-      <p class="hint">Para actualizar: descargue la versión nueva y reemplace la carpeta del programa. Sus ajustes están en la carpeta <b>BSPK</b> y en <b>obs</b>: haga primero un 💾 Respaldo.</p>`,
+      <p class="hint">Para actualizar: descargue la versión nueva e <b>instálela encima</b>. No hace falta desinstalar: sus canciones, fondos y ajustes se conservan. Si quiere, haga antes un 💾 Respaldo.</p>`,
       [['cancel', 'Después'], ['ok', 'Abrir página de descarga', 'primary']]);
     if (r === 'ok') window.open(i.url, '_blank', 'noopener');
   });
@@ -79,6 +85,7 @@
   const hoy = new Date().toISOString().slice(0, 10);
   if (store.get('actRevisada') !== hoy && /(^|\.)localhost$|^127\.0\.0\.1$/.test(location.hostname)) {
     store.set('actRevisada', hoy);
-    setTimeout(() => revisar(false).then((i) => { if (i && i.hay) toast(`⬆ Hay una versión nueva de PK-PENTECOSTAL: ${i.ultima}`); }), 8000);
+    // (en la app instalada el aviso lo da Windows y la descarga empieza sola; aquí solo se marca el botón)
+    setTimeout(() => revisar(false).then((i) => { if (i && i.hay && !i.autoActualiza) toast(`⬆ Hay una versión nueva de PK-PENTECOSTAL: ${i.ultima}`); }), 8000);
   }
 })();

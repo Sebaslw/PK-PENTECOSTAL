@@ -4,7 +4,7 @@
 
 <br/>
 
-![Versión](https://img.shields.io/badge/versión-2.0.2-f59e0b?style=for-the-badge)
+![Versión](https://img.shields.io/badge/versión-2.0.3-f59e0b?style=for-the-badge)
 ![Windows](https://img.shields.io/badge/Windows-10%20%C2%B7%2011%20(64%20bits)-0078D4?style=for-the-badge&logo=windows&logoColor=white)
 ![Sin Node.js](https://img.shields.io/badge/no%20necesita-Node.js-339933?style=for-the-badge&logo=electron&logoColor=white)
 ![OBS Studio](https://img.shields.io/badge/OBS_Studio-28%2B-302E31?style=for-the-badge&logo=obsstudio&logoColor=white)
@@ -85,7 +85,7 @@ Todo corre en **un solo computador**, se maneja desde el **navegador** y **no ne
 
 ### 📽️ Proyector y pantallas
 - Botón **Proyectar**: abre sola la ventana en la 2ª pantalla a pantalla completa.
-- Fondos de **imagen o video** (y suba los suyos desde el panel). **La galería se ve completa apenas abre el programa**: cada fondo trae su miniatura lista.
+- Fondos de **imagen o video**. Botón **➕ Añadir fondo** (o arrastrar y soltar): se guardan solos en **⭐ Mis fondos** y siguen ahí cada vez que abre el programa. **La galería se ve completa apenas abre el programa**: cada fondo trae su miniatura lista.
 - **Mismo tamaño de letra** en todas las diapositivas de una canción (y en los versículos de un capítulo): nada de estrofas gigantes y otras diminutas.
 - Estilo a su gusto: fuente, tamaño, sombra, contorno, mayúsculas, alineación y transiciones.
 - **Pantalla negra**, **ocultar texto** y **limpiar** con una tecla.
@@ -241,8 +241,8 @@ Descargue desde la **[página web](https://sebaslw.github.io/pk-pentecostal.io/)
 
 | Archivo | Para qué |
 |---|---|
-| **`PK-PENTECOSTAL-Instalador-2.0.2.exe`** | Doble clic → *Siguiente*. Crea el acceso directo en el **Escritorio** y en el **menú Inicio**. Se desinstala desde *Configuración → Aplicaciones*. |
-| **`PK-PENTECOSTAL-Portable-2.0.2.exe`** | No se instala: doble clic y listo. Ideal para una memoria USB. |
+| **`PK-PENTECOSTAL-Instalador-2.0.3.exe`** | Doble clic → *Siguiente*. Crea el acceso directo en el **Escritorio** y en el **menú Inicio**. Se desinstala desde *Configuración → Aplicaciones*. |
+| **`PK-PENTECOSTAL-Portable-2.0.3.exe`** | No se instala: doble clic y listo. Ideal para una memoria USB. |
 
 **No necesita Node.js** ni ningún otro programa. Al abrirlo:
 
@@ -253,6 +253,9 @@ Descargue desde la **[página web](https://sebaslw.github.io/pk-pentecostal.io/)
 > 🖱️ Menú del programa: pulse **Alt** → *Archivo* (abrir en el navegador, carpeta de datos, importar una versión anterior, registro de eventos), *Ver* (pantalla completa, zoom) y *Ayuda* (manual PDF). **F11** = pantalla completa.
 
 > 🔒 **Marca protegida:** el logo y los archivos del programa van en un paquete verificado. Si se alteran, PK-PENTECOSTAL no los muestra y pide reinstalar (sus datos se conservan).
+
+#### 🔄 Se actualiza solo
+Desde la **2.0.3**, la versión instalada busca actualizaciones al abrir (y cada 6 horas) en las Releases de GitHub. Si hay una nueva: **aviso de Windows** → se descarga sola en segundo plano → pregunta **Actualizar ahora** o **Al cerrar el programa** → se instala **encima, sin desinstalar** (canciones, fondos, ajustes y claves se conservan) → al abrir dice **«✅ PK-PENTECOSTAL se actualizó»**. También: *Alt → Ayuda → Buscar actualizaciones…* o el botón de versión del pie. La portable avisa y da el enlace. *(Para publicar: subir a la Release `latest.yml` y el `.blockmap` junto al instalador.)*
 
 #### ¿Dónde quedan mis datos?
 

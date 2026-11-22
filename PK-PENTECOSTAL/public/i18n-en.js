@@ -104,6 +104,12 @@ window.I18N_EN = {
   'Agregue imágenes o videos (.jpg .png .webp .mp4 .webm) a la carpeta': 'Add images or videos (.jpg .png .webp .mp4 .webm) to the folder',
   'Todas las categorías': 'All categories',
   'No hay fondos': 'No backgrounds',
+  'Añadir fondo': 'Add background',
+  'Mis fondos': 'My backgrounds',
+  'Imágenes (.jpg .png .webp .gif) o videos (.mp4 .webm). Se guardan solos en': 'Images (.jpg .png .webp .gif) or videos (.mp4 .webm). They are saved automatically in',
+  'y siguen ahí cada vez que abra el programa. También puede arrastrarlos a la galería.': 'and stay there every time you open the program. You can also drag them onto the gallery.',
+  'Todavía no tiene fondos propios.': 'You have no backgrounds of your own yet.',
+  'Quitar de Mis fondos': 'Remove from My backgrounds',
 
   // ---------------- Estilo
   'Pantalla completa / Proyector': 'Full screen / Projector',

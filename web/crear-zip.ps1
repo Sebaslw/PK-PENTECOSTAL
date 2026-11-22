@@ -91,4 +91,5 @@ window.PK_DESCARGA = {
 Write-Host ""
 Write-Host "  Listo: $destDir\info.js"
 Write-Host "  .zip: $n archivos"
-Write-Host "  Suba a la Release v$version : dist\$inst, dist\$port y web\descargas\$nombreZip"
+Write-Host "  Suba a la Release v$version : dist\$inst, dist\$inst.blockmap, dist\latest.yml, dist\$port y web\descargas\$nombreZip"
+Write-Host "  (latest.yml es OBLIGATORIO: sin él los programas instalados no se enteran de la versión nueva)"

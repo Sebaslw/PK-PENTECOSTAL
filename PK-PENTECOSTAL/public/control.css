@@ -119,6 +119,18 @@ mark { background: rgba(248,184,0,.3); color: inherit; border-radius: 3px; }
 .fondo img, .fondo video { width: 100%; height: 100%; object-fit: contain; display: block; }
 .fondo:hover { border-color: rgba(255,255,255,.35); }
 .fondo.active { border-color: var(--warn); }
+/* Añadir fondo + Mis fondos */
+.add-fondo { display: flex; gap: 8px; margin: 10px 0 2px; }
+.add-fondo button { font-weight: 700; padding: 9px 12px; }
+.fondo-prog { margin: 6px 0 2px; font-size: 12px; color: var(--muted); }
+.fondo-prog .barra { height: 6px; border-radius: 3px; background: var(--panel2); overflow: hidden; margin-bottom: 4px; }
+.fondo-prog .barra i { display: block; height: 100%; width: 0; background: var(--warn); transition: width .2s; }
+.grid-fondos.soltar { outline: 2px dashed var(--warn); outline-offset: -4px; border-radius: 8px; }
+.fondo .borrar { position: absolute; top: 4px; right: 4px; z-index: 3; width: 22px; height: 22px; padding: 0; border-radius: 50%;
+  font-size: 12px; line-height: 20px; background: rgba(0,0,0,.7); border-color: rgba(255,255,255,.25); display: none; }
+.fondo:hover .borrar { display: block; }
+.fondo .borrar:hover { background: #7f1d1d; }
+.fondo .mio { position: absolute; left: 4px; top: 4px; font-size: 10px; background: var(--warn); color: #000; font-weight: 800; padding: 0 5px; border-radius: 4px; z-index: 2; }
 .fondo .tag { position: absolute; left: 4px; bottom: 4px; font-size: 10px; background: rgba(0,0,0,.7); padding: 1px 5px; border-radius: 4px; }
 
 /* ---------- Formulario estilo ---------- */

@@ -132,7 +132,13 @@
           <option value="estirar">Estirar a toda la pantalla</option>
         </select>
       </div>
-      <p class="hint">Los fondos se ven en la salida <b>Pantalla</b>. Agregue imágenes o videos (.jpg .png .webp .mp4 .webm) a la carpeta <code>fondos</code>.</p>
+      <!-- Añadir fondo: se guarda solo en BSPK/fondos/Subidos (carpeta de datos) y aparece en «⭐ Mis fondos» -->
+      <div class="add-fondo">
+        <button id="btnAddFondo" class="primary grow">➕ Añadir fondo</button>
+        <input type="file" id="fondoFile" accept=".jpg,.jpeg,.png,.webp,.gif,.mp4,.webm,image/*,video/mp4,video/webm" multiple hidden>
+      </div>
+      <div id="fondoProg" class="fondo-prog hidden"><div class="barra"><i></i></div><span></span></div>
+      <p class="hint">Imágenes (.jpg .png .webp .gif) o videos (.mp4 .webm). Se guardan solos en <b>⭐ Mis fondos</b> y siguen ahí cada vez que abra el programa. También puede arrastrarlos a la galería.</p>
       <div class="scroll grid-fondos" id="fondosGrid"></div>
     </div>
 
