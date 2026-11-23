@@ -446,6 +446,7 @@
     const v = await obs.call('GetVersion').catch(() => ({}));
     plataforma = v.platform || 'windows';
     estadoOBS('ok', 'OBS conectado', `OBS ${v.obsVersion || ''} · WebSocket ${v.obsWebSocketVersion || ''}`);
+    PP.pintarOBS?.(); // las URLs para OBS pasan a la IP de este equipo si OBS está en otro computador
     if (manual && !corregida) toast('Conectado con OBS');
     await Promise.all([cargarEscenas(), actualizarStream(), cargarEntradas()]);
     iniciarMiniaturas();
@@ -542,12 +543,43 @@
       // ya existe: se asegura de que apunte a este equipo (p. ej. creada antes con pkipuc.localhost)
       try {
         const { inputSettings } = await obs.call('GetInputSettings', { inputName: nombre });
-        if (inputSettings && inputSettings.url === url) return toast(`La capa “${nombre}” ya existe en OBS`);
-        await obs.call('SetInputSettings', { inputName: nombre, inputSettings: { url } });
-        toast('Capa actualizada con la dirección de este equipo');
-      } catch (e2) { toast('OBS: ' + e2.message); }
+        if (inputSettings && inputSettings.url === url) {
+          toast(`La capa “${nombre}” ya existe en OBS`);
+          // se recarga para comprobar que el otro computador sí la abre
+          await obs.call('PressInputPropertiesButton', { inputName: nombre, propertyName: 'refreshnocache' }).catch(() => {});
+        } else {
+          await obs.call('SetInputSettings', { inputName: nombre, inputSettings: { url } });
+          toast('Capa actualizada con la dirección de este equipo');
+        }
+      } catch (e2) { return toast('OBS: ' + e2.message); }
     }
+    if (!url.startsWith(location.origin)) comprobarCapaRemota(url, nombre);
   });
+
+  // OBS en otro computador: la capa la abre OBS desde ESE equipo. Si en unos segundos no se conecta
+  // aquí, el Firewall de este computador o la red lo impiden (la capa sale vacía: sin canciones ni Biblia).
+  async function comprobarCapaRemota(url, nombre) {
+    for (let i = 0; i < 16; i++) {
+      await new Promise((r) => setTimeout(r, 500));
+      const r = await api('/api/obs/clientes').catch(() => null);
+      const c = r && (r.clientes || []).find((x) => /^\/(capa|overlay|banner|salida|stinger)/.test(x.pagina || ''));
+      if (c) { estadoOBS('ok', 'OBS conectado', `La capa se ve en OBS (equipo ${c.ip}) ✓`); return toast(`OBS (${c.ip}) ya muestra la capa ✓`); }
+    }
+    const res = await dialogo('OBS no logra abrir la capa', `
+      <p>La capa se creó en OBS, pero el computador de OBS <b>no logra conectarse a este equipo</b>: por eso no se ven las canciones ni la Biblia.</p>
+      <ol class="hint">
+        <li><b>Firewall de este computador</b>: pulse <b>Permitir en el Firewall</b> (Windows pedirá permiso de administrador).</li>
+        <li>Los dos computadores deben estar en la <b>misma red</b> (mismo Wi-Fi o cable, sin “red de invitados”).</li>
+        <li>Prueba: en el computador de OBS abra en el navegador <code>${esc(url)}</code>. Debe verse una página vacía o transparente, no un error.</li>
+      </ol>`, [['cancel', 'Cerrar'], ['fw', 'Permitir en el Firewall', 'primary']]);
+    if (res !== 'fw') return;
+    toast('Esperando el permiso de administrador…');
+    const fw = await api('/api/firewall', { method: 'POST', body: {} }).catch((e) => ({ ok: false, error: e.message }));
+    if (!fw.ok) return toast('Firewall: ' + (fw.error || 'no se pudo'));
+    toast(`Firewall: puertos ${fw.puertos} permitidos. Recargando la capa en OBS…`);
+    await obs.call('PressInputPropertiesButton', { inputName: nombre, propertyName: 'refreshnocache' }).catch(() => {});
+    comprobarCapaRemota(url, nombre);
+  }
 
   // --- Escenas
   async function cargarEscenas() {

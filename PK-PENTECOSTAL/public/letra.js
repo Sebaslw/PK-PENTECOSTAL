@@ -8,7 +8,10 @@
  * de letra: una estrofa larga pasa a varias diapositivas en vez de achicarse. Solo se aplica al mostrar;
  * los cancioneros no se modifican. Lo usan el panel y el celular (y las pruebas, con require). */
 (function (g) {
-  const POR_RENGLON = 42; // letras de un renglón normal (referencia del tamaño de letra)
+  // Letras de un renglón de referencia (Estilo → Letras por renglón). Define el tamaño de la letra en la
+  // pantalla: menos letras por renglón = letra más grande (una línea más larga pasa a dos renglones).
+  const POR_RENGLON = 22;
+  const porRenglonValido = (n) => Math.max(14, Math.min(42, Math.round(+n) || POR_RENGLON));
   // Marcadores de himnario en la primera línea ("Coro", "II", "Estrofa 2"): no se proyectan ni cuentan
   const ES_MARCADOR = /^(coro|estribillo|puente|[ivx]+|estrofa\s*\d+|chorus|refrain|bridge|verse\s*\d+)[.:)]?$/i;
 
@@ -20,7 +23,21 @@
       .trim();
   }
 
-  const renglones = (l, porRenglon = POR_RENGLON) => Math.max(1, Math.ceil(String(l).length / porRenglon));
+  // Renglones que ocupa una línea en pantalla: se corta por palabras (como lo hace la pantalla), no a la
+  // mitad exacta, así una línea de 30 letras puede ocupar 2 renglones y una de 44 letras, 3.
+  function renglones(l, porRenglon = POR_RENGLON) {
+    const s = String(l).trim();
+    if (s.length <= porRenglon) return 1;
+    let n = 1, ancho = 0;
+    for (const w of s.split(/\s+/)) {
+      const largo = w.length;
+      if (!ancho) ancho = largo;
+      else if (ancho + 1 + largo <= porRenglon) ancho += 1 + largo;
+      else { n++; ancho = largo; }
+      while (ancho > porRenglon) { n++; ancho -= porRenglon; } // palabra más larga que el renglón
+    }
+    return n;
+  }
 
   // Mínimo de partes en que cabe la lista de pesos sin pasar de max (una línea más larga que max va sola)
   function partesMinimas(pesos, max) {
@@ -31,8 +48,8 @@
 
   // Reparte las líneas en el mínimo de partes, con renglones lo más parejos posible (las primeras, si
   // sobra, llevan una más: 13 → 5+4+4)
-  function repartir(ls, max) {
-    const pesos = ls.map((l) => renglones(l));
+  function repartir(ls, max, porRenglon) {
+    const pesos = ls.map((l) => renglones(l, porRenglon));
     let k = partesMinimas(pesos, max);
     if (k <= 1) return [ls];
     const partes = [];
@@ -51,9 +68,30 @@
     return partes;
   }
 
+  // Una línea que no cabe en una diapositiva (estrofas enteras escritas en un solo renglón) se parte por
+  // palabras en trozos de máximo 2 renglones, cortando de preferencia después de una coma o un punto
+  function partirLarga(l, max, porRenglon) {
+    if (renglones(l, porRenglon) <= max) return [l];
+    const limite = porRenglon * 2;
+    const out = [];
+    let resto = l;
+    while (resto.length > limite) {
+      const tramo = resto.slice(0, limite + 1);
+      let corte = Math.max(tramo.lastIndexOf(', '), tramo.lastIndexOf('. '), tramo.lastIndexOf('; '));
+      corte = corte >= porRenglon ? corte + 1 : tramo.lastIndexOf(' ');
+      if (corte <= 0) corte = limite;
+      out.push(resto.slice(0, corte).trim());
+      resto = resto.slice(corte).trim();
+    }
+    if (resto) out.push(resto);
+    return out;
+  }
+
   // opciones.limpiar = false: texto libre / anuncios (se respetan enlaces y "/"; solo se quitan espacios)
-  function estrofas(le, lineasMax = 6, opciones = {}) {
-    const max = Math.max(2, Math.min(12, +lineasMax || 6));
+  // opciones.porRenglon: letras por renglón (Estilo → Letras por renglón; 22 por defecto)
+  function estrofas(le, lineasMax = 4, opciones = {}) {
+    const max = Math.max(2, Math.min(12, +lineasMax || 4));
+    const porRenglon = porRenglonValido(opciones.porRenglon);
     const limpiar = opciones.limpiar === false ? (l) => String(l).trim() : limpiarLinea;
     const bloques = [];
     let actual = [];
@@ -64,13 +102,14 @@
     const out = [];
     for (const b of bloques) {
       const marcador = b.length > 1 && ES_MARCADOR.test(b[0]) ? b[0] : null;
-      const cuerpo = marcador ? b.slice(1) : b;
-      repartir(cuerpo, max).forEach((p, i) => out.push((i === 0 && marcador ? [marcador, ...p] : p).join('\n')));
+      // (el texto libre no se parte: puede tener enlaces sin espacios)
+    const cuerpo = (marcador ? b.slice(1) : b).flatMap((l) => (opciones.limpiar === false ? [l] : partirLarga(l, max, porRenglon)));
+      repartir(cuerpo, max, porRenglon).forEach((p, i) => out.push((i === 0 && marcador ? [marcador, ...p] : p).join('\n')));
     }
     return out;
   }
 
-  const api = { limpiarLinea, renglones, estrofas, ES_MARCADOR, POR_RENGLON };
+  const api = { limpiarLinea, renglones, estrofas, ES_MARCADOR, POR_RENGLON, porRenglonValido };
   g.PKLetra = api;
   if (typeof module === 'object' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

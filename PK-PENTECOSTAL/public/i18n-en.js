@@ -143,6 +143,8 @@ window.I18N_EN = {
   'Toda la canción (o el capítulo) se proyecta con el mismo tamaño de letra': 'The whole song (or chapter) is shown with the same text size',
   'Los versículos de un capítulo se proyectan con el mismo tamaño de letra': 'The verses of a chapter are shown with the same text size',
   'Líneas por diapositiva': 'Lines per slide',
+  'Letras por renglón': 'Letters per row',
+  'Define el tamaño de la letra de las canciones: menos letras por renglón = letra más grande (una línea más larga pasa al renglón siguiente)': 'Sets the song text size: fewer letters per row = bigger text (a longer line wraps to the next row)',
   'Una estrofa más larga se reparte en varias diapositivas para que todas las canciones salgan del mismo tamaño': 'A longer verse is split into several slides so every song is shown at the same size',
   'Transición (ms)': 'Transition (ms)',
   'Tercio inferior (OBS)': 'Lower third (OBS)',

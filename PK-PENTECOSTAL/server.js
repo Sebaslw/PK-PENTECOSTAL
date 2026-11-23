@@ -172,15 +172,19 @@ const VID_EXT = ['.mp4', '.webm'];
 // ---------------------------------------------------------------- Estado / configuración
 const DEFAULT_STYLE = {
   // Pantalla completa (proyector / OBS a pantalla completa)
-  fuente: 'Montserrat', peso: '800', interlineado: 1.18, tamMax: 96, color: '#ffffff', sombra: true, contorno: false,
+  // Letra grande y dominante para pantalla LED: Montserrat extra negrita, blanco puro, sombra sutil
+  fuente: 'Montserrat', peso: '800', interlineado: 1.18, tamMax: 160, color: '#ffffff', sombra: true, contorno: false,
   mayusculas: false, alineacion: 'center', negrita: true, margen: 8, posicionV: 0,
   // Resolución de la pantalla del proyector / LED ('auto' = la de la ventana) y ajuste de la imagen de fondo
   pantalla: '3200x1440', ajusteFondo: 'completa',
   // Mismo tamaño de letra en todas las diapositivas de una canción (y en los versículos de un capítulo)
   tamUniforme: true,
   // Canciones: máximo de renglones por diapositiva; una estrofa más larga se reparte en varias (todas las
-  // canciones salen del mismo tamaño de letra)
-  lineasMax: 6,
+  // canciones salen del mismo tamaño de letra). letrasRenglon = letras de un renglón de referencia: define
+  // el tamaño de la letra (menos letras = más grande; una línea más larga pasa al renglón siguiente)
+  lineasMax: 4, letrasRenglon: 22,
+  // Versión de los valores por defecto (para pasar a la letra grande las configuraciones guardadas)
+  estiloVer: 2,
   refColor: '#ffffff', mostrarRef: true, oscurecerFondo: 15,
   fondo: { tipo: 'imagen', valor: '/fondos/IMAGENES/Bokeh%20verde.png' },
   transicion: 400,
@@ -249,10 +253,21 @@ const DEFAULT_ROTULOS = [
   { id: uid(), nombre: 'Escuela Dominical', subtitulo: 'Participantes', reloj: false, items: [] },
 ];
 
+// Letra grande (estiloVer 2): las configuraciones guardadas con los valores de fábrica anteriores
+// (tamaño máximo 96, 6 líneas por diapositiva) pasan a los nuevos. Lo que el usuario cambió se respeta.
+function migrarEstilo(e) {
+  if (!e || typeof e !== 'object' || (+e.estiloVer || 1) >= 2) return;
+  if (e.tamMax == null || +e.tamMax === 96) e.tamMax = DEFAULT_STYLE.tamMax;
+  if (e.lineasMax == null || +e.lineasMax === 6) e.lineasMax = DEFAULT_STYLE.lineasMax;
+  e.estiloVer = 2;
+}
+
 const IDIOMAS = ['es', 'en-US', 'en-GB'];
 let config = { estilo: DEFAULT_STYLE, historial: [], modulo: DEFAULT_MODULO, rotulos: DEFAULT_ROTULOS, idioma: 'es' };
 try {
   const saved = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+  if (saved.estilo) migrarEstilo(saved.estilo);
+  if (saved.estilosVisor && typeof saved.estilosVisor === 'object') Object.values(saved.estilosVisor).forEach(migrarEstilo);
   config = {
     estilo: deepMerge(DEFAULT_STYLE, saved.estilo || {}), historial: saved.historial || [],
     modulo: deepMerge(DEFAULT_MODULO, saved.modulo || {}),
@@ -1324,6 +1339,10 @@ async function handle(req, res) {
   if (p === '/api/eventos') {
     res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
     res._visor = visorDe(req, url);
+    // Quién está mirando (para comprobar que el OBS de otro computador sí abrió la capa)
+    res._ip = String(req.socket.remoteAddress || '').replace(/^::ffff:/, '');
+    res._equipo = equipo;
+    try { res._pagina = new URL(req.headers.referer || '').pathname; } catch (_) { res._pagina = ''; }
     res.write(`retry: 1500\nevent: estado\ndata: ${JSON.stringify(vista(res._visor))}\n\n`);
     clients.add(res);
     req.on('close', () => clients.delete(res));
@@ -1548,6 +1567,16 @@ async function handle(req, res) {
     if (!equipo) return sendJSON(res, { encontrado: false, error: 'Solo desde el computador' }, 403);
     return sendJSON(res, obsLocal());
   }
+  // Pantallas abiertas desde OTROS computadores (OBS remoto): IP y página (/capa, /salida…)
+  if (p === '/api/obs/clientes') {
+    if (!equipo) return sendJSON(res, { error: 'Solo desde el computador' }, 403);
+    return sendJSON(res, { clientes: [...clients].filter((c) => !c._equipo).map((c) => ({ ip: c._ip, pagina: c._pagina })) });
+  }
+  // Permite en el Firewall de Windows los puertos del programa (todas las redes). Pide permiso de administrador.
+  if (p === '/api/firewall' && req.method === 'POST') {
+    if (!equipo) return sendJSON(res, { error: 'Solo desde el computador' }, 403);
+    return sendJSON(res, await permitirFirewall());
+  }
   if (p === '/api/obs/buscar') { // OBS en otro computador de la red (solo desde el panel de este equipo)
     if (!equipo) return sendJSON(res, { encontrados: [], error: 'Solo desde el computador' }, 403);
     return sendJSON(res, await buscarOBS());
@@ -1667,6 +1696,24 @@ function buscarOBS() {
   return Promise.all(ips.map((ip) => probar(ip).then((si) => (si ? { ip, propio: propias.includes(ip) || ip.startsWith('127.') } : null))))
     .then((r) => ({ puerto, encontrados: r.filter(Boolean) }));
 }
+// Regla de entrada en el Firewall de Windows para los puertos del panel y del proyector (todas las redes:
+// privada, pública y dominio). Así el OBS de otro computador y los celulares pueden abrir las capas.
+function permitirFirewall() {
+  return new Promise((ok) => {
+    if (process.platform !== 'win32') return ok({ ok: false, error: 'Solo en Windows' });
+    const puertos = [...new Set([PORT, PORT_PROY].filter(Boolean))].join(',');
+    const nombre = 'PK-PENTECOSTAL (OBS y celulares)';
+    const netsh = `advfirewall firewall delete rule name="${nombre}" & netsh advfirewall firewall add rule name="${nombre}" dir=in action=allow protocol=TCP localport=${puertos} profile=any`;
+    const ps = `try { $p = Start-Process -FilePath cmd.exe -ArgumentList '/c netsh ${netsh.replace(/'/g, "''")}' -Verb RunAs -WindowStyle Hidden -Wait -PassThru; exit $p.ExitCode } catch { exit 1223 }`;
+    const { execFile } = require('child_process');
+    execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', ps], { windowsHide: true, timeout: 120000 }, (err) => {
+      const code = err ? (typeof err.code === 'number' ? err.code : 1) : 0;
+      if (code === 0) return ok({ ok: true, puertos });
+      ok({ ok: false, cancelado: code === 1223, error: code === 1223 ? 'Se canceló el permiso de administrador' : 'No se pudo crear la regla del Firewall (código ' + code + ')' });
+    });
+  });
+}
+
 function esLocal(req) {
   const a = req.socket.remoteAddress || '';
   return a === '127.0.0.1' || a === '::1' || a === '::ffff:127.0.0.1';

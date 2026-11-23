@@ -292,7 +292,8 @@
   // Letra limpia (sin espacios ni marcas //) y repartida en diapositivas de máximo N renglones (letra.js):
   // así todas las canciones se proyectan con el mismo tamaño de letra
   function estrofas(le, opciones) {
-    return window.PKLetra.estrofas(le, (estado && estado.estilo && estado.estilo.lineasMax) || 6, opciones);
+    const est = (estado && estado.estilo) || {};
+    return window.PKLetra.estrofas(le, est.lineasMax || 4, { porRenglon: est.letrasRenglon, ...opciones });
   }
   function abrirCancion(s) {
     CAN.actual = s;
@@ -602,13 +603,22 @@
   $('#btnResetEstilo').addEventListener('click', () => { if (confirm('¿Restaurar todos los estilos por defecto?')) api('/api/estilo', { method: 'POST', body: { reset: true } }).then(() => toast('Estilo restaurado')); });
 
   // ================================================================ OBS
+  // URLs para OBS: si OBS está en OTRO computador, con la IP de este equipo (http://pkipuc.localhost en
+  // el equipo de OBS sería él mismo y la fuente quedaría vacía: sin canciones ni Biblia)
   async function pintarOBS() {
-    $$('.url').forEach((i) => (i.value = location.origin + i.dataset.path));
+    let base = location.origin;
+    try { if (window.PP && window.PP.baseURLParaOBS) base = await window.PP.baseURLParaOBS(); } catch (_) { /* sin OBS: dirección del panel */ }
+    $$('.url').forEach((i) => (i.value = base + i.dataset.path));
     try {
       const info = await api('/api/info');
       if (info.ips.length) $('#redLocal').innerHTML = `Desde otro equipo o celular en la misma red, abra el panel en: ${info.ips.map((ip) => `<code>http://${ip}:${info.puerto}/</code>`).join(' ')}`;
+      const nota = $('#urlNotaRed');
+      if (nota) nota.innerHTML = base !== location.origin
+        ? `OBS está en otro computador: estas direcciones ya usan la IP de este equipo (<code>${esc(base)}</code>).`
+        : info.ips.length ? `¿OBS en <b>otro computador</b>? Use la dirección de red de este equipo: ${info.ips.map((ip) => `<code>http://${ip}:${info.puerto}/capa</code>`).join(' ')} (o conecte OBS en la pestaña Overlay y las direcciones cambian solas).` : '';
     } catch (_) { /* sin red */ }
   }
+  (window.PP = window.PP || {}).pintarOBS = pintarOBS;
   document.addEventListener('click', (e) => {
     if (!e.target.classList.contains('copy')) return;
     const inp = e.target.parentElement.querySelector('input');
@@ -733,9 +743,10 @@
   // ================================================================ Conexión en tiempo real
   function onEstado(st) {
     const cambioEstilo = !estado || JSON.stringify(estado.estilo) !== JSON.stringify(st.estilo);
-    const cambioLineas = !!estado && (estado.estilo || {}).lineasMax !== (st.estilo || {}).lineasMax;
+    const ea = (estado && estado.estilo) || {}, eb = st.estilo || {};
+    const cambioLineas = !!estado && (ea.lineasMax !== eb.lineasMax || ea.letrasRenglon !== eb.letrasRenglon);
     estado = st;
-    // «Líneas por diapositiva» cambió: la canción abierta se vuelve a repartir
+    // «Líneas por diapositiva» o «Letras por renglón» cambió: la canción abierta se vuelve a repartir
     if (cambioLineas && ctx && ctx.tipo === 'cancion' && CAN.actual) abrirCancion(CAN.actual);
     if (st.idioma && window.I18N && st.idioma !== window.I18N.idioma) window.I18N.set(st.idioma);
     $('#btnNegro').classList.toggle('on', !!st.negro);

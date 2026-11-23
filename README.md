@@ -68,7 +68,8 @@ Todo corre en **un solo computador**, se maneja desde el **navegador** y **no ne
 - Editor de canciones integrado con **respaldo automático** antes de cada cambio.
 - Teclas **1..9** para saltar a la estrofa que quiera.
 - Respeta coros y estrofas numeradas; al proyectar quita las marcas de repetición `//así//` y los espacios sobrantes.
-- **Todas las canciones con el mismo tamaño de letra**: una estrofa larga se reparte sola en diapositivas parejas (*Estilo → Líneas por diapositiva*, 6 por defecto).
+- **Todas las canciones con el mismo tamaño de letra**: una estrofa larga se reparte sola en diapositivas parejas (*Estilo → Líneas por diapositiva*, 4 por defecto).
+- **Letra grande para pantalla LED**: Montserrat extra negrita, blanco puro y sombra suave; el tamaño se ajusta con *Estilo → Letras por renglón* (22 por defecto: menos letras = letra más grande). Las estrofas escritas en una sola línea se parten solas por las comas.
 
 </td>
 </tr>

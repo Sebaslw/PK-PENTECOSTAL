@@ -58,9 +58,27 @@ app.whenReady().then(async () => {
     ok(con, 'El panel se conecta al OBS por la IP de la red → ' + await js(`document.querySelector('#obsTxt').textContent + ' · ' + document.querySelector('#obsSub').textContent`));
 
     const esperada = `http://10.9.9.9:${P}`;
+    // URLs para OBS (pestaña OBS): con OBS en otro equipo deben usar la IP de este computador
+    await js(`window.PP.pintarOBS()`);
+    const urls = await esperar(() => js(`(() => { const v = [...document.querySelectorAll('.url')].map(i => i.value); return v.length && v.every(x => x.startsWith(${JSON.stringify(`http://10.9.9.9:${P}/`)})) && v; })()`));
+    ok(!!urls, 'URLs para OBS usan la IP de este equipo (no pkipuc.localhost) → ' + (urls ? urls.find((u) => /solo=banner/.test(u)) : await js(`document.querySelector('.url').value`)));
+
+    // El OBS "remoto" abre la capa: conexión desde 127.0.0.2 (el servidor no la reconoce como este equipo)
+    const abrirComoOBS = (pagina) => new Promise((r) => {
+      const q = http.get({ host: '127.0.0.1', port: P, path: '/api/eventos', localAddress: '127.0.0.2', headers: { Referer: `http://10.9.9.9:${P}${pagina}`, Host: `10.9.9.9:${P}` } }, (res) => r({ res, q }));
+      q.on('error', () => r(null));
+    });
+
     console.log('\nCapa de rótulos/banner');
     await js(`document.querySelector('#btnAddCapa').click()`);
     await esperar(() => obs.fuentes.has(CAPA));
+    const conOBS = await abrirComoOBS('/capa');
+    ok(!!conOBS && conOBS.res.statusCode === 200, 'El OBS de otro equipo puede abrir los eventos de la capa');
+    const visto = await esperar(() => js(`(() => { const t = document.querySelector('#obsSub').textContent; return /La capa se ve en OBS/.test(t) && t; })()`), 12000);
+    ok(!!visto, 'El panel confirma que el OBS del otro equipo abrió la capa → ' + (visto || await js(`document.querySelector('#obsSub').textContent`)));
+    const ajeno = await new Promise((r) => http.get({ host: '127.0.0.1', port: P, path: '/api/obs/clientes', localAddress: '127.0.0.2' }, (x) => r(x.statusCode)).on('error', () => r(0)));
+    ok(ajeno === 403, 'Otro equipo no puede ver quién está conectado (/api/obs/clientes → ' + ajeno + ')');
+    if (conOBS) conOBS.q.destroy();
     ok(obs.fuentes.has(CAPA) && obs.fuentes.get(CAPA).url === esperada + '/capa', `Capa nueva apunta a este equipo → ${obs.fuentes.get(CAPA) && obs.fuentes.get(CAPA).url}`);
     if (!obs.fuentes.has(CAPA)) {
       console.log('    peticiones a OBS:', [...new Set(obs.peticiones.map((p) => p.requestType))].join(', '));
@@ -73,6 +91,10 @@ app.whenReady().then(async () => {
     await esperar(() => obs.peticiones.slice(antes).some((p) => p.requestType === 'SetInputSettings'));
     ok(obs.fuentes.get(CAPA).url === esperada + '/capa', `Capa vieja (pkipuc.localhost) se corrige → ${obs.fuentes.get(CAPA).url}`);
     ok(obs.peticiones.filter((p) => p.requestType === 'CreateInput' && p.requestData.inputName === CAPA).length === 2 && obs.fuentes.size === 1, 'No se duplica la capa');
+    // Nadie abrió la capa desde el otro equipo (Firewall / red): el panel lo dice y ofrece el Firewall
+    const aviso = await esperar(() => js(`(() => { const d = document.querySelector('#dlgGen'); return d && d.open && /no logra abrir la capa/.test(d.textContent) && /Permitir en el Firewall/.test(d.textContent) && document.querySelector('#dgTitulo').textContent; })()`), 15000);
+    ok(!!aviso, 'Si el OBS del otro equipo no abre la capa, avisa y ofrece «Permitir en el Firewall» → ' + aviso);
+    await js(`document.querySelector('#dlgGen').close('cancel')`);
 
     console.log('\nStinger');
     await js(`document.querySelector('#stgAddObs').disabled = false; document.querySelector('#stgAddObs').click()`);

@@ -28,7 +28,7 @@ function elegir(libros) {
   const casos = [];
   const todas = Object.entries(libros).flatMap(([f, s]) => s.map((x) => ({ f, x })));
   const crudo = (x) => (x.le || '').replace(/\r\n?/g, '\n');
-  const una = todas.find(({ x }) => L.estrofas(x.le, 6).length === 1 && crudo(x).split('\n').filter((l) => l.trim()).length <= 3);
+  const una = todas.find(({ x }) => L.estrofas(x.le, 4).length === 1 && crudo(x).split('\n').filter((l) => l.trim()).length <= 3);
   if (una) casos.push(['una sola estrofa corta', una]);
   const masLarga = (x) => Math.max(0, ...crudo(x).split('\n').map((l) => L.limpiarLinea(l).length));
   casos.push(['línea más larga', todas.reduce((a, b) => (masLarga(b.x) > masLarga(a.x) ? b : a))]);
@@ -67,7 +67,7 @@ app.whenReady().then(async () => {
       await sleep(800);
       const tams = [];
       for (const [nombre, { f, x }] of casos) {
-        const diapos = L.estrofas(x.le, 6);
+        const diapos = L.estrofas(x.le, 4);
         const t = [];
         for (const d of diapos) t.push(await medir(win, puerto, d, diapos));
         tams.push(...t);
@@ -82,7 +82,7 @@ app.whenReady().then(async () => {
     console.log('\nFuente recién elegida (aún sin cargar)');
     const post = (ruta, body) => fetch(`http://127.0.0.1:${puerto}${ruta}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const [, { x: cf }] = casos[3];
-    const dcf = L.estrofas(cf.le, 6);
+    const dcf = L.estrofas(cf.le, 4);
     await win.loadURL(`http://127.0.0.1:${puerto}/salida?modo=pantalla&quedarse=1`).catch(() => {});
     await post('/api/estilo', { fuente: 'Tangerine' });
     await post('/api/vivo', { vivo: { tipo: 'cancion', titulo: 'F', texto: dcf[0], ref: 'F', grupo: dcf } });
@@ -113,15 +113,19 @@ app.whenReady().then(async () => {
     await esperar(`!!document.querySelector('#listaCanciones .list-item[data-k=${JSON.stringify(JSON.stringify(k)).slice(1, -1)}]')`);
     await js(`document.querySelector('#listaCanciones .list-item[data-k=${JSON.stringify(JSON.stringify(k)).slice(1, -1)}]').click()`);
     const n6 = L.estrofas(cancion.le, 6).length, n4 = L.estrofas(cancion.le, 4).length;
-    const d6 = await esperar(`document.querySelectorAll('#items .slide').length === ${n6} && ${n6}`);
-    ok(d6 === n6, `«${cancion.ti}» (estrofa de ${estrofaMax(cancion)} líneas) → ${n6} diapositivas con 6 líneas · panel: ${await js(`document.querySelectorAll('#items .slide').length`)}`);
+    const d4 = await esperar(`document.querySelectorAll('#items .slide').length === ${n4} && ${n4}`);
+    ok(d4 === n4, `«${cancion.ti}» (estrofa de ${estrofaMax(cancion)} líneas) → ${n4} diapositivas con 4 líneas (por defecto) · panel: ${await js(`document.querySelectorAll('#items .slide').length`)}`);
     const sucias = await js(`[...document.querySelectorAll('#items .slide')].filter(s => /\\/\\/|\\n /.test(s.textContent)).length`);
     ok(sucias === 0, `Sin // ni espacios al inicio en las diapositivas del panel (${sucias})`);
-    await fetch(`http://127.0.0.1:${puerto}/api/estilo`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lineasMax: 4 }) });
-    const d4 = await esperar(`document.querySelectorAll('#items .slide').length === ${n4} && ${n4}`);
-    ok(d4 === n4, `Con «Líneas por diapositiva» = 4 se recalcula sola → ${n4} diapositivas · panel: ${await js(`document.querySelectorAll('#items .slide').length`)}`);
+    await fetch(`http://127.0.0.1:${puerto}/api/estilo`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lineasMax: 6 }) });
+    const d6 = await esperar(`document.querySelectorAll('#items .slide').length === ${n6} && ${n6}`);
+    ok(d6 === n6, `Con «Líneas por diapositiva» = 6 se recalcula sola → ${n6} diapositivas · panel: ${await js(`document.querySelectorAll('#items .slide').length`)}`);
+    const n6c = L.estrofas(cancion.le, 6, { porRenglon: 36 }).length;
+    await fetch(`http://127.0.0.1:${puerto}/api/estilo`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ letrasRenglon: 36 }) });
+    const d6c = await esperar(`document.querySelectorAll('#items .slide').length === ${n6c} && ${n6c}`);
+    ok(d6c === n6c, `Con «Letras por renglón» = 36 se recalcula sola → ${n6c} diapositivas · panel: ${await js(`document.querySelectorAll('#items .slide').length`)}`);
     const rango = await js(`(() => { const r = document.querySelector('#formEstilo [data-k="lineasMax"]'); return r && r.min + '-' + r.max + '=' + r.value; })()`);
-    ok(rango === '2-12=4', `Ajuste «Líneas por diapositiva» en Estilo (2–12) muestra el valor → ${rango}`);
+    ok(rango === '2-12=6', `Ajuste «Líneas por diapositiva» en Estilo (2–12) muestra el valor → ${rango}`);
 
     // Texto libre / anuncios: sale tal cual se escribió (la limpieza de // es solo para canciones)
     await js(`document.querySelector('#txtTitulo').value = 'Anuncio'; document.querySelector('#txtCuerpo').value = 'Visite https://www.facebook.com/ipuc\\nOfrenda 50 / 100'; document.querySelector('#btnTxtCargar').click()`);

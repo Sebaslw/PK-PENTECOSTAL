@@ -176,7 +176,7 @@
             <option value="auto">Automático (tamaño de la ventana)</option>
           </select></div>
         <div class="f"><label>Fuente</label><select data-k="fuente" class="fuentes"></select></div>
-        <div class="f"><label>Tamaño máximo <output></output></label><input type="range" min="30" max="200" data-k="tamMax"></div>
+        <div class="f"><label>Tamaño máximo <output></output></label><input type="range" min="30" max="300" data-k="tamMax"></div>
         <div class="f2">
           <div class="f"><label>Grosor de letra</label><select data-k="peso"><option value="400">Normal</option><option value="700">Negrita</option><option value="800">Extra negrita (recomendado)</option><option value="900">Máxima</option></select></div>
           <div class="f"><label>Interlineado <output></output></label><input type="range" min="1" max="1.6" step="0.02" data-k="interlineado"></div>
@@ -199,6 +199,7 @@
           <label title="Los versículos de un capítulo se proyectan con el mismo tamaño de letra"><input type="checkbox" data-k="tamUniforme"> Mismo tamaño de letra</label>
         </div>
         <div class="f"><label title="Una estrofa más larga se reparte en varias diapositivas para que todas las canciones salgan del mismo tamaño">Líneas por diapositiva <output></output></label><input type="range" min="2" max="12" data-k="lineasMax"></div>
+        <div class="f"><label title="Define el tamaño de la letra de las canciones: menos letras por renglón = letra más grande (una línea más larga pasa al renglón siguiente)">Letras por renglón <output></output></label><input type="range" min="14" max="42" data-k="letrasRenglon"></div>
         <div class="f"><label>Transición (ms) <output></output></label><input type="range" min="0" max="1500" step="50" data-k="transicion"></div>
 
         <h4>Tercio inferior (OBS)</h4>
@@ -668,6 +669,7 @@
         <li>Pegue una de estas URL. O conecte OBS (pestaña Overlay) y use <b>“Añadir la capa…”</b> para crearla automáticamente.</li>
         <li>Para controlar OBS desde aquí: en OBS vaya a <b>Herramientas → Ajustes del servidor WebSocket</b>, active el servidor y copie la contraseña.</li>
       </ol>
+      <p class="hint" id="urlNotaRed"></p>
       <div class="url-card"><b>Rótulos + Banner (recomendado)</b><p>Una sola fuente con los nombres (overlay) y los versículos/letras (banner).</p>
         <div class="row"><input readonly class="grow url" data-path="/capa"><button class="copy">Copiar</button></div></div>
       <div class="url-card"><b>⚡ Stinger (transiciones)</b><p>Transición a pantalla completa con logo, sonido y efectos. Póngala ARRIBA de todo en cada escena (pestaña STINGERS → “Añadir a todas las escenas”). Active “Controlar audio mediante OBS” si quiere oír el sonido en la transmisión.</p>
