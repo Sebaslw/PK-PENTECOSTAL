@@ -4,7 +4,7 @@
 
 <br/>
 
-![Versión](https://img.shields.io/badge/versión-2.0.6-f59e0b?style=for-the-badge)
+![Versión](https://img.shields.io/badge/versión-2.0.7-f59e0b?style=for-the-badge)
 ![Windows](https://img.shields.io/badge/Windows-10%20%C2%B7%2011%20(64%20bits)-0078D4?style=for-the-badge&logo=windows&logoColor=white)
 ![Sin Node.js](https://img.shields.io/badge/no%20necesita-Node.js-339933?style=for-the-badge&logo=electron&logoColor=white)
 ![OBS Studio](https://img.shields.io/badge/OBS_Studio-28%2B-302E31?style=for-the-badge&logo=obsstudio&logoColor=white)
@@ -243,8 +243,8 @@ Descargue desde la **[página web](https://sebaslw.github.io/pk-pentecostal.io/)
 
 | Archivo | Para qué |
 |---|---|
-| **`PK-PENTECOSTAL-Instalador-2.0.6.exe`** | Doble clic → *Siguiente*. Crea el acceso directo en el **Escritorio** y en el **menú Inicio**. Se desinstala desde *Configuración → Aplicaciones*. |
-| **`PK-PENTECOSTAL-Portable-2.0.6.exe`** | No se instala: doble clic y listo. Ideal para una memoria USB. |
+| **`PK-PENTECOSTAL-Instalador-2.0.7.exe`** | Doble clic → *Siguiente*. Crea el acceso directo en el **Escritorio** y en el **menú Inicio**. Se desinstala desde *Configuración → Aplicaciones*. |
+| **`PK-PENTECOSTAL-Portable-2.0.7.exe`** | No se instala: doble clic y listo. Ideal para una memoria USB. |
 
 **No necesita Node.js** ni ningún otro programa. Al abrirlo:
 
