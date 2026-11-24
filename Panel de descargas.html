@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel de descargas · PK-PENTECOSTAL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+/* Panel de control: resumen arriba, detalle por versión abajo, registro en vivo al costado */
+:root{
+  --bg:#f5f6fa; --panel:#ffffff; --fg:#1b1e2b; --muted:#646a80; --line:#e3e5ee;
+  --accent:#3b4fd8; --inst:#3b4fd8; --port:#0f9b8e; --zip:#c77a12; --upd:#8a8fa6;
+  --ok:#1f9d55; --bad:#c0392b; --flash:#e8ecff;
+  --display:"Space Grotesk",system-ui,sans-serif; --body:"Inter",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#11131c; --panel:#1a1d29; --fg:#eceef6; --muted:#9aa0b8; --line:#2b2f40;
+  --accent:#8193ff; --inst:#8193ff; --port:#3cc9b9; --zip:#eaa43e; --upd:#767b93;
+  --ok:#4fd08a; --bad:#ff7a6b; --flash:#262c4d; color-scheme:dark }}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 var(--body)}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 20px 48px;display:grid;gap:20px}
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+h1{font:700 1.6rem/1.2 var(--display);margin:0}
+h1 small{display:block;font:500 .8rem var(--body);color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px}
+h2{font:600 1rem var(--display);margin:0 0 12px}
+.estado{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.85rem;flex-wrap:wrap}
+.punto{width:9px;height:9px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 var(--ok);animation:latido 2s infinite}
+.punto.err{background:var(--bad);animation:none}
+@keyframes latido{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 60%,transparent)}70%{box-shadow:0 0 0 8px transparent}100%{box-shadow:0 0 0 0 transparent}}
+button{font:500 .85rem var(--body);color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer}
+button:hover{border-color:var(--accent)} button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;transition:background .6s}
+.tile.flash{background:var(--flash)}
+.tile .lab{font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);display:flex;align-items:center;gap:6px}
+.tile .num{font:700 2.2rem/1.1 var(--display);font-variant-numeric:tabular-nums;margin-top:6px}
+.tile .sub{font-size:.8rem;color:var(--muted)}
+.tile.total{border-color:var(--accent)}
+.sw{width:10px;height:10px;border-radius:3px;display:inline-block}
+.grid2{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:20px}
+@media (max-width:860px){.grid2{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;min-width:0}
+.chart{width:100%;overflow-x:auto}
+.chart svg text{fill:var(--muted);font:12px var(--body)}
+.leyenda{display:flex;gap:14px;flex-wrap:wrap;font-size:.8rem;color:var(--muted);margin-top:8px}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th,td{text-align:right;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-weight:600;font-size:.75rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+tr.actual td:first-child::after{content:"actual";margin-left:8px;font-size:.7rem;padding:1px 7px;border-radius:99px;background:var(--accent);color:#fff}
+td.flash{background:var(--flash)}
+.tabla{overflow-x:auto}
+#registro{list-style:none;margin:0;padding:0;display:grid;gap:8px;max-height:420px;overflow:auto}
+#registro li{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;padding:8px 10px;border-radius:8px;background:var(--bg)}
+#registro .h{color:var(--muted);font-size:.8rem;font-variant-numeric:tabular-nums}
+#registro .q{grid-column:2;font-size:.75rem;color:var(--muted)}
+.vacio{color:var(--muted);font-size:.85rem}
+.nota{color:var(--muted);font-size:.8rem;max-width:70ch}
+#toast{position:fixed;right:20px;bottom:20px;background:var(--accent);color:#fff;padding:12px 16px;border-radius:10px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.25);transform:translateY(140%);transition:transform .3s}
+#toast.ver{transform:none}
+@media (prefers-reduced-motion:reduce){.punto{animation:none}#toast,.tile{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><small>PK-PENTECOSTAL</small>Panel de descargas</h1>
+    <div class="estado">
+      <span class="punto" id="punto"></span>
+      <span id="estado">Conectando con GitHub…</span>
+      <button id="btnSonido" type="button" title="Sonar cuando llegue una descarga">🔔 Sonido: no</button>
+      <button id="btnAhora" type="button">Actualizar ahora</button>
+    </div>
+  </header>
+
+  <div class="estado" role="group" aria-label="Qué números mostrar">
+    <button id="vActual" type="button" class="on">Versión actual <span id="tagActual"></span></button>
+    <button id="vTodas" type="button">Todas las versiones</button>
+  </div>
+  <section class="tiles" id="tiles">
+    <div class="tile total" id="t-total"><div class="lab" id="l-total">Descargas de la versión actual</div><div class="num" id="n-total">—</div><div class="sub" id="s-total">Instalador + Portable + Código fuente</div></div>
+    <div class="tile" id="t-inst"><div class="lab"><span class="sw" style="background:var(--inst)"></span>Instalador</div><div class="num" id="n-inst">—</div><div class="sub" id="s-inst"></div></div>
+    <div class="tile" id="t-port"><div class="lab"><span class="sw" style="background:var(--port)"></span>Portable</div><div class="num" id="n-port">—</div><div class="sub" id="s-port"></div></div>
+    <div class="tile" id="t-zip"><div class="lab"><span class="sw" style="background:var(--zip)"></span>Código fuente (.zip)</div><div class="num" id="n-zip">—</div><div class="sub" id="s-zip"></div></div>
+    <div class="tile" id="t-upd"><div class="lab"><span class="sw" style="background:var(--upd)"></span>Revisiones de actualización</div><div class="num" id="n-upd">—</div><div class="sub">Veces que la app instalada buscó versión nueva</div></div>
+  </section>
+
+  <div class="grid2">
+    <section class="card">
+      <h2>Descargas por versión</h2>
+      <div class="chart" id="grafica"></div>
+      <div class="leyenda">
+        <span><span class="sw" style="background:var(--inst)"></span> Instalador</span>
+        <span><span class="sw" style="background:var(--port)"></span> Portable</span>
+        <span><span class="sw" style="background:var(--zip)"></span> Código fuente</span>
+      </div>
+    </section>
+    <section class="card">
+      <h2>Descargas en vivo</h2>
+      <ul id="registro"></ul>
+      <p class="vacio" id="registroVacio">Deja esta página abierta: cada descarga nueva aparece aquí al momento.</p>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2>Detalle por versión</h2>
+    <div class="tabla"><table>
+      <thead><tr><th>Versión</th><th>Publicada</th><th>Instalador</th><th>Portable</th><th>Código fuente</th><th>Total</th><th>Revisiones act.</th></tr></thead>
+      <tbody id="cuerpo"></tbody>
+    </table></div>
+  </section>
+
+  <p class="nota">Los números vienen de los Releases de GitHub (Sebaslw/PK-PENTECOSTAL) y se revisan cada minuto (es lo que GitHub permite sin iniciar sesión). El conteo del Instalador también incluye las descargas que hace la actualización automática de la app ya instalada. GitHub a veces tarda unos minutos en sumar una descarga.</p>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const API = 'https://api.github.com/repos/Sebaslw/PK-PENTECOSTAL/releases?per_page=100';
+const CADA_MS = 65000; // GitHub permite 60 consultas por hora sin cuenta
+const $ = id => document.getElementById(id);
+let etag = null, previo = null, sonido = false, ultimoOk = null;
+
+function tipo(nombre){
+  if (/Instalador.*\.exe$/i.test(nombre)) return 'inst';
+  if (/Portable.*\.exe$/i.test(nombre)) return 'port';
+  if (/\.zip$/i.test(nombre)) return 'zip';
+  if (/^latest.*\.yml$/i.test(nombre)) return 'upd';
+  return null; // .blockmap y otros
+}
+const NOMBRE = {inst:'Instalador', port:'Portable', zip:'Código fuente', upd:'Revisión de actualización'};
+
+function leerLS(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } }
+function guardarLS(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+
+function resumir(releases){
+  const versiones = releases.filter(r => !r.draft).map(r => {
+    const v = {tag:r.tag_name, fecha:r.published_at, inst:0, port:0, zip:0, upd:0};
+    for (const a of r.assets){ const t = tipo(a.name); if (t) v[t] += a.download_count; }
+    v.total = v.inst + v.port + v.zip;
+    return v;
+  });
+  const tot = {inst:0, port:0, zip:0, upd:0};
+  for (const v of versiones) for (const k in tot) tot[k] += v[k];
+  tot.total = tot.inst + tot.port + tot.zip;
+  return {versiones, tot};
+}
+
+function fmtFecha(iso){ return new Date(iso).toLocaleDateString('es', {day:'numeric', month:'short', year:'numeric'}); }
+function fmtHora(d){ return d.toLocaleTimeString('es', {hour:'2-digit', minute:'2-digit', second:'2-digit'}); }
+
+function pintar(datos, cambiados){
+  const {versiones, tot} = datos;
+  const act = versiones[0] || {tag:'', inst:0, port:0, zip:0, upd:0, total:0};
+  const enActual = vista === 'actual';
+  const ver = enActual ? act : tot, otro = enActual ? tot : act;
+  const nota = enActual ? 'en total, todas las versiones' : `en ${act.tag}`;
+  $('tagActual').textContent = act.tag ? `(${act.tag})` : '';
+  $('l-total').textContent = enActual ? `Descargas de ${act.tag || 'la versión actual'}` : 'Descargas totales';
+  $('s-total').textContent = enActual ? `Publicada el ${act.fecha ? fmtFecha(act.fecha) : '—'} · ${tot.total} en total` : 'Instalador + Portable + Código fuente';
+  $('n-total').textContent = ver.total;
+  for (const k of ['inst','port','zip']){ $('n-' + k).textContent = ver[k]; $('s-' + k).textContent = `${otro[k]} ${nota}`; }
+  $('n-upd').textContent = ver.upd;
+  for (const k of cambiados.tipos){
+    if (enActual && !cambiados.celdas.has(act.tag + ':' + k)) continue;
+    destellar($('t-' + k)); if (k !== 'upd') destellar($('t-total'));
+  }
+
+  const cuerpo = $('cuerpo'); cuerpo.textContent = '';
+  versiones.forEach((v, i) => {
+    const tr = document.createElement('tr'); if (i === 0) tr.className = 'actual';
+    [v.tag, fmtFecha(v.fecha), v.inst, v.port, v.zip, v.total, v.upd].forEach((x, j) => {
+      const td = document.createElement('td'); td.textContent = x;
+      const col = ['','','inst','port','zip','total','upd'][j];
+      if (col && cambiados.celdas.has(v.tag + ':' + col)) destellar(td);
+      tr.appendChild(td);
+    });
+    cuerpo.appendChild(tr);
+  });
+  grafica(versiones.slice().reverse());
+}
+
+function destellar(el){ if(!el) return; el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 2500); }
+
+function grafica(vs){
+  const cont = $('grafica');
+  const W = Math.max(cont.clientWidth || 600, vs.length * 56), H = 240, m = {t:16, r:8, b:28, l:34};
+  const max = Math.max(1, ...vs.map(v => v.total));
+  const paso = max <= 5 ? 1 : Math.ceil(max / 5);
+  const tope = Math.ceil(max / paso) * paso;
+  const y = n => m.t + (H - m.t - m.b) * (1 - n / tope);
+  const bw = (W - m.l - m.r) / vs.length;
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.setAttribute('width', W); svg.setAttribute('height', H);
+  const el = (n, a, txt) => { const e = document.createElementNS(ns, n); for (const k in a) e.setAttribute(k, a[k]); if (txt != null) e.textContent = txt; svg.appendChild(e); return e; };
+  for (let n = 0; n <= tope; n += paso){
+    el('line', {x1:m.l, x2:W-m.r, y1:y(n), y2:y(n), stroke:'var(--line)', 'stroke-width':1});
+    el('text', {x:m.l-6, y:y(n)+4, 'text-anchor':'end'}, n);
+  }
+  vs.forEach((v, i) => {
+    const x = m.l + i*bw + bw*0.18, w = bw*0.64; let base = 0;
+    for (const k of ['inst','port','zip']){
+      if (!v[k]) continue;
+      const r = el('rect', {x, y:y(base+v[k]), width:w, height:y(base)-y(base+v[k]), fill:`var(--${k})`, rx:2});
+      const t = document.createElementNS(ns, 'title'); t.textContent = `${v.tag} · ${NOMBRE[k]}: ${v[k]}`; r.appendChild(t);
+      base += v[k];
+    }
+    if (v.total) el('text', {x:x+w/2, y:y(v.total)-5, 'text-anchor':'middle', style:'fill:var(--fg);font-weight:600'}, v.total);
+    el('text', {x:x+w/2, y:H-8, 'text-anchor':'middle'}, v.tag);
+  });
+  cont.textContent = ''; cont.appendChild(svg);
+}
+
+function comparar(antes, ahora){
+  const cambios = [], tipos = new Set(), celdas = new Set();
+  if (!antes) return {cambios, tipos, celdas};
+  const mapa = {}; for (const v of antes.versiones) mapa[v.tag] = v;
+  for (const v of ahora.versiones){
+    const a = mapa[v.tag] || {inst:0, port:0, zip:0, upd:0};
+    for (const k of ['inst','port','zip','upd']){
+      const d = v[k] - a[k];
+      if (d > 0){ cambios.push({tag:v.tag, k, d}); tipos.add(k); celdas.add(v.tag+':'+k); if (k !== 'upd') celdas.add(v.tag+':total'); }
+    }
+  }
+  return {cambios, tipos, celdas};
+}
+
+function registrar(cambios){
+  const lista = leerLS('pk-registro', []);
+  const ahora = new Date().toISOString();
+  for (const c of cambios) lista.unshift({t:ahora, tag:c.tag, k:c.k, d:c.d});
+  guardarLS('pk-registro', lista.slice(0, 200));
+  pintarRegistro();
+}
+function pintarRegistro(){
+  const lista = leerLS('pk-registro', []), ul = $('registro'); ul.textContent = '';
+  $('registroVacio').hidden = lista.length > 0;
+  for (const e of lista.slice(0, 60)){
+    const li = document.createElement('li'); const d = new Date(e.t);
+    const h = document.createElement('span'); h.className = 'h'; h.textContent = fmtHora(d);
+    const q = document.createElement('span'); q.innerHTML = '';
+    const sw = document.createElement('span'); sw.className = 'sw'; sw.style.background = `var(--${e.k})`; sw.style.marginRight = '6px';
+    q.appendChild(sw); q.appendChild(document.createTextNode(`${e.d > 1 ? '+' + e.d + ' ' : ''}${NOMBRE[e.k]} ${e.tag}`));
+    const f = document.createElement('span'); f.className = 'q'; f.textContent = d.toLocaleDateString('es', {weekday:'long', day:'numeric', month:'long'});
+    li.append(h, q, f); ul.appendChild(li);
+  }
+}
+
+function avisar(cambios){
+  const desc = cambios.filter(c => c.k !== 'upd');
+  if (!desc.length) return;
+  const n = desc.reduce((s, c) => s + c.d, 0);
+  const t = $('toast');
+  t.textContent = n === 1 ? `Nueva descarga: ${NOMBRE[desc[0].k]} ${desc[0].tag}` : `${n} descargas nuevas`;
+  t.classList.add('ver'); setTimeout(() => t.classList.remove('ver'), 5000);
+  document.title = `(+${n}) Panel de descargas · PK-PENTECOSTAL`;
+  setTimeout(() => document.title = 'Panel de descargas · PK-PENTECOSTAL', 15000);
+  if (sonido) campana();
+  try { if ('Notification' in window && Notification.permission === 'granted') new Notification('PK-PENTECOSTAL', {body: t.textContent}); } catch(e){}
+}
+let ctx = null;
+function campana(){
+  try{
+    ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+    [880, 1320].forEach((f, i) => {
+      const o = ctx.createOscillator(), g = ctx.createGain(), t0 = ctx.currentTime + i*0.15;
+      o.frequency.value = f; g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.25, t0+0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0+0.5);
+      o.connect(g).connect(ctx.destination); o.start(t0); o.stop(t0+0.55);
+    });
+  }catch(e){}
+}
+
+async function consultar(){
+  try{
+    const h = {Accept:'application/vnd.github+json'}; if (etag) h['If-None-Match'] = etag;
+    const r = await fetch(API, {headers:h, cache:'no-store'});
+    const resto = r.headers.get('X-RateLimit-Remaining');
+    if (r.status === 304){ ok(resto); return; }
+    if (!r.ok){
+      const reset = r.headers.get('X-RateLimit-Reset');
+      throw new Error(r.status === 403 && reset ? `GitHub pidió esperar hasta las ${fmtHora(new Date(reset*1000))}` : `GitHub respondió ${r.status}`);
+    }
+    etag = r.headers.get('ETag');
+    const datos = resumir(await r.json());
+    const base = previo || leerLS('pk-ultimo', null);
+    const cmp = comparar(base, datos);
+    if (cmp.cambios.length){ registrar(cmp.cambios); avisar(cmp.cambios); }
+    pintar(datos, previo ? cmp : {tipos:new Set(), celdas:new Set()});
+    previo = datos; guardarLS('pk-ultimo', datos);
+    ok(resto);
+  }catch(e){
+    $('punto').classList.add('err');
+    $('estado').textContent = (e.message || 'Sin conexión') + ' · se reintenta solo';
+  }
+}
+function ok(resto){
+  ultimoOk = new Date();
+  $('punto').classList.remove('err');
+  $('estado').textContent = `En vivo · revisado a las ${fmtHora(ultimoOk)}`;
+}
+
+let vista = leerLS('pk-vista', 'actual');
+function ponerVista(v){
+  vista = v; guardarLS('pk-vista', v);
+  $('vActual').classList.toggle('on', v === 'actual'); $('vTodas').classList.toggle('on', v !== 'actual');
+  const d = previo || leerLS('pk-ultimo', null);
+  if (d) pintar(d, {tipos:new Set(), celdas:new Set()});
+}
+$('vActual').onclick = () => ponerVista('actual');
+$('vTodas').onclick = () => ponerVista('todas');
+ponerVista(vista);
+$('btnAhora').onclick = consultar;
+$('btnSonido').onclick = () => {
+  sonido = !sonido; guardarLS('pk-sonido', sonido);
+  $('btnSonido').textContent = '🔔 Sonido: ' + (sonido ? 'sí' : 'no'); $('btnSonido').classList.toggle('on', sonido);
+  if (sonido){ campana(); try{ if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); }catch(e){} }
+};
+sonido = leerLS('pk-sonido', false);
+$('btnSonido').textContent = '🔔 Sonido: ' + (sonido ? 'sí' : 'no'); $('btnSonido').classList.toggle('on', sonido);
+window.addEventListener('resize', () => previo && grafica(previo.versiones.slice().reverse()));
+const guardado = leerLS('pk-ultimo', null);
+if (guardado){ previo = null; pintar(guardado, {tipos:new Set(), celdas:new Set()}); }
+pintarRegistro();
+consultar();
+setInterval(consultar, CADA_MS);
+</script>
+</body>
+</html>
