@@ -523,30 +523,111 @@ function loadBible(name) {
   return text;
 }
 
+// ---------------------------------------------------------------- Guardado seguro en Windows
+// Causa del error "EPERM: operation not permitted, open '...\cancioneros\Mi Cancionero.js'":
+// fs.writeFileSync abre el archivo con CREATE_ALWAYS, y Windows lo rechaza si el archivo está OCULTO,
+// es de SISTEMA o de SOLO LECTURA (pasa al ocultar las carpetas del .zip con Propiedades → Oculto, o al
+// copiarlas desde un CD/USB). También lo rechaza un antivirus o el "Acceso controlado a carpetas".
+// Solución: se escribe un archivo temporal nuevo y se reemplaza el original (rename), que Windows sí
+// permite con archivos ocultos; antes se le quita el "solo lectura" y, si el archivo está bloqueado un
+// momento (antivirus, OneDrive), se reintenta. Si aun así la carpeta no deja escribir, ver CANC_ALT.
+const esperar = (ms) => { try { Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms); } catch (_) { /* nada */ } };
+const ERR_PERMISO = new Set(['EPERM', 'EACCES', 'EBUSY', 'EROFS']);
+function escribirSeguro(f, datos) {
+  fs.mkdirSync(path.dirname(f), { recursive: true });
+  const tmp = `${f}.${process.pid}.${Date.now().toString(36)}.tmp`;
+  const fd = fs.openSync(tmp, 'w');
+  try { fs.writeSync(fd, typeof datos === 'string' ? Buffer.from(datos, 'utf8') : datos); fs.fsyncSync(fd); }
+  finally { fs.closeSync(fd); }
+  let error;
+  for (let i = 0; i < 8; i++) {
+    try {
+      if (fs.existsSync(f)) { try { fs.chmodSync(f, 0o666); } catch (_) { /* sin "solo lectura" que quitar */ } }
+      fs.renameSync(tmp, f);
+      return;
+    } catch (e) {
+      error = e;
+      if (!ERR_PERMISO.has(e.code)) break;
+      esperar(60 * (i + 1)); // bloqueo momentáneo de un antivirus u OneDrive
+    }
+  }
+  // Último intento: copiar encima (algunas carpetas sincronizadas no dejan renombrar)
+  try {
+    if (fs.existsSync(f)) { try { fs.chmodSync(f, 0o666); } catch (_) { /* nada */ } }
+    fs.copyFileSync(tmp, f);
+    fs.rmSync(tmp, { force: true });
+    return;
+  } catch (_) { /* se informa el error original */ }
+  try { fs.rmSync(tmp, { force: true }); } catch (_) { /* nada */ }
+  throw error;
+}
+// Temporales que quedaron de un guardado interrumpido (apagón, cierre forzado): el archivo original no se
+// tocó, así que solo se borran.
+function limpiarTemporales(dir) {
+  try { for (const n of fs.readdirSync(dir)) if (/\.\d+\.[0-9a-z]+\.tmp$/.test(n)) fs.rmSync(path.join(dir, n), { force: true }); } catch (_) { /* nada */ }
+}
+
 // ---------------------------------------------------------------- Cancioneros (.js: var jscanciones=[...])
+// El formato .js (var jscanciones=[...]) se conserva: es el del Proyektor original, lo leen las pruebas y el
+// traductor, y se carga en una caja aislada (vm), nunca como código del programa.
+// CANC_ALT: si la carpeta cancioneros/ no deja escribir (carpeta protegida, antivirus, solo lectura en
+// un USB), lo editado se guarda en %APPDATA%\PK-PENTECOSTAL\cancioneros-guardados y desde entonces se
+// lee de allí (el archivo de fábrica no se pierde ni se modifica).
+const CANC_ALT = (() => {
+  const base = path.resolve(process.env.PK_CANC_ALT || path.join(process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'), 'PK-PENTECOSTAL', 'cancioneros-guardados'));
+  return base === path.resolve(DIRS.cancioneros) ? null : base;
+})();
+for (const d of [DIRS.cancioneros, CANC_ALT]) if (d) { limpiarTemporales(d); limpiarTemporales(path.join(d, 'traducciones')); }
+// Ruta dentro de cancioneros/ (o de CANC_ALT si allí hay una copia editada). rel = "Mi Cancionero.js"
+function rutaCanc(rel) {
+  const f = path.join(DIRS.cancioneros, rel);
+  if (!f.startsWith(DIRS.cancioneros + path.sep)) return null;
+  if (CANC_ALT) { const a = path.join(CANC_ALT, rel); if (fs.existsSync(a)) return a; }
+  return f;
+}
+function escribirCanc(rel, datos) {
+  const f = rutaCanc(rel);
+  if (!f) throw new Error('Nombre inválido');
+  try { escribirSeguro(f, datos); return f; }
+  catch (e) {
+    if (!CANC_ALT || f.startsWith(CANC_ALT + path.sep) || !ERR_PERMISO.has(e.code)) throw errorAmable(e, f);
+    const a = path.join(CANC_ALT, rel);
+    try { escribirSeguro(a, datos); console.log(`  Cancionero guardado en ${a} (la carpeta ${path.dirname(f)} no deja escribir: ${e.code})`); return a; }
+    catch (_) { throw errorAmable(e, f); }
+  }
+}
+function errorAmable(e, f) {
+  if (!ERR_PERMISO.has(e.code)) return e;
+  const err = new Error(`Windows no dejó guardar en "${f}" (${e.code}). La canción NO se perdió: sigue en el editor para volver a intentarlo. ` +
+    'Si se repite, quite "Oculto" y "Solo lectura" de la carpeta PK-PENTECOSTAL (clic derecho → Propiedades) o permita PK-PENTECOSTAL en "Acceso controlado a carpetas" de Windows Defender.');
+  err.code = e.code;
+  return err;
+}
 function listSongbooks() {
-  try { return fs.readdirSync(DIRS.cancioneros).filter((f) => /\.js$/i.test(f)).map((f) => f.replace(/\.js$/i, '')).sort(); } catch (_) { return []; }
+  const s = new Set();
+  for (const d of [DIRS.cancioneros, CANC_ALT]) {
+    if (!d) continue;
+    try { for (const f of fs.readdirSync(d)) if (/\.js$/i.test(f)) s.add(f.replace(/\.js$/i, '')); } catch (_) { /* nada */ }
+  }
+  return [...s].sort();
 }
 function songbookPath(name) {
-  const f = path.join(DIRS.cancioneros, name + '.js');
-  return path.dirname(f) === DIRS.cancioneros ? f : null;
+  if (!name || /[\\/]/.test(name)) return null;
+  return rutaCanc(name + '.js');
 }
 // Traducciones al inglés: cancioneros/traducciones/<cancionero>.en.json = { id: { ti, le } }
 // (archivo aparte: los cancioneros originales no se tocan)
 function tradPath(name) {
-  const dir = path.join(DIRS.cancioneros, 'traducciones');
-  const f = path.join(dir, name + '.en.json');
-  return path.dirname(f) === dir ? f : null;
+  if (!name || /[\\/]/.test(name)) return null;
+  return rutaCanc(path.join('traducciones', name + '.en.json'));
 }
 function leerTraducciones(name) {
   const f = tradPath(name);
   try { return f && fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8').replace(/^\uFEFF/, '')) : {}; } catch (_) { return {}; }
 }
 function escribirTraducciones(name, tr) {
-  const f = tradPath(name);
-  if (!f) return;
-  fs.mkdirSync(path.dirname(f), { recursive: true });
-  fs.writeFileSync(f, JSON.stringify(tr, null, 1), 'utf8');
+  if (!tradPath(name)) return;
+  escribirCanc(path.join('traducciones', name + '.en.json'), JSON.stringify(tr, null, 1));
   songbookCache.delete(name); gzipCache.delete('cancionero:' + name);
 }
 function guardarTraduccion(name, id, ti, le, auto = false) {
@@ -645,15 +726,100 @@ function loadSongbook(name) {
 function saveSongbook(name, songs) {
   const f = songbookPath(name);
   if (!f) throw new Error('Nombre inválido');
-  if (fs.existsSync(f)) {
-    const bak = PRIV.respaldos;
-    fs.mkdirSync(bak, { recursive: true });
-    fs.copyFileSync(f, path.join(bak, `${name}.${Date.now()}.js`));
-  }
+  if (fs.existsSync(f)) respaldarCancionero(name, f);
   const body = 'var jscanciones=[\n' + songs.map((s) => JSON.stringify({ id: s.id, ti: s.ti, tono: s.tono || '', estilo: s.estilo || '0', le: s.le })).join(',\n') + '\n]\n';
-  fs.writeFileSync(f, body, 'utf8');
+  // Comprobación antes de reemplazar: el texto nuevo debe leerse con el mismo número de canciones
+  const ctx = vm.createContext({});
+  vm.runInContext(body + '\n;this.__r = jscanciones;', ctx, { timeout: 2000 });
+  if (!Array.isArray(ctx.__r) || ctx.__r.length !== songs.length) throw new Error('El cancionero no se pudo preparar para guardar');
+  escribirCanc(name + '.js', body);
   songbookCache.delete(name); gzipCache.delete('cancionero:' + name);
 }
+// Copia del cancionero antes de cada cambio (BSPK/respaldos, o CANC_ALT/respaldos si BSPK no deja escribir)
+function respaldarCancionero(name, f) {
+  for (const dir of [PRIV.respaldos, CANC_ALT && path.join(CANC_ALT, 'respaldos')]) {
+    if (!dir) continue;
+    try { fs.mkdirSync(dir, { recursive: true }); fs.copyFileSync(f, path.join(dir, `${name}.${Date.now()}.js`)); return; }
+    catch (_) { /* se prueba la otra carpeta */ }
+  }
+}
+// ---------------------------------------------------------------- CANCIONES EN LÍNEA IPUC
+// Catálogo de letras de generacionpentecostal.com (categoría "Letras", unas 3.000) consultado EN VIVO por
+// su API pública de WordPress: las letras no se copian dentro del programa (respeta los derechos de cada
+// canción y el crédito de la página); la iglesia la proyecta o la guarda en su cancionero cuando la usa.
+const EN_LINEA = { host: 'www.generacionpentecostal.com', categoria: 127, nombre: 'CANCIONES EN LÍNEA IPUC' };
+const enLineaCache = new Map(); // id -> canción (máx. 300)
+function pedirEnLinea(ruta) {
+  return new Promise((ok, mal) => {
+    const r = require('https').get({ host: EN_LINEA.host, path: ruta, timeout: 12000, headers: { 'User-Agent': 'PK-PENTECOSTAL', Accept: 'application/json' } }, (s) => {
+      if (s.statusCode >= 300 && s.statusCode < 400) { s.resume(); return mal(new Error('La página de canciones cambió de dirección')); }
+      const partes = []; let n = 0;
+      s.on('data', (c) => { n += c.length; if (n > 4 * 1024 * 1024) r.destroy(new Error('Respuesta demasiado grande')); else partes.push(c); });
+      s.on('end', () => {
+        let datos; try { datos = JSON.parse(Buffer.concat(partes).toString('utf8')); } catch (_) { return mal(new Error('La página de canciones respondió algo inesperado')); }
+        if (s.statusCode === 400 && datos && datos.code === 'rest_post_invalid_page_number') return ok({ datos: [], paginas: 0 });
+        if (s.statusCode !== 200) return mal(new Error('La página de canciones respondió ' + s.statusCode));
+        ok({ datos, paginas: Number(s.headers['x-wp-totalpages']) || 1, total: Number(s.headers['x-wp-total']) || 0 });
+      });
+    });
+    r.on('timeout', () => r.destroy(new Error('La página de canciones no respondió a tiempo')));
+    r.on('error', (e) => mal(/ENOTFOUND|EAI_AGAIN|ECONNREFUSED|ENETUNREACH|ECONNRESET/.test(e.code || '') ? new Error('Sin conexión a internet') : e));
+  });
+}
+const ENTIDADES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', hellip: '…', ndash: '–', mdash: '—', laquo: '«', raquo: '»', iexcl: '¡', iquest: '¿', rsquo: '’', lsquo: '‘', rdquo: '”', ldquo: '“' };
+const textoHTML = (h) => String(h || '').replace(/&#x([0-9a-f]+);/gi, (_, x) => String.fromCodePoint(parseInt(x, 16)))
+  .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d))).replace(/&([a-z]+);/gi, (m, e) => ENTIDADES[e.toLowerCase()] ?? m);
+// "Letra Santo es el que vive de Montesanto" / "SUELTO – Letra de la canción de Sarai Rivera" → título y autor
+function tituloEnLinea(t) {
+  let ti = textoHTML(t).replace(/\s+/g, ' ').trim(), autor = '';
+  const m = /^(.*?)\s*[–—-]\s*letra(?:\s+de\s+la\s+canci[oó]n)?(?:\s+de\s+(.+))?$/i.exec(ti);
+  if (m && m[1]) { ti = m[1]; autor = m[2] || ''; }
+  ti = ti.replace(/^letras?\s+(?:de\s+(?:la\s+canci[oó]n\s+)?)?/i, '').replace(/^[«"“]|[»"”]$/g, '').trim();
+  if (ti === ti.toUpperCase() && /[A-ZÁÉÍÓÚÑ]/.test(ti)) ti = ti.charAt(0) + ti.slice(1).toLowerCase(); // "SUELTO" → "Suelto"
+  return { ti, autor: autor.trim() };
+}
+// Solo la letra: cada párrafo es una estrofa. Se omiten el título (encabezado), los avisos de la página
+// ("Ver más letras", "Suscríbete…", "EQUIPO GP"), el estilo CSS y los párrafos de reseña después de la letra.
+const FIN_LETRA = /^(ver m[aá]s|suscr[ií]bete|te invitamos|equipo gp|s[ií]guenos|lee tambi[eé]n|te puede interesar|ver video|escucha nuestro|descarga)/i;
+function letraHTML(h) {
+  const html = String(h || '').replace(/\s+/g, ' ') // los saltos del HTML no cuentan: solo <br> y los párrafos
+    .replace(/<(script|style|iframe|figure|noscript)[\s\S]*?<\/\1>/gi, '');
+  const estrofas = [];
+  for (const parte of html.split(/(?=<h[1-6][\s>])|<\/(?:p|div|li|h[1-6])>/i)) {
+    const titulo = /^\s*<h[1-6][\s>]/i.test(parte);
+    const lineas = textoHTML(parte.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '')).replace(/ /g, ' ')
+      .split('\n').map((l) => l.replace(/\s+/g, ' ').trim()).filter(Boolean);
+    if (!lineas.length) continue;
+    const txt = lineas.join('\n');
+    if (FIN_LETRA.test(txt) || /custom css|\{[^}]*:[^}]*\}/i.test(txt)) { if (estrofas.length) break; continue; }
+    if (titulo) { if (estrofas.length) break; continue; }             // título antes; reseña después
+    if (lineas.length === 1 && txt.length > 160) { if (estrofas.length) break; continue; } // párrafo de prosa
+    if (lineas.length === 1 && /^(#\S|letra\b|autor\b|m[uú]sica\b)/i.test(txt)) continue;    // "#80añosipuc", "Letra Fulano"
+    estrofas.push(txt);
+  }
+  return estrofas.join('\n\n');
+}
+async function buscarEnLinea(q, pagina) {
+  const qs = new URLSearchParams({ categories: String(EN_LINEA.categoria), per_page: '50', page: String(pagina), _fields: 'id,title,link' });
+  if (q) { qs.set('search', q); qs.set('orderby', 'relevance'); } else { qs.set('orderby', 'title'); qs.set('order', 'asc'); }
+  const r = await pedirEnLinea('/wp-json/wp/v2/posts?' + qs);
+  return { pagina, paginas: r.paginas, total: r.total || 0, canciones: (Array.isArray(r.datos) ? r.datos : []).map((p) => ({ id: String(p.id), ...tituloEnLinea(p.title && p.title.rendered), url: p.link })) };
+}
+async function cancionEnLinea(id) {
+  if (enLineaCache.has(id)) return enLineaCache.get(id);
+  const r = await pedirEnLinea(`/wp-json/wp/v2/posts/${id}?_fields=id,title,link,content`);
+  const p = r.datos || {};
+  const c = { id: String(p.id), ...tituloEnLinea(p.title && p.title.rendered), url: p.link, le: letraHTML(p.content && p.content.rendered) };
+  if (!c.le) throw new Error('Esa página no tiene letra');
+  enLineaCache.set(id, c);
+  if (enLineaCache.size > 300) enLineaCache.delete(enLineaCache.keys().next().value);
+  return c;
+}
+
+const norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9ñ\s]/g, '').trim();
+// Un solo guardado de cancioneros a la vez (panel y celulares): las peticiones se ponen en fila
+let colaCanc = Promise.resolve();
+function enFilaCanc(fn) { const p = colaCanc.then(fn, fn); colaCanc = p.catch(() => {}); return p; }
 
 // ---------------------------------------------------------------- Fondos
 // Un fondo puede estar en fondos/ (públicos) o en BSPK/fondos/ (subidos y videos pesados)
@@ -1120,8 +1286,12 @@ function importarRespaldo(buf) {
       const c = path.join(copia, 'cancioneros', path.relative(DIRS.cancioneros, destino));
       fs.mkdirSync(path.dirname(c), { recursive: true }); fs.copyFileSync(destino, c);
     }
-    fs.writeFileSync(destino, datos); n++;
+    // escribirSeguro: no falla con EPERM si el archivo actual está oculto o es de solo lectura
+    if (destino.startsWith(DIRS.cancioneros + path.sep)) escribirCanc(path.relative(DIRS.cancioneros, destino), datos);
+    else escribirSeguro(destino, datos);
+    n++;
   }
+  songbookCache.clear(); gzipCache.clear();
   guardadoBloqueado = true;
   STG = leerStingers(); state.stingerRev++;
   return { archivos: n, copia: path.relative(DATA_ROOT, copia) };
@@ -1488,6 +1658,18 @@ async function handle(req, res) {
     return sendGzip(req, res, text, 'text/plain; charset=utf-8', 'biblia:' + p);
   }
   if (p === '/api/cancioneros') return sendJSON(res, listSongbooks());
+  if (p === '/api/enlinea/buscar' && req.method === 'GET') {
+    const q = String(url.searchParams.get('q') || '').trim().slice(0, 100);
+    const pagina = Math.min(Math.max(parseInt(url.searchParams.get('pagina'), 10) || 1, 1), 200);
+    try { return sendJSON(res, { fuente: EN_LINEA.host, ...(await buscarEnLinea(q, pagina)) }); }
+    catch (e) { return sendJSON(res, { error: e.message }, 502); }
+  }
+  if (p.startsWith('/api/enlinea/cancion/') && req.method === 'GET') {
+    const id = p.slice('/api/enlinea/cancion/'.length);
+    if (!/^\d{1,9}$/.test(id)) return sendJSON(res, { error: 'Canción inválida' }, 400);
+    try { return sendJSON(res, await cancionEnLinea(id)); }
+    catch (e) { return sendJSON(res, { error: e.message }, 502); }
+  }
   if (p.startsWith('/api/cancionero/')) {
     const name = p.slice('/api/cancionero/'.length);
     if (req.method === 'GET') {
@@ -1499,22 +1681,42 @@ async function handle(req, res) {
     }
     if (req.method === 'POST') { // guardar / crear canción
       const b = await readBody(req);
-      if (!b.ti || !b.le) return sendJSON(res, { error: 'Falta título o letra' }, 400);
-      const songs = loadSongbook(name) || [];
-      const song = { id: String(b.id || ''), ti: String(b.ti).trim(), le: String(b.le).replace(/\r\n?/g, '\n'), tono: String(b.tono || ''), estilo: String(b.estilo || '0') };
-      const i = song.id ? songs.findIndex((s) => s.id === song.id) : -1;
-      if (i >= 0) songs[i] = song;
-      else { song.id = String(songs.reduce((m, s) => Math.max(m, parseInt(s.id, 10) || 0), 0) + 1); songs.push(song); }
-      saveSongbook(name, songs);
-      if (b.leen !== undefined) guardarTraduccion(name, song.id, b.tien, b.leen, !!b.enauto);
-      if (!String(b.leen || '').trim()) traducirCancionLuego(name, song);
-      return sendJSON(res, { ok: true, cancion: song });
+      const ti = String(b.ti || '').trim(), le = String(b.le || '').replace(/\r\n?/g, '\n').replace(/^\n+|\s+$/g, '');
+      if (!ti) return sendJSON(res, { error: 'Escriba el título de la canción' }, 400);
+      if (!le.trim()) return sendJSON(res, { error: 'Escriba o pegue la letra de la canción' }, 400);
+      if (!songbookPath(name)) return sendJSON(res, { error: 'Elija un cancionero válido' }, 400);
+      if (!fs.existsSync(songbookPath(name))) return sendJSON(res, { error: `El cancionero "${name}" no existe` }, 400);
+      try {
+        const r = await enFilaCanc(() => {
+          const songs = loadSongbook(name) || [];
+          const song = { id: String(b.id || ''), ti, le, tono: String(b.tono || '').trim(), estilo: String(b.estilo || '0') };
+          const i = song.id ? songs.findIndex((s) => s.id === song.id) : -1;
+          if (i >= 0) { songs[i] = song; saveSongbook(name, songs); return { song }; }
+          // Nueva: si ya existe la misma canción (doble clic en Guardar, o se pegó dos veces) no se duplica
+          const llave = (s) => norm(s.ti) + '|' + norm(s.le).replace(/\s+/g, ' ');
+          const igual = songs.find((s) => llave(s) === llave(song));
+          if (igual) return { song: igual, repetida: true };
+          song.id = String(songs.reduce((m, s) => Math.max(m, parseInt(s.id, 10) || 0), 0) + 1);
+          songs.push(song);
+          saveSongbook(name, songs);
+          return { song };
+        });
+        const song = r.song;
+        if (!r.repetida) {
+          try { if (b.leen !== undefined) await enFilaCanc(() => guardarTraduccion(name, song.id, b.tien, b.leen, !!b.enauto)); }
+          catch (e) { console.log('  No se pudo guardar la traducción: ' + e.message); } // la canción en español ya quedó guardada
+          if (!String(b.leen || '').trim()) traducirCancionLuego(name, song);
+        }
+        return sendJSON(res, { ok: true, cancion: song, ...(r.repetida ? { repetida: true } : {}) });
+      } catch (e) { return sendJSON(res, { error: e.message }, 500); }
     }
     if (req.method === 'DELETE') {
       const id = url.searchParams.get('id');
-      const songs = (loadSongbook(name) || []).filter((s) => s.id !== id);
-      saveSongbook(name, songs);
-      return sendJSON(res, { ok: true });
+      if (!songbookPath(name) || !fs.existsSync(songbookPath(name))) return sendJSON(res, { error: 'Cancionero no encontrado' }, 404);
+      try {
+        await enFilaCanc(() => saveSongbook(name, (loadSongbook(name) || []).filter((s) => s.id !== id)));
+        return sendJSON(res, { ok: true });
+      } catch (e) { return sendJSON(res, { error: e.message }, 500); }
     }
   }
   if (p === '/api/fondos') return sendJSON(res, listBackgrounds());

@@ -8,7 +8,10 @@
 # Los tres archivos se suben como Release v<versión> en GitHub (pesan más de 100 MB).
 
 $ErrorActionPreference = 'Stop'
-$web  = Split-Path -Parent $MyInvocation.MyCommand.Path
+# git entrega los nombres en UTF-8: sin esto, PowerShell 5.1 los lee con la página de códigos de la consola
+# y los archivos con tildes ("Traducción", "VÍDEO") no se encontraban y quedaban FUERA del .zip
+[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding $false
+$web  =Split-Path -Parent $MyInvocation.MyCommand.Path
 $raiz = Split-Path -Parent $web
 $version = (Get-Content -Raw (Join-Path $raiz 'package.json') | ConvertFrom-Json).version
 $repoGitHub = 'Sebaslw/PK-PENTECOSTAL'

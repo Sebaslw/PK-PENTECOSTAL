@@ -15,7 +15,7 @@
   };
 
   let toastT;
-  function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2200); }
+  function toast(msg, ms = 2200) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), ms); }
 
   async function api(url, opts = {}) {
     const r = await fetch(url, { ...opts, headers: { 'Content-Type': 'application/json' }, body: opts.body ? JSON.stringify(opts.body) : undefined });
@@ -250,8 +250,61 @@
   const CAN = { libros: [], canciones: [], actual: null };
   const TODOS = '__todos__';
 
+  // ---------------------------------------------------------------- CANCIONES EN LÍNEA IPUC
+  // Letras de generacionpentecostal.com consultadas en vivo (el servidor hace de puente). Se pueden
+  // proyectar al momento o guardar en un cancionero para usarlas sin internet.
+  const ENL = '__enlinea__', ENL_NOMBRE = 'CANCIONES EN LÍNEA IPUC';
+  const ENLC = { q: null, pagina: 0, paginas: 0, total: 0, lista: [], cargando: false, error: '', t: 0, pedido: 0 };
+  const enLinea = () => $('#cancionero').value === ENL;
+  async function buscarEnLinea(q, mas = false) {
+    const pedido = ++ENLC.pedido;
+    if (!mas) Object.assign(ENLC, { q, pagina: 0, paginas: 0, total: 0, lista: [] });
+    ENLC.cargando = true; ENLC.error = ''; pintarEnLinea();
+    try {
+      const r = await api(`/api/enlinea/buscar?q=${encodeURIComponent(q)}&pagina=${ENLC.pagina + 1}`);
+      if (pedido !== ENLC.pedido) return; // ya se escribió otra búsqueda
+      Object.assign(ENLC, { pagina: r.pagina, paginas: r.paginas, total: r.total, lista: ENLC.lista.concat(r.canciones) });
+    } catch (e) { if (pedido === ENLC.pedido) ENLC.error = e.message; }
+    if (pedido === ENLC.pedido) { ENLC.cargando = false; pintarEnLinea(); }
+  }
+  function pintarEnLinea() {
+    if (!enLinea()) return;
+    const L = $('#listaCanciones');
+    const cab = `<div class="hint" style="padding:6px 10px">🌐 Letras de <b>generacionpentecostal.com</b> (necesita internet)${ENLC.total ? ' · ' + ENLC.total.toLocaleString('es') + (ENLC.q ? ' resultados' : ' canciones') : ''}</div>`;
+    const items = ENLC.lista.map((s) => `<div class="list-item ${CAN.actual && CAN.actual.enlinea && CAN.actual.id === s.id ? 'active' : ''}" data-enl="${esc(s.id)}">
+        <div class="t">${esc(s.ti)}</div><div class="s">${s.autor ? esc(s.autor) + ' · ' : ''}${esc(ENL_NOMBRE)}</div></div>`).join('');
+    const pie = ENLC.cargando ? '<div class="empty">⏳ Buscando en línea…</div>'
+      : ENLC.error ? `<div class="empty">⚠ ${esc(ENLC.error)}<br><button data-enl-reintentar style="margin-top:8px">Reintentar</button></div>`
+      : !ENLC.lista.length ? '<div class="empty">No se encontraron canciones en línea</div>'
+      : ENLC.pagina < ENLC.paginas ? '<div style="padding:8px;text-align:center"><button data-enl-mas>Cargar más canciones</button></div>' : '';
+    L.innerHTML = cab + items + pie;
+  }
+  async function abrirEnLinea(id) {
+    const it = ENLC.lista.find((x) => x.id === id);
+    $('#cTitulo').textContent = it ? it.ti : ENL_NOMBRE; $('#cSub').textContent = '⏳ Trayendo la letra…';
+    try {
+      const c = await api('/api/enlinea/cancion/' + encodeURIComponent(id));
+      abrirCancion({ id: c.id, ti: c.ti, le: c.le, tono: '', estilo: '0', libro: ENL_NOMBRE, autor: c.autor, url: c.url, enlinea: true });
+    } catch (e) { $('#cSub').textContent = '⚠ ' + e.message; toast('Error: ' + e.message, 6000); }
+  }
+  // Guarda la canción en línea en un cancionero propio (se abre el editor ya lleno: se elige el cancionero)
+  function guardarEnLinea(s) {
+    editarCancion(null);
+    $('#edTi').value = s.ti + (s.autor ? ' - ' + s.autor : '');
+    $('#edLe').value = s.le;
+  }
+  $('#listaCanciones').addEventListener('click', (e) => {
+    if (e.target.closest('[data-enl-mas]')) return buscarEnLinea(ENLC.q, true);
+    if (e.target.closest('[data-enl-reintentar]')) return buscarEnLinea(ENLC.q || '', ENLC.lista.length > 0);
+    const ir = e.target.closest('[data-ir-enlinea]');
+    if (ir) { $('#cancionero').value = ENL; store.set('cancionero', ENL); return buscarEnLinea($('#canBuscar').value.trim()); }
+    const it = e.target.closest('[data-enl]');
+    if (it) { $$('#listaCanciones .list-item').forEach((x) => x.classList.toggle('active', x === it)); abrirEnLinea(it.dataset.enl); }
+  });
+
   async function cargarCancionero(nombre) {
     store.set('cancionero', nombre);
+    if (nombre === ENL) return buscarEnLinea($('#canBuscar').value.trim());
     const nombres = nombre === TODOS ? CAN.libros : [nombre];
     const listas = await Promise.all(nombres.map((n) => api('/api/cancionero/' + encodeURIComponent(n)).then((arr) => arr.map((s) => ({ ...s, libro: n }))).catch(() => [])));
     CAN.canciones = listas.flat().map((s) => ({ ...s, _n: norm(s.ti + ' ' + (s.tien || '')), _l: norm(s.le + ' ' + (s.leen || '')) }));
@@ -261,6 +314,11 @@
   // En inglés se muestra y proyecta la traducción de la canción (si existe)
   const vistaCan = (s) => (idiomaEn() && s.leen ? { ti: s.tien || s.ti, le: s.leen } : { ti: s.ti, le: s.le });
   function filtrarCanciones() {
+    if (enLinea()) { // búsqueda en internet: espera a que se termine de escribir
+      clearTimeout(ENLC.t);
+      ENLC.t = setTimeout(() => buscarEnLinea($('#canBuscar').value.trim()), 450);
+      return;
+    }
     const q = norm($('#canBuscar').value.trim());
     let lista = CAN.canciones;
     if (q) {
@@ -277,17 +335,19 @@
         ${s.tono ? `<span class="tono">${esc(s.tono)}</span>` : ''}<div class="t">${esc(v.ti)}${s.leen ? (s.enauto ? ' <span class="en-tag auto" title="Traducción automática">EN·auto</span>' : ' <span class="en-tag" title="English">EN</span>') : ''}</div>
         <div class="s">${todos ? esc(s.libro) + ' · ' : ''}${esc(prim)}</div></div>`;
     }).join('') || '<div class="empty">No hay canciones</div>';
+    // ¿No la tiene? → buscarla en CANCIONES EN LÍNEA IPUC
+    if (q) $('#listaCanciones').insertAdjacentHTML('beforeend', `<div style="padding:10px;text-align:center"><button data-ir-enlinea>🌐 Buscar «${esc($('#canBuscar').value.trim())}» en ${esc(ENL_NOMBRE)}</button></div>`);
   }
   $('#canBuscar').addEventListener('input', filtrarCanciones);
   $('#cancionero').addEventListener('change', (e) => cargarCancionero(e.target.value));
   $('#listaCanciones').addEventListener('click', (e) => {
-    const it = e.target.closest('.list-item'); if (!it) return;
+    const it = e.target.closest('.list-item[data-k]'); if (!it) return;
     const [libro, id] = it.dataset.k.split('|');
     const s = CAN.canciones.find((x) => x.libro === libro && x.id === id);
     if (s) abrirCancion(s);
     $$('#listaCanciones .list-item').forEach((x) => x.classList.toggle('active', x === it));
   });
-  $('#listaCanciones').addEventListener('dblclick', (e) => { if (e.target.closest('.list-item') && ctx?.items.length) proyectarSlide(0); });
+  $('#listaCanciones').addEventListener('dblclick', (e) => { if (e.target.closest('.list-item[data-k]') && ctx?.items.length) proyectarSlide(0); });
 
   // Letra limpia (sin espacios ni marcas //) y repartida en diapositivas de máximo N renglones (letra.js):
   // así todas las canciones se proyectan con el mismo tamaño de letra
@@ -302,8 +362,10 @@
     const slides = estrofas(v.le);
     ctx = { tipo: 'cancion', items: slides.map((t, i) => ({ texto: t, titulo: v.ti, ref: v.ti, label: `${i + 1}` })) };
     $('#cTitulo').textContent = v.ti;
-    $('#cSub').textContent = `${s.libro}${s.tono ? ' · Tono ' + s.tono : ''} · ${slides.length} diapositivas`;
-    $('#cActions').innerHTML = `<button data-act="editar">✎ Editar</button>`;
+    $('#cSub').textContent = `${s.libro}${s.autor ? ' · ' + s.autor : ''}${s.tono ? ' · Tono ' + s.tono : ''} · ${slides.length} diapositivas`;
+    $('#cActions').innerHTML = s.enlinea
+      ? `<button data-act="guardarEnLinea" class="primary" title="Guardarla para usarla sin internet">💾 Guardar en mi cancionero</button><button data-act="verEnLinea" title="Fuente: generacionpentecostal.com">🔗 Ver en la página</button>`
+      : `<button data-act="editar">✎ Editar</button>`;
     pintarSlides();
   }
   function pintarSlides() {
@@ -354,11 +416,13 @@
   });
   dlg.addEventListener('close', async () => {
     const s = dlg._s; const v = dlg.returnValue;
+    let guardado = false;
     try {
       if (v === 'ok') {
         const libro = s ? s.libro : $('#edLibro').value;
         const r = await api('/api/cancionero/' + encodeURIComponent(libro), { method: 'POST', body: { id: s?.id, ti: $('#edTi').value, tono: $('#edTono').value, le: $('#edLe').value, estilo: s?.estilo, tien: $('#edTiEn').value, leen: $('#edLeEn').value, enauto: $('#edLeEn').dataset.auto === '1' } });
-        toast('Canción guardada');
+        guardado = true;
+        toast(r.repetida ? 'Esa canción ya estaba en ' + libro + ' (no se duplicó)' : 'Canción guardada');
         await cargarCancionero($('#cancionero').value);
         const n = CAN.canciones.find((x) => x.libro === libro && x.id === r.cancion.id);
         if (n) abrirCancion(n);
@@ -367,9 +431,16 @@
         toast('Canción eliminada');
         await cargarCancionero($('#cancionero').value);
       }
-    } catch (e) { toast('Error: ' + e.message); }
+    } catch (e) {
+      toast('Error: ' + e.message, 9000);
+      // No se pierde lo escrito: el editor se vuelve a abrir con el título y la letra tal cual
+      if (v === 'ok' && !guardado && !dlg.open) { dlg._s = s; dlg.showModal(); }
+    }
   });
-  $('#edGuardar').addEventListener('click', (e) => { if (!$('#edTi').value.trim() || !$('#edLe').value.trim()) { e.preventDefault(); toast('Complete título y letra'); } });
+  $('#edGuardar').addEventListener('click', (e) => {
+    const falta = !$('#edTi').value.trim() ? 'Escriba el título de la canción' : !$('#edLibro').value ? 'Elija un cancionero' : !$('#edLe').value.trim() ? 'Escriba o pegue la letra' : '';
+    if (falta) { e.preventDefault(); toast(falta); }
+  });
 
   // ================================================================ TEXTO / ANUNCIOS
   function cargarTexto(titulo, cuerpo) {
@@ -417,7 +488,9 @@
     const a = e.target.closest('button')?.dataset.act;
     if (a === 'prevCap') cambiarCap(-1);
     if (a === 'nextCap') cambiarCap(1);
-    if (a === 'editar' && CAN.actual) editarCancion(CAN.actual);
+    if (a === 'editar' && CAN.actual && !CAN.actual.enlinea) editarCancion(CAN.actual);
+    if (a === 'guardarEnLinea' && CAN.actual?.enlinea) guardarEnLinea(CAN.actual);
+    if (a === 'verEnLinea' && CAN.actual?.url && /^https:\/\/www\.generacionpentecostal\.com\//.test(CAN.actual.url)) window.open(CAN.actual.url, '_blank', 'noopener');
   });
 
   function marcar() {
@@ -791,9 +864,12 @@
     BIBLIAS = biblias;
     $('#bibVersion').innerHTML = biblias.map((b) => `<option>${esc(b)}</option>`).join('');
     CAN.libros = cancioneros;
-    $('#cancionero').innerHTML = `<option value="${TODOS}">★ Todos los cancioneros</option>` + cancioneros.map((c) => `<option>${esc(c)}</option>`).join('');
+    // "🌐 CANCIONES EN LÍNEA IPUC" va justo después del Corario IPUC castilla (o al final si no está)
+    const iCor = cancioneros.findIndex((c) => /corario ipuc/i.test(c));
+    const optEnl = `<option value="${ENL}">🌐 ${esc(ENL_NOMBRE)}</option>`;
+    $('#cancionero').innerHTML = `<option value="${TODOS}">★ Todos los cancioneros</option>` + cancioneros.map((c, i) => `<option>${esc(c)}</option>` + (i === iCor ? optEnl : '')).join('') + (iCor < 0 ? optEnl : '');
     const cSel = store.get('cancionero', TODOS);
-    $('#cancionero').value = [TODOS, ...cancioneros].includes(cSel) ? cSel : TODOS;
+    $('#cancionero').value = [TODOS, ENL, ...cancioneros].includes(cSel) ? cSel : TODOS;
     cargarCancionero($('#cancionero').value);
     cargarFondos();
     if (biblias.length) {

@@ -4,7 +4,7 @@
 
 <br/>
 
-![Versión](https://img.shields.io/badge/versión-2.0.7-f59e0b?style=for-the-badge)
+![Versión](https://img.shields.io/badge/versión-2.0.8-f59e0b?style=for-the-badge)
 ![Windows](https://img.shields.io/badge/Windows-10%20%C2%B7%2011%20(64%20bits)-0078D4?style=for-the-badge&logo=windows&logoColor=white)
 ![Sin Node.js](https://img.shields.io/badge/no%20necesita-Node.js-339933?style=for-the-badge&logo=electron&logoColor=white)
 ![OBS Studio](https://img.shields.io/badge/OBS_Studio-28%2B-302E31?style=for-the-badge&logo=obsstudio&logoColor=white)
@@ -65,7 +65,8 @@ Todo corre en **un solo computador**, se maneja desde el **navegador** y **no ne
 
 ### 🎵 Canciones
 - **6 cancioneros** incluidos: Corario IPUC Castilla, Himnario Lluvias de Bendición, Infantiles, Mi Cancionero, Manantial de Inspiración y Canciones.
-- Editor de canciones integrado con **respaldo automático** antes de cada cambio.
+- Editor de canciones integrado con **respaldo automático** antes de cada cambio. Desde la **2.0.8** el guardado es seguro en Windows: funciona aunque la carpeta esté **oculta** o sea de **solo lectura** (antes daba `EPERM`), no duplica canciones y, si algo falla, el editor no pierde lo escrito.
+- **🌐 CANCIONES EN LÍNEA IPUC** (2.0.8): las **3.000+ letras** de [generacionpentecostal.com](https://www.generacionpentecostal.com/letras-de-canciones/) consultadas en vivo (necesita internet). Búsquelas, proyéctelas al momento o pulse **💾 Guardar en mi cancionero** para tenerlas sin internet. Si no encuentra una canción en sus cancioneros, el botón **🌐 Buscar … en CANCIONES EN LÍNEA IPUC** la busca allí.
 - Teclas **1..9** para saltar a la estrofa que quiera.
 - Respeta coros y estrofas numeradas; al proyectar quita las marcas de repetición `//así//` y los espacios sobrantes.
 - **Todas las canciones con el mismo tamaño de letra**: una estrofa larga se reparte sola en diapositivas parejas (*Estilo → Líneas por diapositiva*, 4 por defecto).
@@ -243,8 +244,8 @@ Descargue desde la **[página web](https://sebaslw.github.io/pk-pentecostal.io/)
 
 | Archivo | Para qué |
 |---|---|
-| **`PK-PENTECOSTAL-Instalador-2.0.7.exe`** | Doble clic → *Siguiente*. Crea el acceso directo en el **Escritorio** y en el **menú Inicio**. Se desinstala desde *Configuración → Aplicaciones*. |
-| **`PK-PENTECOSTAL-Portable-2.0.7.exe`** | No se instala: doble clic y listo. Ideal para una memoria USB. |
+| **`PK-PENTECOSTAL-Instalador-2.0.8.exe`** | Doble clic → *Siguiente*. Crea el acceso directo en el **Escritorio** y en el **menú Inicio**. Se desinstala desde *Configuración → Aplicaciones*. |
+| **`PK-PENTECOSTAL-Portable-2.0.8.exe`** | No se instala: doble clic y listo. Ideal para una memoria USB. |
 
 **No necesita Node.js** ni ningún otro programa. Al abrirlo:
 
@@ -257,7 +258,7 @@ Descargue desde la **[página web](https://sebaslw.github.io/pk-pentecostal.io/)
 > 🔒 **Marca protegida:** el logo y los archivos del programa van en un paquete verificado. Si se alteran, PK-PENTECOSTAL no los muestra y pide reinstalar (sus datos se conservan).
 
 #### 🔄 Se actualiza solo
-Desde la **2.0.3**, la versión instalada busca actualizaciones al abrir (y cada 6 horas) en las Releases de GitHub. Si hay una nueva: **aviso de Windows** → se descarga sola en segundo plano → pregunta **Actualizar ahora** o **Al cerrar el programa** → se instala **encima, sin desinstalar** (canciones, fondos, ajustes y claves se conservan) → al abrir dice **«✅ PK-PENTECOSTAL se actualizó»**. También: *Alt → Ayuda → Buscar actualizaciones…* o el botón de versión del pie. La portable avisa y da el enlace. *(Para publicar: subir a la Release `latest.yml` y el `.blockmap` junto al instalador.)*
+Desde la **2.0.3**, la versión instalada busca actualizaciones al abrir (y cada 6 horas) en las Releases de GitHub. Si hay una nueva: **aviso de Windows** → se descarga sola en segundo plano → **«✅ ¡Tenemos ajustes nuevos!»** con **Reiniciar PK-PENTECOSTAL** o **Más tarde (al cerrar)** → se instala **encima, sin desinstalar** (canciones, fondos, ajustes y claves se conservan) → al abrir dice **«✅ PK-PENTECOSTAL se actualizó»**. También: *Alt → Ayuda → Buscar actualizaciones…* o el botón de versión del pie. La portable avisa y da el enlace. *(Para publicar: subir a la Release `latest.yml` y el `.blockmap` junto al instalador.)*
 
 #### ¿Dónde quedan mis datos?
 
@@ -411,6 +412,12 @@ Todo lo privado de cada instalación vive en la carpeta **`BSPK/`** (en la app d
 ---
 
 ## ❓ Problemas comunes
+
+<details>
+<summary><b>"EPERM: operation not permitted" al guardar una canción</b></summary>
+
+Corregido en la **2.0.8**. Pasaba al usar el .zip con los archivos de `cancioneros/` marcados como **ocultos** o de **solo lectura** (Windows no deja sobrescribirlos directamente). Ahora el programa guarda en un archivo nuevo y lo reemplaza de forma segura. Si la carpeta no deja escribir en absoluto (memoria USB protegida, *Acceso controlado a carpetas* de Windows Defender), las canciones se guardan en `%APPDATA%PK-PENTECOSTALcancioneros-guardados` y se siguen leyendo de allí. No hace falta abrir el programa como administrador.
+</details>
 
 <details>
 <summary><b>"El puerto 8888 está ocupado"</b></summary>

@@ -235,18 +235,18 @@ function buscarActualizacion(manual) {
 }
 
 async function preguntarInstalar(i) {
-  notificar(`✅ ${NOMBRE} ${i.version} está lista para instalar`, 'No hace falta desinstalar: sus canciones, fondos y ajustes se conservan.');
+  notificar(`✅ ¡Tenemos ajustes nuevos! (${NOMBRE} ${i.version})`, `Dale en «Reiniciar ${NOMBRE}» para tenerlos. Sus canciones, fondos y ajustes se conservan.`);
   if (PRUEBA_ACT || preguntando) return;
   preguntando = true;
   try {
     const r = await dialog.showMessageBox(ventana, {
       type: 'info', title: NOMBRE, icon: ICONO, noLink: true,
-      message: `⬆ Nueva actualización: ${NOMBRE} ${i.version}`,
-      detail: `Usted tiene la versión ${app.getVersion()}. La actualización ya se descargó y se verificó.\n\n` +
-        'Se instala ENCIMA, sin desinstalar nada: sus canciones, fondos, ajustes y claves de los celulares se conservan.\n\n' +
-        '«Actualizar ahora»: el programa se cierra unos segundos, se actualiza y se vuelve a abrir solo.\n' +
-        '«Al cerrar el programa»: si está en pleno culto, se actualizará cuando lo cierre.' + novedades(i),
-      buttons: ['Actualizar ahora', 'Al cerrar el programa'], defaultId: 0, cancelId: 1,
+      message: `✅ ¡Tenemos ajustes nuevos! (${NOMBRE} ${i.version})`,
+      detail: `Dale en «Reiniciar ${NOMBRE}» para tenerlos: el programa se cierra unos segundos, se actualiza y se vuelve a abrir solo.\n\n` +
+        'Se instala ENCIMA, sin desinstalar nada: sus canciones, fondos, ajustes y claves de los celulares se conservan.\n' +
+        `Usted tiene la versión ${app.getVersion()}; la nueva ya se descargó y se verificó.\n\n` +
+        '«Más tarde»: si está en pleno culto, se actualizará cuando cierre el programa.' + novedades(i),
+      buttons: [`Reiniciar ${NOMBRE}`, 'Más tarde (al cerrar)'], defaultId: 0, cancelId: 1,
     });
     if (r.response === 0) instalarYReiniciar();
     else log('[act] se instalará al cerrar');
