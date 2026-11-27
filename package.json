@@ -18,7 +18,8 @@
     "miniaturas": "electron electron/miniaturas-fabrica.js",
     "dist": "electron electron/miniaturas-fabrica.js && electron-builder --win --x64 --publish never",
     "probar-canciones": "node electron/prueba-canciones.js",
-    "probar-enlinea": "electron electron/prueba-enlinea-panel.js"
+    "probar-enlinea": "electron electron/prueba-enlinea-panel.js",
+    "probar-biblias": "node electron/prueba-biblias.js && electron electron/prueba-biblias-panel.js"
   },
   "devDependencies": {
     "electron": "45.4.1",

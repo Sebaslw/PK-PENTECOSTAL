@@ -155,7 +155,7 @@
   function escalar() { root.style.transform = `scale(${Math.min(innerWidth / 1920, innerHeight / 1080)})`; }
   addEventListener('resize', escalar); escalar();
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  const fmt = (t) => esc(t.trim()).replace(/\[\[(\d+)\]\]\s*/g, '<sup>$1</sup>').split('\n').map((l) => l.trim()).join('<br>');
+  const fmt = (t) => esc(t.trim()).replace(/\[\[([\d-]+)\]\]\s*/g, '<sup>$1</sup>').split('\n').map((l) => l.trim()).join('<br>');
   const urlSegura = (u) => String(u).replace(/'/g, '%27').replace(/"/g, '%22').replace(/</g, '%3C').replace(/>/g, '%3E');
   const hexA = (hex, a) => { const n = parseInt(hex.replace('#', ''), 16); return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`; };
 

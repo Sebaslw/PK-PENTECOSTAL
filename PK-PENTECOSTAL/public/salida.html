@@ -112,9 +112,10 @@
   const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   function formatear(texto, mayus) {
     let h = esc(texto.trim());
+    // Número de versículo (o versículos unidos "23-24") primero, para que el guion no lo confunda con una palabra
+    h = h.replace(/\[\[([\d-]+)\]\]\s*/g, '<sup>$1</sup>');
     // Palabras con guion (ieh-eh-eh) nunca se parten entre dos líneas
     h = h.replace(/[^\s<>]+(?:-[^\s<>]+)+/g, (w) => `<span class="ng">${w}</span>`);
-    h = h.replace(/\[\[(\d+)\]\]\s*/g, '<sup>$1</sup>');
     // Cada línea en su propio bloque (en canciones la frase queda completa en una sola línea)
     h = h.split('\n').map((l) => l.trim()).map((l) => l ? `<span class="l">${l}</span>` : '<span class="l vacia"></span>').join('');
     return h;

@@ -89,9 +89,12 @@
     for (const line of txt.split(/\r?\n/)) {
       const p = line.split('|');
       if (p.length < 4) continue;
-      const b = +p[0], c = +p[1], v = +p[2], t = p.slice(3).join('|').trim();
-      ((data[b] ||= {})[c] ||= []).push([v, t]);
-      flat.push([b, c, v, t, norm(t)]);
+      // El versículo puede ser un rango "1-3" cuando la traducción une varios en uno
+      const [v, h] = p[2].split('-').map((x) => parseInt(x, 10));
+      const b = +p[0], c = +p[1], hasta = h > v ? h : v, t = p.slice(3).join('|').trim();
+      if (!v) continue;
+      ((data[b] ||= {})[c] ||= []).push([v, t, hasta]);
+      flat.push([b, c, v, t, norm(t), hasta]);
     }
     Object.assign(BIB, { nombre, data, flat, ingles: window.esBibliaIngles(nombre) });
     store.set('biblia', nombre);
@@ -126,17 +129,20 @@
     const vs = BIB.data[libro][cap];
     ctx = {
       tipo: 'biblia', libro, cap,
-      items: vs.map(([v, t]) => ({ v, t })),
+      items: vs.map(([v, t, hasta]) => ({ v, t, hasta: hasta || v, n: hasta > v ? `${v}-${hasta}` : String(v) })),
     };
+    const totalVersos = vs.reduce((mx, x) => Math.max(mx, x[2] || x[0]), 0);
     $('#cTitulo').textContent = `${nomLibro(libro - 1)} ${cap}`;
-    $('#cSub').textContent = `${BIB.nombre} · ${vs.length} versículos`;
+    $('#cSub').textContent = `${BIB.nombre} · ${totalVersos} versículos`;
     $('#cActions').innerHTML = `<button data-act="prevCap">◀ Cap.</button><button data-act="nextCap">Cap. ▶</button>`;
-    $('#items').innerHTML = vs.map(([v, t], i) => `<div class="verse" data-i="${i}"><span class="n">${v}</span><span>${esc(t)}</span></div>`).join('');
+    $('#items').innerHTML = ctx.items.map((x, i) => `<div class="verse" data-i="${i}"><span class="n">${x.n}</span><span>${esc(x.t)}</span></div>`).join('');
     $('#items').scrollTop = 0;
     liveIdx = -1; selRange = null; selAnchor = -1;
     if (versos) {
-      const a = vs.findIndex(([v]) => v === versos[0]);
-      const b = versos[1] ? vs.findIndex(([v]) => v === versos[1]) : a;
+      // Un versículo unido ("2-3") también se encuentra buscando el 3
+      const idx = (n) => vs.findIndex(([v, , h]) => n >= v && n <= (h || v));
+      const a = idx(versos[0]);
+      const b = versos[1] ? idx(versos[1]) : a;
       if (a >= 0) {
         selAnchor = a;
         if (alAire) proyectarRango(a, b >= 0 ? b : a); else { selRange = [a, b >= 0 ? b : a]; marcar(); }
@@ -162,14 +168,14 @@
 
   function refTexto(a, b) {
     const it = ctx.items;
-    const va = it[a].v, vb = it[b].v;
+    const va = it[a].v, vb = it[b].hasta || it[b].v;
     return `${nomLibro(ctx.libro - 1)} ${ctx.cap}:${va}${vb !== va ? '-' + vb : ''}`;
   }
   function proyectarRango(a, b) {
     if (a > b) [a, b] = [b, a];
     selRange = [a, b]; liveIdx = b;
     const it = ctx.items.slice(a, b + 1);
-    const texto = it.length > 1 ? it.map((x) => `[[${x.v}]] ${x.t}`).join(' ') : it[0].t;
+    const texto = it.length > 1 ? it.map((x) => `[[${x.n || x.v}]] ${x.t}`).join(' ') : it[0].t;
     const ref = refTexto(a, b);
     // grupo = versículos del capítulo: la salida usa un tamaño de letra parejo para todo el capítulo
     irAlAire({ tipo: 'biblia', titulo: ref, texto, ref: `${ref}  ·  ${versionCorta(BIB.nombre)}`, grupo: ctx.items.map((x) => x.t) });
@@ -216,7 +222,7 @@
     subTab('resultados');
     // Resalta sin importar tildes; se escapan los caracteres especiales para que "(" o "?" no rompan la búsqueda
     const hl = (t) => { let h = esc(t); for (const w of words) h = h.replace(new RegExp('(' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/[aeiou]/g, (c) => `[${c}${'áéíóú'['aeiou'.indexOf(c)]}]`).replace(/n/g, '[nñ]') + ')', 'gi'), '<mark>$1</mark>'); return h; };
-    out.innerHTML = res.length ? res.map(([b, c, v, t]) => `<div class="list-item" data-b="${b}" data-c="${c}" data-v="${v}"><div class="t">${nomLibro(b - 1)} ${c}:${v}</div><div class="s" style="white-space:normal">${hl(t)}</div></div>`).join('') : '<div class="empty">Sin resultados</div>';
+    out.innerHTML = res.length ? res.map(([b, c, v, t, , h]) => `<div class="list-item" data-b="${b}" data-c="${c}" data-v="${v}"><div class="t">${nomLibro(b - 1)} ${c}:${h > v ? `${v}-${h}` : v}</div><div class="s" style="white-space:normal">${hl(t)}</div></div>`).join('') : '<div class="empty">Sin resultados</div>';
   }
   $('#bResultados').addEventListener('click', (e) => {
     const it = e.target.closest('.list-item'); if (!it) return;
@@ -227,7 +233,7 @@
   async function pintarHistorial() {
     const h = await api('/api/historial');
     $('#bHistorial').innerHTML = (h.length ? `<div class="row"><button class="grow danger" id="borrarHist">Borrar historial</button></div>` : '') +
-      (h.map((x) => `<div class="list-item" data-ref="${esc(x.ref)}"><div class="t">${esc(x.ref.split('  ·  ')[0])}</div><div class="s">${esc(x.texto.replace(/\[\[\d+\]\]/g, ''))}</div></div>`).join('') || '<div class="empty">Aún no se han proyectado versículos</div>');
+      (h.map((x) => `<div class="list-item" data-ref="${esc(x.ref)}"><div class="t">${esc(x.ref.split('  ·  ')[0])}</div><div class="s">${esc(x.texto.replace(/\[\[[\d-]+\]\]/g, ''))}</div></div>`).join('') || '<div class="empty">Aún no se han proyectado versículos</div>');
   }
   $('#bHistorial').addEventListener('click', async (e) => {
     if (e.target.id === 'borrarHist') { await api('/api/historial', { method: 'DELETE' }); return pintarHistorial(); }
@@ -825,7 +831,7 @@
     $('#btnNegro').classList.toggle('on', !!st.negro);
     $('#btnOcultar').classList.toggle('on', !!st.ocultarTexto);
     $('#nowRef').textContent = st.vivo ? (st.vivo.ref || st.vivo.titulo || '(texto)') : '—';
-    $('#nowTxt').textContent = st.vivo ? st.vivo.texto.replace(/\[\[(\d+)\]\]\s*/g, '$1 ') : (window.I18N ? window.I18N.t('Nada en pantalla') : 'Nada en pantalla');
+    $('#nowTxt').textContent = st.vivo ? st.vivo.texto.replace(/\[\[([\d-]+)\]\]\s*/g, '$1 ') : (window.I18N ? window.I18N.t('Nada en pantalla') : 'Nada en pantalla');
     if (!st.vivo) { liveIdx = -1; }
     marcar();
     if (cambioEstilo) { pintarFormEstilo(st.estilo); if (FONDOS.length) marcarFondoActivo(); }
@@ -874,7 +880,9 @@
     cargarFondos();
     if (biblias.length) {
       const b = store.get('biblia', biblias[0]);
-      $('#bibVersion').value = biblias.includes(b) ? b : biblias[0];
+      // Si el nombre cambió (p. ej. "TraducciÃ³n" → "Traducción" en 2.0.8) se busca la misma versión por su sigla
+      const porSigla = biblias.find((x) => versionCorta(x).toUpperCase() === versionCorta(String(b)).toUpperCase());
+      $('#bibVersion').value = biblias.includes(b) ? b : (porSigla || biblias.find((x) => /RV1960/i.test(x)) || biblias[0]);
       await cargarBiblia($('#bibVersion').value);
       await bibliaSegunIdioma();
     } else {
