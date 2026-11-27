@@ -1,0 +1,97 @@
+# PK-PENTECOSTAL · Instaladores para macOS y Linux
+# Windows se compila en el computador de Sebas (npm run dist). Este flujo compila, en máquinas REALES de
+# macOS y Linux de GitHub, el .dmg/.zip de Mac (universal: Intel y Apple M1/M2/M3/M4) y el .AppImage/.deb de
+# Linux; los abre y comprueba que funcionen (servidor, 9 Biblias completas, cancioneros, panel) y los sube
+# a la Release de esa versión. Se ejecuta solo al publicar una Release, o a mano desde la pestaña Actions.
+name: Mac y Linux
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Etiqueta de la Release (p. ej. v2.0.9) o rama para ensayar (main)'
+        required: true
+      subir:
+        description: 'Subir los instaladores a la Release'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+env:
+  TAG: ${{ github.event.release.tag_name || inputs.tag }}
+
+jobs:
+  pruebas:
+    name: Pruebas del servidor (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: '${{ env.TAG }}' }
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - run: npm ci
+      - run: node electron/pruebas.js
+      - run: node electron/prueba-biblias.js
+
+  mac:
+    name: macOS (.dmg y .zip)
+    needs: pruebas
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: '${{ env.TAG }}' }
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - run: npm ci
+      - run: echo "V=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
+      - name: Compilar (universal, firma ad-hoc)
+        run: npm run dist:mac
+      - name: Verificar la firma
+        run: codesign --verify --deep --strict --verbose=2 dist/mac-universal/PK-PENTECOSTAL.app
+      - name: Abrir el programa compilado y probarlo
+        run: node electron/prueba-app.js dist/mac-universal/PK-PENTECOSTAL.app/Contents/MacOS/PK-PENTECOSTAL
+      - name: Probar el .dmg (montar y abrir la app que trae)
+        run: |
+          hdiutil attach "dist/PK-PENTECOSTAL-${V}-mac.dmg" -mountpoint /Volumes/PKPRUEBA -nobrowse
+          node electron/prueba-app.js /Volumes/PKPRUEBA/PK-PENTECOSTAL.app/Contents/MacOS/PK-PENTECOSTAL
+          hdiutil detach /Volumes/PKPRUEBA
+      - name: Subir a la Release
+        if: github.event_name == 'release' || inputs.subir
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: gh release upload "$TAG" "dist/PK-PENTECOSTAL-${V}-mac.dmg" "dist/PK-PENTECOSTAL-${V}-mac.zip" --clobber
+
+  linux:
+    name: Linux (.AppImage y .deb)
+    needs: pruebas
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: '${{ env.TAG }}' }
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - run: npm ci
+      - run: echo "V=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
+      - name: Compilar
+        run: npm run dist:linux
+      - name: Instalar el .deb y probarlo
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb "./dist/PK-PENTECOSTAL-${V}-linux-amd64.deb"
+          xvfb-run -a node electron/prueba-app.js /opt/PK-PENTECOSTAL/pk-pentecostal
+      - name: Probar el .AppImage
+        run: |
+          sudo apt-get install -y -qq libfuse2t64 || sudo apt-get install -y -qq libfuse2
+          chmod +x "dist/PK-PENTECOSTAL-${V}-linux-x86_64.AppImage"
+          xvfb-run -a node electron/prueba-app.js "dist/PK-PENTECOSTAL-${V}-linux-x86_64.AppImage" --no-sandbox
+      - name: Subir a la Release
+        if: github.event_name == 'release' || inputs.subir
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: gh release upload "$TAG" "dist/PK-PENTECOSTAL-${V}-linux-x86_64.AppImage" "dist/PK-PENTECOSTAL-${V}-linux-amd64.deb" dist/latest-linux.yml --clobber

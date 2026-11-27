@@ -18,7 +18,9 @@ const RAIZ_APP = path.resolve(__dirname, '..');                 // biblias, fond
 const SERVER_JS = path.join(RAIZ_APP, 'PK-PENTECOSTAL', 'server.js');
 // Marca protegida: el logo, los iconos y el manual se leen desde el paquete .asar del programa, que Electron
 // verifica (integridad). Si alguien altera esos archivos, el programa no los muestra y pide reinstalar.
-const ICONO = path.join(RAIZ_APP, 'PK-PENTECOSTAL', 'pk-pentecostal.ico');
+// Windows usa el .ico; macOS y Linux, el PNG grande
+const ES_MAC = process.platform === 'darwin', ES_WIN = process.platform === 'win32';
+const ICONO = ES_WIN ? path.join(RAIZ_APP, 'PK-PENTECOSTAL', 'pk-pentecostal.ico') : path.join(RAIZ_APP, 'PK-PENTECOSTAL', 'public', 'icono-512.png');
 
 // ---------------------------------------------------------------- Carpeta de datos del usuario
 // · Versión instalada: %APPDATA%\PK-PENTECOSTAL  (se conserva al desinstalar o actualizar)
@@ -159,6 +161,9 @@ function salir() {
 // Pruebas: PK_UPDATE_URL=<carpeta http con latest.yml> usa ese origen; PK_UPDATE_PRUEBA=1 no muestra diálogos.
 const PORTABLE = !!process.env.PORTABLE_EXECUTABLE_DIR;
 const PRUEBA_ACT = process.env.PK_UPDATE_PRUEBA === '1';
+// Se actualiza solo: Windows instalado y Linux .AppImage. En macOS la actualización automática exige un
+// certificado de Apple (de pago) y el .deb de Linux lo actualiza el sistema: ahí se avisa y se da el enlace.
+const ACT_SOPORTADA = ES_WIN ? !PORTABLE : process.platform === 'linux' ? !!process.env.APPIMAGE : false;
 const VERSION_FILE = path.join(DATOS, 'BSPK', 'version.json');
 let autoUpdater = null, actEstado = 'nada', actManual = false, actInfo = null, preguntando = false;
 // Versión con la que se abrió la última vez. Se lee AL ARRANCAR (antes de iniciar el servidor, que crea
@@ -181,7 +186,7 @@ function novedades(info) {
 }
 
 function iniciarActualizaciones() {
-  if ((!app.isPackaged && !PRUEBA_ACT) || PORTABLE) { log('[act] desactivada', { empaquetado: app.isPackaged, portable: PORTABLE }); return; }
+  if ((!app.isPackaged && !PRUEBA_ACT) || !ACT_SOPORTADA) { log('[act] desactivada', { empaquetado: app.isPackaged, portable: PORTABLE, sistema: process.platform }); return; }
   try { ({ autoUpdater } = require('electron-updater')); } catch (e) { log('[act] no se pudo cargar electron-updater', e); return; }
   autoUpdater.logger = { info: (m) => log('[act]', m), warn: (m) => log('[act:aviso]', m), error: (m) => log('[act:error]', m), debug: () => {} };
   autoUpdater.autoDownload = true;            // se descarga sola, en segundo plano
@@ -219,7 +224,7 @@ function iniciarActualizaciones() {
 
 function buscarActualizacion(manual) {
   if (!autoUpdater) {
-    if (manual) dialog.showMessageBox(ventana, { type: 'info', title: NOMBRE, icon: ICONO, message: PORTABLE ? 'La versión portable no se actualiza sola' : 'Actualización automática no disponible',
+    if (manual) dialog.showMessageBox(ventana, { type: 'info', title: NOMBRE, icon: ICONO, message: PORTABLE ? 'La versión portable no se actualiza sola' : ES_MAC ? 'En Mac la actualización se descarga desde la página' : 'Actualización automática no disponible',
       detail: 'Descargue la versión nueva de https://sebaslw.github.io/pk-pentecostal.io/\nSus datos se conservan.', buttons: ['Abrir la página', 'Cerrar'] })
       .then((r) => { if (r.response === 0) shell.openExternal('https://sebaslw.github.io/pk-pentecostal.io/'); });
     return;
@@ -409,7 +414,22 @@ function abrirManual() {
 // ---------------------------------------------------------------- Menú (se muestra con la tecla Alt)
 function menu() {
   const ir = (ruta) => () => { if (urlPanel) shell.openExternal(urlPanel.replace(/\/$/, '') + ruta); };
+  // En macOS el primer menú es el de la app, y copiar/pegar (⌘C/⌘V) solo funcionan si existe el menú Edición
+  const mac = ES_MAC ? [
+    { label: NOMBRE, submenu: [
+      { label: `Acerca de ${NOMBRE}`, click: () => acercaDe() },
+      { type: 'separator' },
+      { role: 'hide', label: `Ocultar ${NOMBRE}` }, { role: 'hideOthers', label: 'Ocultar otros' }, { role: 'unhide', label: 'Mostrar todo' },
+      { type: 'separator' },
+      { label: `Salir de ${NOMBRE}`, accelerator: 'Cmd+Q', click: () => salir() },
+    ] },
+    { label: 'Edición', submenu: [
+      { role: 'undo', label: 'Deshacer' }, { role: 'redo', label: 'Rehacer' }, { type: 'separator' },
+      { role: 'cut', label: 'Cortar' }, { role: 'copy', label: 'Copiar' }, { role: 'paste', label: 'Pegar' }, { role: 'selectAll', label: 'Seleccionar todo' },
+    ] },
+  ] : [];
   return Menu.buildFromTemplate([
+    ...mac,
     { label: 'Archivo', submenu: [
       { label: 'Abrir el panel en el navegador', click: ir('/') },
       { label: 'Abrir el proyector en el navegador', click: ir('/proyector') },
@@ -418,7 +438,7 @@ function menu() {
       { label: 'Importar datos de una versión anterior…', click: importarVersionAnterior },
       { label: 'Ver registro de eventos', click: () => shell.openPath(path.join(DATOS, 'BSPK', 'logs')) },
       { type: 'separator' },
-      { label: 'Salir', accelerator: 'Alt+F4', click: () => salir() },
+      ...(ES_MAC ? [] : [{ label: 'Salir', accelerator: ES_WIN ? 'Alt+F4' : 'Ctrl+Q', click: () => salir() }]),
     ] },
     { label: 'Ver', submenu: [
       { role: 'reload', label: 'Recargar' },
@@ -431,7 +451,10 @@ function menu() {
       { label: 'Página web', click: () => shell.openExternal('https://sebaslw.github.io/pk-pentecostal.io/') },
       { label: 'Buscar actualizaciones…', click: () => buscarActualizacion(true) },
       { type: 'separator' },
-      { label: 'Acerca de PK-PENTECOSTAL', click: () => dialog.showMessageBox(ventana, { type: 'info', title: NOMBRE, icon: ICONO, message: `${NOMBRE} ${app.getVersion()}`, detail: 'Biblia y canciones en vivo para proyector, OBS y celulares.\n\nHecho por Sebastian Lopez · IPUC Natania 6° Etapa\nZona Especial Misionera – Archipiélago de San Andrés, Providencia y Santa Catalina\n\n«Por toda la tierra salió su voz, y hasta el extremo del mundo sus palabras.» Salmos 19:4\n\nDatos: ' + DATOS } ) },
+      { label: 'Acerca de PK-PENTECOSTAL', click: () => acercaDe() },
     ] },
   ]);
+}
+function acercaDe() {
+  dialog.showMessageBox(ventana, { type: 'info', title: NOMBRE, icon: ICONO, message: `${NOMBRE} ${app.getVersion()}`, detail: 'Biblia y canciones en vivo para proyector, OBS y celulares.\n\nHecho por Sebastian Lopez · IPUC Natania 6° Etapa\nZona Especial Misionera – Archipiélago de San Andrés, Providencia y Santa Catalina\n\n«Por toda la tierra salió su voz, y hasta el extremo del mundo sus palabras.» Salmos 19:4\n\nDatos: ' + DATOS });
 }

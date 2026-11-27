@@ -19,7 +19,10 @@
     "dist": "electron electron/miniaturas-fabrica.js && electron-builder --win --x64 --publish never",
     "probar-canciones": "node electron/prueba-canciones.js",
     "probar-enlinea": "electron electron/prueba-enlinea-panel.js",
-    "probar-biblias": "node electron/prueba-biblias.js && electron electron/prueba-biblias-panel.js"
+    "probar-biblias": "node electron/prueba-biblias.js && electron electron/prueba-biblias-panel.js",
+    "dist:mac": "electron-builder --mac --universal --publish never",
+    "dist:linux": "electron-builder --linux --x64 --publish never",
+    "probar-app": "node electron/prueba-app.js"
   },
   "devDependencies": {
     "electron": "45.4.1",
@@ -85,6 +88,34 @@
         }
       ],
       "requestedExecutionLevel": "asInvoker"
+    },
+    "mac": {
+      "icon": "PK-PENTECOSTAL/public/icono-512.png",
+      "category": "public.app-category.productivity",
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "identity": "-",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "artifactName": "PK-PENTECOSTAL-${version}-mac.${ext}"
+    },
+    "dmg": {
+      "title": "PK-PENTECOSTAL ${version}",
+      "artifactName": "PK-PENTECOSTAL-${version}-mac.${ext}"
+    },
+    "linux": {
+      "icon": "PK-PENTECOSTAL/public/icono-512.png",
+      "category": "AudioVideo",
+      "synopsis": "Biblia y canciones en vivo para proyector, OBS y celulares",
+      "maintainer": "Sebastian Lopez <129629599+Sebaslw@users.noreply.github.com>",
+      "vendor": "IPUC Natania 6° Etapa",
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "artifactName": "PK-PENTECOSTAL-${version}-linux-${arch}.${ext}"
     },
     "nsis": {
       "oneClick": false,
