@@ -141,7 +141,7 @@
     <li><a href="#c19"><span>19</span> Créditos<small></small></a></li>
   </ol>
   <div class="resumen">
-    <div><b>8 Biblias</b>5 en español y 3 en inglés</div>
+    <div><b>9 Biblias completas</b>6 en español y 3 en inglés</div>
     <div><b>1.849 canciones</b>en 6 cancioneros, todas también en inglés</div>
     <div><b>Sin internet</b>funciona solo con el computador</div>
   </div>
@@ -167,22 +167,32 @@
 
 <!-- ======================= 2 ======================= -->
 <h1 id="c2"><span class="n">2</span>Instalación (una sola vez)</h1>
-<h2>Requisito: Node.js</h2>
-<p>PK-PENTECOSTAL necesita <b>Node.js</b>, un programa gratuito. Solo se instala una vez.</p>
+<p>Todo se descarga gratis de la página <b>sebaslw.github.io/pk-pentecostal.io</b>. No necesita instalar nada más: el programa trae todo lo que usa.</p>
+<table>
+  <tr><th style="width:30%">Su computador</th><th>Qué descargar</th></tr>
+  <tr><td>🪟 <b>Windows 10 / 11</b></td><td><code>PK-PENTECOSTAL-Instalador.exe</code> (recomendado, se actualiza solo) o el <b>Portable</b> para llevar en una memoria USB.</td></tr>
+  <tr><td>🍎 <b>Mac</b> (Intel o Apple M1/M2/M3/M4)</td><td><code>PK-PENTECOSTAL-mac.dmg</code></td></tr>
+  <tr><td>🐧 <b>Linux</b> (Ubuntu, Debian, Mint…)</td><td><code>.deb</code> (recomendado en Ubuntu/Mint/Debian) o <code>.AppImage</code> (cualquier Linux, se actualiza solo).</td></tr>
+</table>
+<h2>Instalar en Windows</h2>
 <ol class="pasos">
-  <li>Abra <b>PK-PENTECOSTAL.vbs</b>. Si Node.js no está instalado, el programa le avisa y abre la página de descarga automáticamente (<code>nodejs.org/es/download</code>).</li>
-  <li>Descargue la versión <b>LTS</b> (la recomendada) para Windows.</li>
-  <li>Ejecute el instalador y pulse <span class="btn">Siguiente</span> en todas las ventanas hasta <span class="btn">Finalizar</span>. No hace falta cambiar ninguna opción.</li>
-  <li>Vuelva a abrir <b>PK-PENTECOSTAL.vbs</b>. Ya debe abrir el panel.</li>
+  <li>Abra el archivo <code>PK-PENTECOSTAL-Instalador.exe</code> que descargó.</li>
+  <li>Si Windows muestra <b>«Windows protegió su PC»</b>, pulse <b>Más información</b> → <span class="btn">Ejecutar de todas formas</span>. Aparece porque el programa es nuevo y gratuito; es seguro (puede comprobar la huella SHA-256 que aparece en la página).</li>
+  <li>Pulse <span class="btn">Siguiente</span> hasta <span class="btn">Finalizar</span>. Queda el ícono <b>PK-PENTECOSTAL</b> en el Escritorio y en el menú Inicio.</li>
 </ol>
-<h2>Crear el acceso directo en el Escritorio</h2>
+<h2>Instalar en Mac</h2>
 <ol class="pasos">
-  <li>Entre a la carpeta <code>PK-PENTECOSTAL</code>.</li>
-  <li>Haga doble clic en <b>Crear acceso directo (Windows).vbs</b>.</li>
-  <li>Aparecerá en el Escritorio el ícono <b>PK-PENTECOSTAL</b> con el logo de la IPUC. Desde ahora abra el programa con ese ícono.</li>
+  <li>Abra <code>PK-PENTECOSTAL-mac.dmg</code> y arrastre <b>PK-PENTECOSTAL</b> a la carpeta <b>Aplicaciones</b>.</li>
+  <li>La primera vez, en <b>Aplicaciones</b> haga <b>clic derecho</b> sobre PK-PENTECOSTAL → <b>Abrir</b> → <span class="btn">Abrir</span>. (En macOS 15 o más nuevo: si dice que no se puede abrir, vaya a <b>Ajustes del Sistema → Privacidad y seguridad</b> y pulse <span class="btn">Abrir igualmente</span>.)</li>
+  <li>Desde ahí se abre normal, con doble clic o desde el Launchpad.</li>
 </ol>
-<div class="tip"><b>Consejo</b>Si el ícono no muestra el logo, vuelva a ejecutar “Crear acceso directo”. Windows a veces tarda en refrescar los íconos.</div>
-<h2>Contenido de la carpeta</h2>
+<h2>Instalar en Linux</h2>
+<ul>
+  <li><b>.deb</b> (Ubuntu, Mint, Debian): doble clic en el archivo e <span class="btn">Instalar</span>, o en la terminal <code>sudo apt install ./PK-PENTECOSTAL-…-linux-amd64.deb</code>. Queda en el menú de aplicaciones.</li>
+  <li><b>.AppImage</b>: clic derecho → Propiedades → <b>Permitir ejecutar como programa</b> y doble clic. Si no abre (Ubuntu 24.04), use el <b>.deb</b> o ábralo con <code>./PK-PENTECOSTAL-….AppImage --no-sandbox</code>.</li>
+</ul>
+<div class="nota"><b>Versión de código fuente (.zip)</b>Sigue disponible para quien la prefiera: trae el instalador de Node.js en la carpeta <code>NODEJS</code> y se abre con <code>PK-PENTECOSTAL.vbs</code> (Windows), <code>iniciar-mac.command</code> o <code>iniciar-linux.sh</code>.</div>
+<h2>Contenido de la carpeta (versión de código fuente)</h2>
 <p>Al abrir la carpeta <code>PK-PENTECOSTAL</code> solo se ve lo que se usa a diario:</p>
 <table>
   <tr><th style="width:38%">Lo que se ve</th><th>Para qué sirve</th></tr>
@@ -197,7 +207,7 @@
 <div class="ojo"><b>No borre, mueva ni cambie el nombre de las carpetas ocultas</b>Si oculta una carpeta usted mismo, en la ventana de Windows elija <b>“Aplicar cambios solo a esta carpeta”</b>. Si elige “a subcarpetas y archivos”, el programa no podrá guardar canciones ni ajustes.</div>
 
 <h2>Actualizaciones: se actualiza solo<span class="novedad">NUEVO</span></h2>
-<p>Desde la versión <b>2.0.3</b>, el programa instalado busca solo las versiones nuevas cada vez que se abre.</p>
+<p>Desde la versión <b>2.0.3</b>, el programa instalado busca solo las versiones nuevas cada vez que se abre (Windows con instalador y Linux con .AppImage). En <b>Mac</b>, el portable y el .deb, el programa avisa y abre la página para descargar la nueva.</p>
 <ol class="pasos">
   <li>Si hay una versión nueva, aparece un <b>aviso de Windows</b>: «Hay una nueva actualización». Se descarga sola en segundo plano; puede seguir usando el programa.</li>
   <li>Cuando termina, el programa pregunta: <span class="btn">Actualizar ahora</span> (se cierra unos segundos y se vuelve a abrir solo) o <span class="btn">Al cerrar el programa</span> (útil en pleno culto).</li>
@@ -209,14 +219,15 @@
 <h1 id="c3"><span class="n">3</span>Abrir y cerrar el programa</h1>
 <h2>Abrir en Windows</h2>
 <ol class="pasos">
-  <li>Haga doble clic en el ícono <b>PK-PENTECOSTAL</b> del Escritorio (o en <code>PK-PENTECOSTAL.vbs</code>).</li>
-  <li>Aparece el aviso <i>“Iniciando PK-PENTECOSTAL… Espere por favor”</i>.</li>
-  <li>En unos segundos se abre el <b>panel de control</b> en el navegador.</li>
+  <li>Haga doble clic en el ícono <b>PK-PENTECOSTAL</b> del Escritorio o del menú Inicio.</li>
+  <li>Aparece la pantalla de inicio con el logo.</li>
+  <li>En unos segundos se abre el <b>panel de control</b> en su propia ventana.</li>
 </ol>
 <p>Si el programa ya estaba abierto, abrirlo otra vez solo vuelve a mostrar el panel; no inicia una segunda copia.</p>
 <div class="ojo"><b>Importante</b>No abra el <b>Proyektor original</b> al mismo tiempo. Los dos usan la misma “puerta” (puerto 8888) y PK-PENTECOSTAL no podrá iniciar.</div>
 <h2>Abrir en Mac o Linux</h2>
-<p>Los archivos <code>iniciar-mac.command</code> e <code>iniciar-linux.sh</code> están entre las carpetas ocultas (vea el capítulo 2).</p>
+<p>Con el programa instalado: <b>Mac</b> → Aplicaciones o Launchpad → <b>PK-PENTECOSTAL</b>. <b>Linux</b> → menú de aplicaciones → <b>PK-PENTECOSTAL</b>. En Mac, copiar y pegar funcionan con <kbd>⌘</kbd> + <kbd>C</kbd> / <kbd>⌘</kbd> + <kbd>V</kbd> y se cierra con <kbd>⌘</kbd> + <kbd>Q</kbd>.</p>
+<p>Con la versión de código fuente, los archivos <code>iniciar-mac.command</code> e <code>iniciar-linux.sh</code> están entre las carpetas ocultas:</p>
 <ul>
   <li><b>Mac:</b> doble clic en <code>iniciar-mac.command</code>. La primera vez: clic derecho → <b>Abrir</b>. Si dice que no tiene permisos, en la Terminal escriba <code>chmod +x iniciar-mac.command</code>.</li>
   <li><b>Linux:</b> en una terminal dentro de la carpeta: <code>chmod +x iniciar-linux.sh</code> (solo la primera vez) y luego <code>./iniciar-linux.sh</code>. Con <code>./iniciar-linux.sh --instalar</code> queda en el menú de aplicaciones.</li>
@@ -291,6 +302,14 @@
 </ol>
 <h2>Historial</h2>
 <p>La sub-pestaña <b>Historial</b> guarda los versículos que ya se proyectaron en el culto. Clic en uno para volver a él rápidamente.</p>
+<h2>Todas las Biblias están completas<span class="novedad">NUEVO</span></h2>
+<p>Desde la versión <b>2.0.9</b> las 9 Biblias tienen sus <b>31.102 versículos</b>: cualquier cita que escriba aparece, en cualquier versión. Hay dos casos que se ven un poco distintos:</p>
+<table>
+  <tr><th style="width:32%">Lo que ve</th><th>Qué significa</th></tr>
+  <tr><td>Número doble, por ejemplo <b>23-24</b></td><td>Algunas traducciones (TLA, DHH, NTV) unen dos o más versículos en uno solo, con palabras más sencillas. Si escribe <code>Juan 3:24</code> en la TLA, se abre y se proyecta el <b>23-24</b>, que contiene los dos.</td></tr>
+  <tr><td>Texto con la nota <i>(Reina-Valera 1960 · esta versión no trae este versículo en su texto, solo en nota)</i></td><td>Algunas traducciones modernas (NVI, NTV, DHH…) ponen ciertos versículos solo al pie de página, porque no aparecen en los manuscritos más antiguos (por ejemplo <b>Mateo 17:21</b>, <b>Hechos 8:37</b>). Para que no falte ninguno, el programa muestra ese versículo según la <b>Reina-Valera 1960</b> (o la King James en las Biblias en inglés) y lo indica.</td></tr>
+</table>
+<div class="tip"><b>Consejo</b>Si prefiere que en pantalla no salga la nota, proyecte ese pasaje en <b>Reina Valera 1960</b>: ahí todos los versículos vienen completos en el texto.</div>
 
 <!-- ======================= 6 ======================= -->
 <h1 id="c6"><span class="n">6</span>Canciones: proyectar, crear y editar</h1>

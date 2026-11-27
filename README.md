@@ -273,7 +273,19 @@ Ahí viven `BSPK/` (ajustes, claves de los celulares, respaldos, fondos subidos,
 
 Abra PK-PENTECOSTAL → **Alt → Archivo → Importar datos de una versión anterior…** → elija la carpeta donde estaba `PK-PENTECOSTAL.vbs`. Se copian sus ajustes, claves, canciones, stingers y fondos subidos; **antes se guarda una copia** de lo actual en `BSPK/respaldos`. También sirve el **💾 Respaldo** (.zip) de siempre.
 
-### 🍎 🐧 macOS, Linux o desde el código fuente
+### 🍎 macOS y 🐧 Linux — app de escritorio (desde 2.0.9)
+
+Descárguela de la [página](https://sebaslw.github.io/pk-pentecostal.io/#descargas) o de la [Release](https://github.com/Sebaslw/PK-PENTECOSTAL/releases/latest). No necesita Node.js.
+
+| Sistema | Archivo | Cómo instalarlo |
+|---|---|---|
+| 🍎 **macOS** (Intel y Apple M1/M2/M3/M4) | `PK-PENTECOSTAL-x.y.z-mac.dmg` | Abra el `.dmg` y arrastre la app a **Aplicaciones**. La primera vez: clic derecho → **Abrir** (macOS 15: *Ajustes → Privacidad y seguridad → Abrir igualmente*). |
+| 🐧 **Ubuntu / Mint / Debian** | `PK-PENTECOSTAL-x.y.z-linux-amd64.deb` | `sudo apt install ./PK-PENTECOSTAL-x.y.z-linux-amd64.deb` |
+| 🐧 **Cualquier Linux** | `PK-PENTECOSTAL-x.y.z-linux-x86_64.AppImage` | `chmod +x` y doble clic (se actualiza solo). En Ubuntu 24.04, si no abre: `--no-sandbox` o use el `.deb`. |
+
+Los instaladores de Mac y Linux los compila y **prueba en máquinas reales** el flujo [`.github/workflows/mac-linux.yml`](.github/workflows/mac-linux.yml) cada vez que se publica una Release (abre el programa y comprueba el servidor, las 9 Biblias completas, los cancioneros y el panel).
+
+### 📦 Desde el código fuente (cualquier sistema)
 
 Requiere **[Node.js](https://nodejs.org) 16 o superior**. Descargue el `.zip` del código fuente (Releases) o `git clone`, y:
 

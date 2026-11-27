@@ -151,7 +151,7 @@ const urlProyector = () => (webActiva ? `http://proyector.${DOMINIO}${sufijoWeb(
 let almacenPendiente = null;
 const APP_NOMBRE = 'PK-PENTECOSTAL';
 // Desde el código fuente (.zip) se lee del package.json del proyecto, para que no se quede en una versión vieja
-const APP_VERSION = process.env.PK_VERSION || (() => { try { return require(path.join(__dirname, '..', 'package.json')).version; } catch (_) { return '2.0.8'; } })();
+const APP_VERSION = process.env.PK_VERSION || (() => { try { return require(path.join(__dirname, '..', 'package.json')).version; } catch (_) { return '2.0.9'; } })();
 const ABRIR = process.argv.includes('--abrir');
 
 if (parseInt(process.versions.node, 10) < 16) {
