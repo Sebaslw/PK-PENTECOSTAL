@@ -64,8 +64,11 @@ const leer = async (p) => (await pedir(p, 'GET', '/api/cancionero/' + LIBRO)).bo
   attrib(['+h', '+s', path.join(COPIA, 'cancioneros')]);
   attrib(['+h', '+r', mi]);
   attrib(['+h', path.join(COPIA, 'cancioneros', 'Canciones.js')]);
-  try { fs.writeFileSync(mi, fs.readFileSync(mi)); ok(false, 'Reproducción: escribir directo debería dar EPERM'); }
-  catch (e) { ok(e.code === 'EPERM', 'Reproducción del error original con writeFileSync → ' + e.code); }
+  // El error EPERM con archivos ocultos / de solo lectura (attrib) solo existe en Windows
+  if (process.platform === 'win32') {
+    try { fs.writeFileSync(mi, fs.readFileSync(mi)); ok(false, 'Reproducción: escribir directo debería dar EPERM'); }
+    catch (e) { ok(e.code === 'EPERM', 'Reproducción del error original con writeFileSync → ' + e.code); }
+  }
   const antes = fs.readFileSync(mi, 'utf8');
 
   let s = await arrancar();
