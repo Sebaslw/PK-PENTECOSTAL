@@ -264,8 +264,10 @@ Desde la **2.0.3**, la versión instalada busca actualizaciones al abrir (y cada
 
 | Versión | Carpeta de datos |
 |---|---|
-| Instalada | `%APPDATA%\PK-PENTECOSTAL` (se **conserva** al actualizar y al desinstalar) |
-| Portable | `PK-PENTECOSTAL datos`, al lado del `.exe` |
+| Windows instalada | `%APPDATA%\PK-PENTECOSTAL` (se **conserva** al actualizar y al desinstalar) |
+| Windows portable | `PK-PENTECOSTAL datos`, al lado del `.exe` |
+| macOS | `~/Library/Application Support/PK-PENTECOSTAL` |
+| Linux | `~/.config/PK-PENTECOSTAL` |
 
 Ahí viven `BSPK/` (ajustes, claves de los celulares, respaldos, fondos subidos, registro de eventos en `BSPK/logs`), los cancioneros con sus cambios y la biblioteca de OBS. Los archivos del programa nunca se modifican.
 
@@ -280,10 +282,12 @@ Descárguela de la [página](https://sebaslw.github.io/pk-pentecostal.io/#descar
 | Sistema | Archivo | Cómo instalarlo |
 |---|---|---|
 | 🍎 **macOS** (Intel y Apple M1/M2/M3/M4) | `PK-PENTECOSTAL-x.y.z-mac.dmg` | Abra el `.dmg` y arrastre la app a **Aplicaciones**. La primera vez: clic derecho → **Abrir** (macOS 15: *Ajustes → Privacidad y seguridad → Abrir igualmente*). |
-| 🐧 **Ubuntu / Mint / Debian** | `PK-PENTECOSTAL-x.y.z-linux-amd64.deb` | `sudo apt install ./PK-PENTECOSTAL-x.y.z-linux-amd64.deb` |
+| 🐧 **Ubuntu / Mint / Debian** | `PK-PENTECOSTAL-x.y.z-linux-amd64.deb` | `sudo apt install ./PK-PENTECOSTAL-x.y.z-linux-amd64.deb` (se actualiza solo; pide la contraseña para instalar la nueva). |
 | 🐧 **Cualquier Linux** | `PK-PENTECOSTAL-x.y.z-linux-x86_64.AppImage` | `chmod +x` y doble clic (se actualiza solo). En Ubuntu 24.04, si no abre: `--no-sandbox` o use el `.deb`. |
 
-Los instaladores de Mac y Linux los compila y **prueba en máquinas reales** el flujo [`.github/workflows/mac-linux.yml`](.github/workflows/mac-linux.yml) cada vez que se publica una Release (abre el programa y comprueba el servidor, las 9 Biblias completas, los cancioneros y el panel).
+Los instaladores de Mac y Linux los compila y **prueba en máquinas reales** el flujo [`.github/workflows/mac-linux.yml`](.github/workflows/mac-linux.yml) cada vez que se publica una Release (abre el programa y comprueba el servidor, las 9 Biblias completas, los cancioneros y el panel). El mismo flujo compila y prueba también el instalador de **Windows**; ese solo se sube a la Release si se pide a mano (*subir_windows*), porque la página guarda la huella SHA-256 del `.exe` compilado en el computador de desarrollo.
+
+> 🍎 **Mac:** avisa cuando hay versión nueva y abre la página, pero no se instala solo: la actualización automática en macOS exige firmar la app con un certificado de Apple Developer (de pago).
 
 ### 📦 Desde el código fuente (cualquier sistema)
 

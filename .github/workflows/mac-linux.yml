@@ -129,6 +129,8 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq xvfb "./dist/PK-PENTECOSTAL-${V}-linux-amd64.deb"
+          # La actualización automática del .deb depende de este archivo (electron-updater -> DebUpdater)
+          test "$(cat /opt/PK-PENTECOSTAL/resources/package-type)" = "deb" && echo "package-type = deb (se actualiza solo)"
           xvfb-run -a node electron/prueba-app.js /opt/PK-PENTECOSTAL/pk-pentecostal
       - name: Probar el .AppImage
         run: |

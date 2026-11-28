@@ -161,9 +161,12 @@ function salir() {
 // Pruebas: PK_UPDATE_URL=<carpeta http con latest.yml> usa ese origen; PK_UPDATE_PRUEBA=1 no muestra diálogos.
 const PORTABLE = !!process.env.PORTABLE_EXECUTABLE_DIR;
 const PRUEBA_ACT = process.env.PK_UPDATE_PRUEBA === '1';
-// Se actualiza solo: Windows instalado y Linux .AppImage. En macOS la actualización automática exige un
-// certificado de Apple (de pago) y el .deb de Linux lo actualiza el sistema: ahí se avisa y se da el enlace.
-const ACT_SOPORTADA = ES_WIN ? !PORTABLE : process.platform === 'linux' ? !!process.env.APPIMAGE : false;
+// Se actualiza solo: Windows instalado, Linux .AppImage y Linux .deb (electron-builder deja el archivo
+// resources/package-type = "deb"; la instalación usa dpkg y el sistema pide la contraseña del usuario).
+// En macOS la actualización automática exige un certificado de Apple (de pago) y el portable de Windows no
+// tiene instalador: ahí se avisa y se da el enlace.
+const ES_DEB = (() => { try { return process.platform === 'linux' && fs.readFileSync(path.join(process.resourcesPath, 'package-type'), 'utf8').trim() === 'deb'; } catch (_) { return false; } })();
+const ACT_SOPORTADA = ES_WIN ? !PORTABLE : process.platform === 'linux' ? !!process.env.APPIMAGE || ES_DEB : false;
 const VERSION_FILE = path.join(DATOS, 'BSPK', 'version.json');
 let autoUpdater = null, actEstado = 'nada', actManual = false, actInfo = null, preguntando = false;
 // Versión con la que se abrió la última vez. Se lee AL ARRANCAR (antes de iniciar el servidor, que crea
@@ -250,6 +253,7 @@ async function preguntarInstalar(i) {
       detail: `Dale en «Reiniciar ${NOMBRE}» para tenerlos: el programa se cierra unos segundos, se actualiza y se vuelve a abrir solo.\n\n` +
         'Se instala ENCIMA, sin desinstalar nada: sus canciones, fondos, ajustes y claves de los celulares se conservan.\n' +
         `Usted tiene la versión ${app.getVersion()}; la nueva ya se descargó y se verificó.\n\n` +
+        (ES_DEB ? 'Linux le pedirá su contraseña para instalarla.\n\n' : '') +
         '«Más tarde»: si está en pleno culto, se actualizará cuando cierre el programa.' + novedades(i),
       buttons: [`Reiniciar ${NOMBRE}`, 'Más tarde (al cerrar)'], defaultId: 0, cancelId: 1,
     });
