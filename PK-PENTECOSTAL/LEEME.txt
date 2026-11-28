@@ -8,23 +8,47 @@
                                                          Salmos 19:4
 =====================================================================
 
-VERSIÓN 2.0 PARA WINDOWS (recomendada) - NO NECESITA NODE.JS
-  · PK-PENTECOSTAL-Instalador-2.0.7.exe -> doble clic, "Siguiente".
+VERSIÓN 2.0.9 - INSTALADORES (recomendados) - NO NECESITAN NODE.JS
+  Descárguelos gratis en https://sebaslw.github.io/pk-pentecostal.io/
+
+  WINDOWS 10 / 11 (64 bits)
+  · PK-PENTECOSTAL-Instalador-2.0.9.exe -> doble clic, "Siguiente".
       Crea accesos directos en el Escritorio y en el menú Inicio.
       Se desinstala desde Configuración -> Aplicaciones.
       SE ACTUALIZA SOLO (desde 2.0.3): avisa, descarga la versión nueva y
       la instala encima, sin desinstalar. Sus datos se conservan.
-  · PK-PENTECOSTAL-Portable-2.0.7.exe   -> no se instala (memoria USB).
+      Si Windows dice "Windows protegió su PC": Más información ->
+      Ejecutar de todas formas.
+  · PK-PENTECOSTAL-Portable-2.0.9.exe   -> no se instala (memoria USB).
+      No se actualiza solo: descargue la nueva desde la página.
+
+  MAC (Intel y Apple M1/M2/M3/M4)
+  · PK-PENTECOSTAL-2.0.9-mac.dmg -> ábralo y arrastre PK-PENTECOSTAL a
+      Aplicaciones. La primera vez: clic derecho -> Abrir -> Abrir.
+      (macOS 15 o más nuevo: Ajustes del Sistema -> Privacidad y
+      seguridad -> "Abrir igualmente".)
+      Avisa cuando hay versión nueva y abre la página para descargarla.
+
+  LINUX (Ubuntu, Mint, Debian y otros)
+  · PK-PENTECOSTAL-2.0.9-linux-amd64.deb -> doble clic e Instalar, o
+      sudo apt install ./PK-PENTECOSTAL-2.0.9-linux-amd64.deb
+      Avisa cuando hay versión nueva y abre la página para descargarla.
+  · PK-PENTECOSTAL-2.0.9-linux-x86_64.AppImage -> Propiedades -> Permitir
+      ejecutar como programa, y doble clic. SE ACTUALIZA SOLO.
+      Si no abre (Ubuntu 24.04): use el .deb o agregue --no-sandbox.
+
   Al abrirlo: si ya estaba abierto solo muestra la ventana; si el puerto
   8888 lo usa otro programa, elige otro libre (sin cerrar ese programa).
   Datos del usuario (se conservan al actualizar y al desinstalar):
-      instalado -> %APPDATA%\PK-PENTECOSTAL
-      portable  -> carpeta "PK-PENTECOSTAL datos" junto al .exe
+      Windows instalado -> %APPDATA%\PK-PENTECOSTAL
+      Windows portable  -> carpeta "PK-PENTECOSTAL datos" junto al .exe
+      Mac               -> ~/Library/Application Support/PK-PENTECOSTAL
+      Linux             -> ~/.config/PK-PENTECOSTAL
   Venía de la versión de carpeta (1.x)?  Alt -> Archivo ->
       "Importar datos de una versión anterior..." (guarda un respaldo antes).
   Registro de eventos: Alt -> Archivo -> Ver registro de eventos.
 
-VERSIÓN DE CARPETA (código fuente: macOS, Linux o Windows con Node.js)
+VERSIÓN DE CARPETA (código fuente .zip, para quien prefiera usar Node.js)
   Requisito: Node.js 16 o superior (gratis): https://nodejs.org -> "LTS".
   El .zip YA TRAE el instalador oficial en la carpeta NODEJS (Windows .msi
   y macOS .pkg): si falta Node.js, los lanzadores ofrecen instalarlo.
