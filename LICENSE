@@ -1,0 +1,31 @@
+PK-PENTECOSTAL
+Copyright (c) 2026 Sebastian Lopez · IPUC Natania 6° Etapa
+Todos los derechos reservados.
+
+USO GRATUITO
+Cualquier iglesia o persona puede descargar, instalar y usar PK-PENTECOSTAL
+gratis, en los computadores que quiera, desde la página oficial
+(https://sebaslw.github.io/pk-pentecostal.io/) o desde las Releases de
+https://github.com/Sebaslw/PK-PENTECOSTAL.
+
+LO QUE NO SE PERMITE SIN PERMISO ESCRITO DEL AUTOR
+  · Copiar, modificar o adaptar el código fuente para hacer otro programa.
+  · Redistribuir el programa (modificado o no) por otros medios, publicarlo
+    con otro nombre o venderlo.
+  · Usar el nombre PK-PENTECOSTAL, su logo o sus diseños en otros productos.
+
+Que el código se pueda ver en GitHub no da permiso para lo anterior.
+Para pedir permiso, abra un "issue" en
+https://github.com/Sebaslw/PK-PENTECOSTAL/issues
+
+CONTENIDO DE TERCEROS
+Este permiso cubre solo el programa PK-PENTECOSTAL. Las traducciones de la
+Biblia, las letras de las canciones, las tipografías (por ejemplo Source
+Sans 3, con licencia SIL Open Font License, ver css/font/) y las librerías
+incluidas (Electron, electron-updater y otras) pertenecen a sus autores y se
+rigen por sus propias licencias. Las canciones en línea se consultan en
+generacionpentecostal.com y conservan los derechos de sus autores.
+
+SIN GARANTÍA
+El programa se entrega "tal cual", sin garantía de ningún tipo. El autor no
+responde por daños o pérdidas que resulten de su uso.

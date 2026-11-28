@@ -8,7 +8,6 @@
 ![Windows](https://img.shields.io/badge/Windows-10%20%C2%B7%2011%20(64%20bits)-0078D4?style=for-the-badge&logo=windows&logoColor=white)
 ![Sin Node.js](https://img.shields.io/badge/no%20necesita-Node.js-339933?style=for-the-badge&logo=electron&logoColor=white)
 ![OBS Studio](https://img.shields.io/badge/OBS_Studio-28%2B-302E31?style=for-the-badge&logo=obsstudio&logoColor=white)
-![Windows](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)
 ![macOS](https://img.shields.io/badge/macOS-000000?style=for-the-badge&logo=apple&logoColor=white)
 ![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)
 ![Sin internet](https://img.shields.io/badge/funciona-sin_internet-1d4ed8?style=for-the-badge)
@@ -22,7 +21,9 @@
 **[Control móvil](#-control-desde-el-celular)** ·
 **[Idiomas](#-idiomas)** ·
 **[Atajos](#atajos)** ·
-**[Manual PDF](Manual%20PK-PENTECOSTAL.pdf)**
+**[Manual PDF](Manual%20PK-PENTECOSTAL.pdf)** ·
+**[Historial de cambios](CHANGELOG.md)** ·
+**[Licencia](LICENSE)**
 
 </div>
 
@@ -258,7 +259,7 @@ Descargue desde la **[página web](https://sebaslw.github.io/pk-pentecostal.io/)
 > 🔒 **Marca protegida:** el logo y los archivos del programa van en un paquete verificado. Si se alteran, PK-PENTECOSTAL no los muestra y pide reinstalar (sus datos se conservan).
 
 #### 🔄 Se actualiza solo
-Desde la **2.0.3**, la versión instalada busca actualizaciones al abrir (y cada 6 horas) en las Releases de GitHub. Si hay una nueva: **aviso de Windows** → se descarga sola en segundo plano → **«✅ ¡Tenemos ajustes nuevos!»** con **Reiniciar PK-PENTECOSTAL** o **Más tarde (al cerrar)** → se instala **encima, sin desinstalar** (canciones, fondos, ajustes y claves se conservan) → al abrir dice **«✅ PK-PENTECOSTAL se actualizó»**. También: *Alt → Ayuda → Buscar actualizaciones…* o el botón de versión del pie. La portable avisa y da el enlace. *(Para publicar: subir a la Release `latest.yml` y el `.blockmap` junto al instalador.)*
+Desde la **2.0.3**, la versión instalada busca actualizaciones al abrir (y cada 6 horas) en las Releases de GitHub. Si hay una nueva: **aviso de Windows** → se descarga sola en segundo plano → **«✅ ¡Tenemos ajustes nuevos!»** con **Reiniciar PK-PENTECOSTAL** o **Más tarde (al cerrar)** → se instala **encima, sin desinstalar** (canciones, fondos, ajustes y claves se conservan) → al abrir dice **«✅ PK-PENTECOSTAL se actualizó»**. También: *Alt → Ayuda → Buscar actualizaciones…* o el botón de versión del pie. La portable avisa y da el enlace. *(Para publicar: `npm run poner-version -- x.y.z` pone la versión en todos los archivos; luego `npm run dist`, `web/crear-zip.ps1` y subir a la Release `latest.yml` y el `.blockmap` junto al instalador. Anote los cambios en [CHANGELOG.md](CHANGELOG.md).)*
 
 #### ¿Dónde quedan mis datos?
 

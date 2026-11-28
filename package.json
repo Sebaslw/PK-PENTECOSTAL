@@ -5,7 +5,7 @@
   "description": "Biblia y canciones en vivo para proyector, OBS y celulares",
   "author": "Sebastian Lopez · IPUC Natania 6° Etapa",
   "homepage": "https://sebaslw.github.io/pk-pentecostal.io/",
-  "license": "UNLICENSED",
+  "license": "SEE LICENSE IN LICENSE",
   "private": true,
   "main": "electron/main.js",
   "scripts": {
