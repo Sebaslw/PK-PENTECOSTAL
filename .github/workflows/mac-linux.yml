@@ -1,9 +1,13 @@
-# PK-PENTECOSTAL · Instaladores para macOS y Linux
-# Windows se compila en el computador de Sebas (npm run dist). Este flujo compila, en máquinas REALES de
-# macOS y Linux de GitHub, el .dmg/.zip de Mac (universal: Intel y Apple M1/M2/M3/M4) y el .AppImage/.deb de
-# Linux; los abre y comprueba que funcionen (servidor, 9 Biblias completas, cancioneros, panel) y los sube
-# a la Release de esa versión. Se ejecuta solo al publicar una Release, o a mano desde la pestaña Actions.
-name: Mac y Linux
+# PK-PENTECOSTAL · Instaladores para Windows, macOS y Linux
+# Compila, en máquinas REALES de GitHub, el .dmg/.zip de Mac (universal: Intel y Apple M1/M2/M3/M4), el
+# .AppImage/.deb de Linux y el instalador y portable de Windows; los abre y comprueba que funcionen (servidor,
+# 9 Biblias completas, cancioneros, panel). Mac y Linux se suben a la Release de esa versión.
+# Windows: el instalador que se publica sigue siendo el que se compila en el computador de Sebas (npm run dist),
+# porque web/descargas/info.js guarda SU huella SHA-256. Aquí Windows solo se compila y se prueba; se sube a la
+# Release únicamente si se pide a mano ("Subir también Windows"), y entonces hay que volver a correr
+# web/crear-zip.ps1 con esos archivos para que la página muestre la huella correcta.
+# Se ejecuta al publicar una Release, o a mano desde la pestaña Actions.
+name: Instaladores (Windows, Mac y Linux)
 
 on:
   release:
@@ -14,9 +18,13 @@ on:
         description: 'Etiqueta de la Release (p. ej. v2.0.9) o rama para ensayar (main)'
         required: true
       subir:
-        description: 'Subir los instaladores a la Release'
+        description: 'Subir los instaladores de Mac y Linux a la Release'
         type: boolean
         default: true
+      subir_windows:
+        description: 'Subir también Windows (reemplaza el .exe y latest.yml de la Release)'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -30,7 +38,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -38,8 +46,44 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 24 }
       - run: npm ci
+      - name: La versión es la misma en todos los archivos
+        run: node electron/poner-version.js --revisar
       - run: node electron/pruebas.js
       - run: node electron/prueba-biblias.js
+      - run: node electron/prueba-letra.js
+      - run: node electron/prueba-canciones.js
+
+  windows:
+    name: Windows (instalador y portable)
+    needs: pruebas
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: '${{ env.TAG }}' }
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - run: npm ci
+      - name: Compilar (las miniaturas de los fondos ya vienen en git)
+        run: npx electron-builder --win --x64 --publish never
+      - name: Abrir el programa compilado y probarlo
+        run: node electron/prueba-app.js dist/win-unpacked/PK-PENTECOSTAL.exe
+      - name: Guardar los instaladores como artefacto (se descargan desde la pestaña Actions)
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: |
+            dist/PK-PENTECOSTAL-Instalador-*.exe
+            dist/PK-PENTECOSTAL-Instalador-*.exe.blockmap
+            dist/PK-PENTECOSTAL-Portable-*.exe
+            dist/latest.yml
+          retention-days: 7
+      - name: Subir a la Release (solo si se pidió a mano)
+        if: github.event_name == 'workflow_dispatch' && inputs.subir_windows
+        shell: bash
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: |
+          V=$(node -p "require('./package.json').version")
+          gh release upload "$TAG" "dist/PK-PENTECOSTAL-Instalador-${V}.exe" "dist/PK-PENTECOSTAL-Instalador-${V}.exe.blockmap" "dist/PK-PENTECOSTAL-Portable-${V}.exe" dist/latest.yml --clobber
 
   mac:
     name: macOS (.dmg y .zip)
