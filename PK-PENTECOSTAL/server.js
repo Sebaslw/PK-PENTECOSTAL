@@ -12,6 +12,8 @@ const zlib = require('zlib');
 const vm = require('vm');
 const os = require('os');
 const crypto = require('crypto');
+const { crearZip, leerZip } = require('./lib/zip');          // respaldo completo (.zip)
+const { redesLocales, localIPs, abrirNavegador } = require('./lib/red');
 
 const APP_DIR = __dirname;
 const PUBLIC_DIR = path.join(APP_DIR, 'public');
@@ -488,140 +490,10 @@ function serveFile(req, res, file) {
   });
 }
 
-// ---------------------------------------------------------------- Biblias (.bi = zip con un archivo de texto)
-function unzipFirst(buf) {
-  if (buf.readUInt32LE(0) !== 0x04034b50) return buf; // texto plano
-  let eocd = -1;
-  for (let i = buf.length - 22; i >= Math.max(0, buf.length - 66000); i--) {
-    if (buf.readUInt32LE(i) === 0x06054b50) { eocd = i; break; }
-  }
-  if (eocd < 0) throw new Error('ZIP sin directorio central');
-  const cdOffset = buf.readUInt32LE(eocd + 16);
-  const method = buf.readUInt16LE(cdOffset + 10);
-  const compSize = buf.readUInt32LE(cdOffset + 20);
-  const localOff = buf.readUInt32LE(cdOffset + 42);
-  const nameLen = buf.readUInt16LE(localOff + 26);
-  const extraLen = buf.readUInt16LE(localOff + 28);
-  const start = localOff + 30 + nameLen + extraLen;
-  const data = buf.subarray(start, start + compSize);
-  if (method === 0) return data;
-  if (method === 8) return zlib.inflateRawSync(data);
-  throw new Error('Compresión ZIP no soportada: ' + method);
-}
-
-const bibleCache = new Map();
-function listBibles() {
-  try {
-    return fs.readdirSync(DIRS.biblias).filter((f) => /\.(bi|txt)$/i.test(f)).map((f) => f.replace(/\.(bi|txt)$/i, '')).sort();
-  } catch (_) { return []; }
-}
-function leerBibliaCruda(name) {
-  const file = ['.bi', '.txt'].map((e) => path.join(DIRS.biblias, name + e)).find((f) => fs.existsSync(f));
-  if (!file || path.dirname(file) !== DIRS.biblias) return null;
-  return unzipFirst(fs.readFileSync(file)).toString('utf8').replace(/^﻿/, '');
-}
-function loadBible(name) {
-  if (bibleCache.has(name)) return bibleCache.get(name);
-  const cruda = leerBibliaCruda(name);
-  if (cruda == null) return null;
-  let text = cruda;
-  try { text = completarBiblia(cruda, name); } catch (e) { console.error('[biblia] no se pudo completar', name, e.message); }
-  bibleCache.set(name, text);
-  return text;
-}
-
-// ---------------------------------------------------------------- Biblias completas
-// Varias traducciones (TLA, DHH, NTV) unen versículos: "Génesis 2:1-3" viene en UNA línea numerada 1, y el 2 y el 3
-// no existían (o venían vacíos), así que "Juan 3:24" no se encontraba y la Biblia parecía incompleta. Otras (NVI, DHH,
-// NTV, BBE, WEB) dejan fuera del texto los versículos que faltan en los manuscritos más antiguos (Mateo 17:21, 18:11…).
-// Aquí cada capítulo se completa contra la Biblia de referencia del mismo idioma (RV1960 / KJV):
-//   · versículo unido → la línea lleva el rango "1-3" y cualquier número del rango la encuentra;
-//   · versículo omitido → se muestra el texto de la Reina-Valera 1960 (o KJV), avisando de dónde sale.
-// Ningún texto de la versión se cambia ni se pierde.
-const VERSICULOS_OMITIDOS = new Set(['40:12:47', '40:17:21', '40:18:11', '40:23:14', '41:7:16', '41:9:44', '41:9:46', '41:11:26', '41:15:28',
-  '42:17:36', '42:23:17', '43:5:4', '44:8:37', '44:15:34', '44:24:7', '44:28:29', '45:16:24']);
-const parsearBiblia = (texto) => {
-  const caps = new Map(); // "b:c" → [{v, t}]
-  for (const linea of texto.split(/\r?\n/)) {
-    const p = linea.split('|');
-    if (p.length < 4 || !/^\d+$/.test(p[0]) || !/^\d+$/.test(p[1])) continue;
-    const k = `${+p[0]}:${+p[1]}`;
-    if (!caps.has(k)) caps.set(k, []);
-    caps.get(k).push({ v: p[2].trim(), t: p.slice(3).join('|').trim() });
-  }
-  return caps;
-};
-const refBiblias = new Map();
-function bibliaReferencia(ingles) {
-  const clave = ingles ? 'en' : 'es';
-  if (refBiblias.has(clave)) return refBiblias.get(clave);
-  const sigla = ingles ? 'KJV' : 'RV1960';
-  const nombre = listBibles().find((b) => b.split(' - ').pop().trim().toUpperCase() === sigla);
-  const caps = nombre ? parsearBiblia(leerBibliaCruda(nombre) || '') : new Map();
-  const ref = { sigla, caps, texto: new Map() };
-  for (const [k, vs] of caps) for (const { v, t } of vs) ref.texto.set(`${k}:${parseInt(v, 10)}`, t);
-  refBiblias.set(clave, ref);
-  return ref;
-}
-const SIGLAS_INGLES = ['KJV', 'WEB', 'WEBBE', 'NIV', 'NLT', 'ESV', 'NKJV', 'GNT', 'CEV', 'ASV', 'BBE', 'NASB', 'AMP', 'MSG', 'CSB', 'NRSV', 'YLT', 'DRB', 'ERV', 'NCV', 'TLB'];
-const esIngles = (name) => SIGLAS_INGLES.includes(String(name).split(' - ').pop().trim().toUpperCase()) || /\b(english|king james)\b/i.test(name);
-
-function completarBiblia(texto, name) {
-  const ingles = esIngles(name);
-  const ref = bibliaReferencia(ingles);
-  const sigla = String(name).split(' - ').pop().trim().toUpperCase();
-  if (sigla === ref.sigla) return texto; // la referencia ya está completa
-  const nota = (b, c, v) => {
-    const t = ref.texto.get(`${b}:${c}:${v}`);
-    if (!t) return null;
-    return ingles ? `${t} (${ref.sigla} · this version leaves this verse out of its main text)`
-      : `${t} (Reina-Valera 1960 · esta versión no trae este versículo en su texto, solo en nota)`;
-  };
-  const out = [];
-  const caps = parsearBiblia(texto);
-  for (const [k, filas] of caps) {
-    const [b, c] = k.split(':').map(Number);
-    const items = []; // {a, z, t, omitido}
-    for (const { v, t } of filas) {
-      const m = v.match(/^(\d+)(?:\s*[-–]\s*(\d+))?/);
-      if (!m) continue;
-      let a = +m[1], z = m[2] ? +m[2] : a, txt = /^[-–—\s]*$/.test(t) ? '' : t; // "--" = versículo que no viene
-      // "(20–21) texto" (NTV) → rango 20-21
-      const r = txt.match(/^\((\d+)\s*[-–]\s*(\d+)\)\s*/);
-      if (r && +r[1] === a) { z = Math.max(z, +r[2]); txt = txt.slice(r[0].length); }
-      // Línea basura con solo el número del versículo omitido ("40|17|20|21")
-      if (/^\d+$/.test(txt) && +txt > a && +txt <= a + 3) continue; // se rellena abajo como cualquier versículo faltante
-      if (!txt) { // versículo vacío = va unido al anterior
-        const ult = items[items.length - 1];
-        if (ult && !ult.omitido && a === ult.z + 1) ult.z = a;
-        continue;
-      }
-      const ult = items[items.length - 1];
-      if (ult && a <= ult.z) { ult.t += ' ' + txt; ult.z = Math.max(ult.z, z); continue; } // repetido
-      items.push({ a, z, t: txt });
-    }
-    if (!items.length) continue;
-    const refFilas = ref.caps.get(k) || [];
-    const ultimoRef = refFilas.reduce((mx, f) => Math.max(mx, parseInt(f.v, 10) || 0), 0);
-    const ultimo = Math.max(ultimoRef, items[items.length - 1].z);
-    const res = [];
-    let i = 0;
-    for (let v = 1; v <= ultimo; v++) {
-      if (i < items.length && items[i].a === v) { res.push(items[i]); v = items[i].z; i++; continue; }
-      if (i < items.length && items[i].a < v) { i++; v--; continue; }
-      // Falta el versículo v
-      const omitido = VERSICULOS_OMITIDOS.has(`${b}:${c}:${v}`) || ingles;
-      const prev = res[res.length - 1];
-      if (!omitido && prev && !prev.omitido && prev.z === v - 1) { prev.z = v; continue; } // unido al anterior
-      const t = nota(b, c, v);
-      if (t) res.push({ a: v, z: v, t, omitido: true });
-      else if (prev && !prev.omitido && prev.z === v - 1) prev.z = v;
-    }
-    for (; i < items.length; i++) res.push(items[i]);
-    for (const it of res) out.push(`${b}|${c}|${it.a === it.z ? it.a : `${it.a}-${it.z}`}|${it.t}`);
-  }
-  return out.join('\n') + '\n';
-}
+// ---------------------------------------------------------------- Biblias (lib/biblias.js)
+// .bi = zip con un archivo de texto; cada capítulo se completa contra la RV1960 / KJV (ver lib/biblias.js)
+const BIBLIAS = require('./lib/biblias')(DIRS.biblias);
+const listBibles = BIBLIAS.listar, loadBible = BIBLIAS.cargar;
 
 // ---------------------------------------------------------------- Guardado seguro en Windows
 // Causa del error "EPERM: operation not permitted, open '...\cancioneros\Mi Cancionero.js'":
@@ -843,78 +715,8 @@ function respaldarCancionero(name, f) {
     catch (_) { /* se prueba la otra carpeta */ }
   }
 }
-// ---------------------------------------------------------------- CANCIONES EN LÍNEA IPUC
-// Catálogo de letras de generacionpentecostal.com (categoría "Letras", unas 3.000) consultado EN VIVO por
-// su API pública de WordPress: las letras no se copian dentro del programa (respeta los derechos de cada
-// canción y el crédito de la página); la iglesia la proyecta o la guarda en su cancionero cuando la usa.
-const EN_LINEA = { host: 'www.generacionpentecostal.com', categoria: 127, nombre: 'CANCIONES EN LÍNEA IPUC' };
-const enLineaCache = new Map(); // id -> canción (máx. 300)
-function pedirEnLinea(ruta) {
-  return new Promise((ok, mal) => {
-    const r = require('https').get({ host: EN_LINEA.host, path: ruta, timeout: 12000, headers: { 'User-Agent': 'PK-PENTECOSTAL', Accept: 'application/json' } }, (s) => {
-      if (s.statusCode >= 300 && s.statusCode < 400) { s.resume(); return mal(new Error('La página de canciones cambió de dirección')); }
-      const partes = []; let n = 0;
-      s.on('data', (c) => { n += c.length; if (n > 4 * 1024 * 1024) r.destroy(new Error('Respuesta demasiado grande')); else partes.push(c); });
-      s.on('end', () => {
-        let datos; try { datos = JSON.parse(Buffer.concat(partes).toString('utf8')); } catch (_) { return mal(new Error('La página de canciones respondió algo inesperado')); }
-        if (s.statusCode === 400 && datos && datos.code === 'rest_post_invalid_page_number') return ok({ datos: [], paginas: 0 });
-        if (s.statusCode !== 200) return mal(new Error('La página de canciones respondió ' + s.statusCode));
-        ok({ datos, paginas: Number(s.headers['x-wp-totalpages']) || 1, total: Number(s.headers['x-wp-total']) || 0 });
-      });
-    });
-    r.on('timeout', () => r.destroy(new Error('La página de canciones no respondió a tiempo')));
-    r.on('error', (e) => mal(/ENOTFOUND|EAI_AGAIN|ECONNREFUSED|ENETUNREACH|ECONNRESET/.test(e.code || '') ? new Error('Sin conexión a internet') : e));
-  });
-}
-const ENTIDADES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', hellip: '…', ndash: '–', mdash: '—', laquo: '«', raquo: '»', iexcl: '¡', iquest: '¿', rsquo: '’', lsquo: '‘', rdquo: '”', ldquo: '“' };
-const textoHTML = (h) => String(h || '').replace(/&#x([0-9a-f]+);/gi, (_, x) => String.fromCodePoint(parseInt(x, 16)))
-  .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d))).replace(/&([a-z]+);/gi, (m, e) => ENTIDADES[e.toLowerCase()] ?? m);
-// "Letra Santo es el que vive de Montesanto" / "SUELTO – Letra de la canción de Sarai Rivera" → título y autor
-function tituloEnLinea(t) {
-  let ti = textoHTML(t).replace(/\s+/g, ' ').trim(), autor = '';
-  const m = /^(.*?)\s*[–—-]\s*letra(?:\s+de\s+la\s+canci[oó]n)?(?:\s+de\s+(.+))?$/i.exec(ti);
-  if (m && m[1]) { ti = m[1]; autor = m[2] || ''; }
-  ti = ti.replace(/^letras?\s+(?:de\s+(?:la\s+canci[oó]n\s+)?)?/i, '').replace(/^[«"“]|[»"”]$/g, '').trim();
-  if (ti === ti.toUpperCase() && /[A-ZÁÉÍÓÚÑ]/.test(ti)) ti = ti.charAt(0) + ti.slice(1).toLowerCase(); // "SUELTO" → "Suelto"
-  return { ti, autor: autor.trim() };
-}
-// Solo la letra: cada párrafo es una estrofa. Se omiten el título (encabezado), los avisos de la página
-// ("Ver más letras", "Suscríbete…", "EQUIPO GP"), el estilo CSS y los párrafos de reseña después de la letra.
-const FIN_LETRA = /^(ver m[aá]s|suscr[ií]bete|te invitamos|equipo gp|s[ií]guenos|lee tambi[eé]n|te puede interesar|ver video|escucha nuestro|descarga)/i;
-function letraHTML(h) {
-  const html = String(h || '').replace(/\s+/g, ' ') // los saltos del HTML no cuentan: solo <br> y los párrafos
-    .replace(/<(script|style|iframe|figure|noscript)[\s\S]*?<\/\1>/gi, '');
-  const estrofas = [];
-  for (const parte of html.split(/(?=<h[1-6][\s>])|<\/(?:p|div|li|h[1-6])>/i)) {
-    const titulo = /^\s*<h[1-6][\s>]/i.test(parte);
-    const lineas = textoHTML(parte.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '')).replace(/ /g, ' ')
-      .split('\n').map((l) => l.replace(/\s+/g, ' ').trim()).filter(Boolean);
-    if (!lineas.length) continue;
-    const txt = lineas.join('\n');
-    if (FIN_LETRA.test(txt) || /custom css|\{[^}]*:[^}]*\}/i.test(txt)) { if (estrofas.length) break; continue; }
-    if (titulo) { if (estrofas.length) break; continue; }             // título antes; reseña después
-    if (lineas.length === 1 && txt.length > 160) { if (estrofas.length) break; continue; } // párrafo de prosa
-    if (lineas.length === 1 && /^(#\S|letra\b|autor\b|m[uú]sica\b)/i.test(txt)) continue;    // "#80añosipuc", "Letra Fulano"
-    estrofas.push(txt);
-  }
-  return estrofas.join('\n\n');
-}
-async function buscarEnLinea(q, pagina) {
-  const qs = new URLSearchParams({ categories: String(EN_LINEA.categoria), per_page: '50', page: String(pagina), _fields: 'id,title,link' });
-  if (q) { qs.set('search', q); qs.set('orderby', 'relevance'); } else { qs.set('orderby', 'title'); qs.set('order', 'asc'); }
-  const r = await pedirEnLinea('/wp-json/wp/v2/posts?' + qs);
-  return { pagina, paginas: r.paginas, total: r.total || 0, canciones: (Array.isArray(r.datos) ? r.datos : []).map((p) => ({ id: String(p.id), ...tituloEnLinea(p.title && p.title.rendered), url: p.link })) };
-}
-async function cancionEnLinea(id) {
-  if (enLineaCache.has(id)) return enLineaCache.get(id);
-  const r = await pedirEnLinea(`/wp-json/wp/v2/posts/${id}?_fields=id,title,link,content`);
-  const p = r.datos || {};
-  const c = { id: String(p.id), ...tituloEnLinea(p.title && p.title.rendered), url: p.link, le: letraHTML(p.content && p.content.rendered) };
-  if (!c.le) throw new Error('Esa página no tiene letra');
-  enLineaCache.set(id, c);
-  if (enLineaCache.size > 300) enLineaCache.delete(enLineaCache.keys().next().value);
-  return c;
-}
+// ---------------------------------------------------------------- CANCIONES EN LÍNEA IPUC (lib/enlinea.js)
+const { EN_LINEA, buscar: buscarEnLinea, cancion: cancionEnLinea } = require('./lib/enlinea');
 
 const norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9ñ\s]/g, '').trim();
 // Un solo guardado de cancioneros a la vez (panel y celulares): las peticiones se ponen en fila
@@ -1302,8 +1104,6 @@ function iniciarCuenta(b) {
 // Un .zip con todo lo propio de esta instalación: BSPK (ajustes, claves, respaldos, fondos subidos) y la
 // biblioteca de stingers. Sirve para pasar PK-PENTECOSTAL a otro computador con todo configurado.
 // El traductor no se incluye (se reinstala con instalar.js).
-const CRC_TABLA = (() => { const t = new Int32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c; } return t; })();
-function crc32(buf) { let c = -1; for (let i = 0; i < buf.length; i++) c = CRC_TABLA[(c ^ buf[i]) & 0xff] ^ (c >>> 8); return (c ^ -1) >>> 0; }
 function archivosRespaldo() {
   const out = [];
   const walk = (dir, prefijo, saltar) => {
@@ -1321,51 +1121,6 @@ function archivosRespaldo() {
   walk(OBS_LIB, 'obs/biblioteca');
   // Cancioneros (canciones nuevas o editadas y sus traducciones)
   walk(DIRS.cancioneros, 'cancioneros', (r) => /\.tmp$/.test(r));
-  return out;
-}
-function crearZip(lista) {
-  const partes = [], central = [];
-  let offset = 0;
-  const d = new Date();
-  const hora = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
-  const fecha = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
-  for (const [nombre, archivo] of lista) {
-    const datos = fs.readFileSync(archivo);
-    const comprimir = /\.(json|js|txt|svg|css|html|md|bi)$/i.test(nombre);
-    const cuerpo = comprimir ? zlib.deflateRawSync(datos) : datos;
-    const n = Buffer.from(nombre, 'utf8'), crc = crc32(datos);
-    const loc = Buffer.alloc(30);
-    loc.writeUInt32LE(0x04034b50, 0); loc.writeUInt16LE(20, 4); loc.writeUInt16LE(0x0800, 6); loc.writeUInt16LE(comprimir ? 8 : 0, 8);
-    loc.writeUInt16LE(hora, 10); loc.writeUInt16LE(fecha, 12); loc.writeUInt32LE(crc, 14); loc.writeUInt32LE(cuerpo.length, 18);
-    loc.writeUInt32LE(datos.length, 22); loc.writeUInt16LE(n.length, 26); loc.writeUInt16LE(0, 28);
-    const cen = Buffer.alloc(46);
-    cen.writeUInt32LE(0x02014b50, 0); cen.writeUInt16LE(20, 4); cen.writeUInt16LE(20, 6); cen.writeUInt16LE(0x0800, 8); cen.writeUInt16LE(comprimir ? 8 : 0, 10);
-    cen.writeUInt16LE(hora, 12); cen.writeUInt16LE(fecha, 14); cen.writeUInt32LE(crc, 16); cen.writeUInt32LE(cuerpo.length, 20); cen.writeUInt32LE(datos.length, 24);
-    cen.writeUInt16LE(n.length, 28); cen.writeUInt32LE(offset, 42);
-    partes.push(loc, n, cuerpo); central.push(cen, n);
-    offset += 30 + n.length + cuerpo.length;
-  }
-  const cd = Buffer.concat(central), fin = Buffer.alloc(22);
-  fin.writeUInt32LE(0x06054b50, 0); fin.writeUInt16LE(lista.length, 8); fin.writeUInt16LE(lista.length, 10);
-  fin.writeUInt32LE(cd.length, 12); fin.writeUInt32LE(offset, 16);
-  return Buffer.concat([...partes, cd, fin]);
-}
-function leerZip(buf) {
-  let e = buf.length - 22;
-  while (e >= 0 && buf.readUInt32LE(e) !== 0x06054b50) e--;
-  if (e < 0) throw new Error('El archivo no es un .zip válido');
-  const total = buf.readUInt16LE(e + 10);
-  let p = buf.readUInt32LE(e + 16);
-  const out = [];
-  for (let i = 0; i < total; i++) {
-    if (buf.readUInt32LE(p) !== 0x02014b50) throw new Error('El .zip está dañado');
-    const metodo = buf.readUInt16LE(p + 10), csize = buf.readUInt32LE(p + 20), nl = buf.readUInt16LE(p + 28), xl = buf.readUInt16LE(p + 30), cl = buf.readUInt16LE(p + 32);
-    const local = buf.readUInt32LE(p + 42), nombre = buf.slice(p + 46, p + 46 + nl).toString('utf8');
-    const ini = local + 30 + buf.readUInt16LE(local + 26) + buf.readUInt16LE(local + 28);
-    const datos = buf.slice(ini, ini + csize);
-    if (!nombre.endsWith('/')) out.push([nombre, metodo === 8 ? zlib.inflateRawSync(datos) : datos]);
-    p += 46 + nl + xl + cl;
-  }
   return out;
 }
 function importarRespaldo(buf) {
@@ -2033,37 +1788,6 @@ function claveValida(c) {
 }
 
 // Abre el navegador predeterminado en Windows, macOS o Linux
-function abrirNavegador(url) {
-  const { spawn } = require('child_process');
-  const cmd = process.platform === 'win32' ? ['cmd', ['/c', 'start', '""', url]]
-    : process.platform === 'darwin' ? ['open', [url]]
-    : ['xdg-open', [url]];
-  try {
-    const ch = spawn(cmd[0], cmd[1], { detached: true, stdio: 'ignore', windowsVerbatimArguments: process.platform === 'win32' });
-    ch.on('error', () => console.log(`   Abra manualmente en su navegador: ${url}`));
-    ch.unref();
-  } catch (_) { console.log(`   Abra manualmente en su navegador: ${url}`); }
-}
-
-// IPs de este equipo en la red. Primero el Wi-Fi / cable real; al final adaptadores virtuales
-// (VirtualBox, VMware, Hyper-V, WSL, VPN), que un celular no puede alcanzar.
-function redesLocales() {
-  const VIRTUAL_MAC = /^(0a:00:27|08:00:27|00:50:56|00:0c:29|00:05:69|00:1c:14|00:15:5d|00:03:ff)/i;
-  const VIRTUAL_NOM = /virtual|vbox|vmware|vethernet|hyper-v|wsl|docker|vpn|tailscale|zerotier|hamachi|bluetooth/i;
-  const lista = [];
-  for (const [nombre, list] of Object.entries(os.networkInterfaces())) {
-    for (const i of list || []) {
-      if (i.family !== 'IPv4' && i.family !== 4) continue;
-      if (i.internal || i.address.startsWith('169.254.')) continue;
-      let puntos = 0;
-      if (/wi-?fi|wlan|wireless|inal/i.test(nombre)) puntos += 2;
-      if (VIRTUAL_MAC.test(i.mac || '') || VIRTUAL_NOM.test(nombre) || i.address.startsWith('192.168.56.')) puntos -= 5;
-      lista.push({ ip: i.address, nombre, puntos });
-    }
-  }
-  return lista.sort((a, b) => b.puntos - a.puntos).map(({ ip, nombre }) => ({ ip, nombre }));
-}
-function localIPs() { return redesLocales().map((r) => r.ip); }
 
 // ---------------------------------------------------------------- Inicio del servidor y puertos
 // 1) Si ya hay un PK-PENTECOSTAL abierto con ESTOS MISMOS datos, no se abre otro: se muestra ese.
