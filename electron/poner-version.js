@@ -19,6 +19,7 @@ const MESES = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', '
 const REGLAS = [
   ['README.md', `(img\\.shields\\.io/badge/versión-)(${V})(-)`, 1],
   ['README.md', `(PK-PENTECOSTAL-(?:Instalador|Portable)-)(${V})(\\.exe\`)`, 2],
+  ['assets/readme/banner.svg', `(>VERSIÓN )(${V})(<)`, 1],
   ['web/index.html', `(<span data-version>)(${V})(</span>)`, 2],
   ['web/index.html', `(<span id="d-version">)(${V})(</span>)`, 1],
   ['web/index.html', `(id="d-nombre">PK-PENTECOSTAL-Instalador-)(${V})(\\.exe)`, 1],
@@ -40,7 +41,16 @@ if (args.some((a) => a !== '--revisar' && a !== nueva)) {
 }
 
 const leer = (f) => fs.readFileSync(path.join(RAIZ, f), 'utf8');
-const escribir = (f, t) => fs.writeFileSync(path.join(RAIZ, f), t, 'utf8');
+// Algunos archivos están ocultos o son de solo lectura a propósito (por ejemplo assets/readme/banner.svg).
+// En Windows no se pueden crear de nuevo encima (EPERM): se abren, se sobrescriben y conservan sus atributos.
+function escribir(f, t) {
+  const ruta = path.join(RAIZ, f);
+  try { return fs.writeFileSync(ruta, t, 'utf8'); } catch (e) { if (e.code !== 'EPERM' && e.code !== 'EACCES') throw e; }
+  const modo = fs.statSync(ruta).mode;
+  fs.chmodSync(ruta, 0o666);
+  try { const fd = fs.openSync(ruta, 'r+'); try { fs.ftruncateSync(fd, 0); fs.writeSync(fd, t, 0, 'utf8'); } finally { fs.closeSync(fd); } }
+  finally { fs.chmodSync(ruta, modo); }
+}
 
 let version = JSON.parse(leer('package.json')).version;
 if (nueva && nueva !== version) {
