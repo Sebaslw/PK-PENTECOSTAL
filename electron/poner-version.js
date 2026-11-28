@@ -63,7 +63,10 @@ if (nueva && nueva !== version) {
 const textos = new Map();
 const malos = [];
 let cambios = 0;
+const faltan = new Set();
 for (const [archivo, patron, minimo] of REGLAS) {
+  // En el .zip del código fuente no viene la carpeta web/: lo que no está en esta copia se salta
+  if (!fs.existsSync(path.join(RAIZ, archivo))) { if (!faltan.has(archivo)) console.log(`  – ${archivo}: no está en esta copia (se salta)`); faltan.add(archivo); continue; }
   const texto = textos.has(archivo) ? textos.get(archivo) : leer(archivo);
   const re = new RegExp(patron, 'gm');
   let hallados = 0;
@@ -78,7 +81,7 @@ for (const [archivo, patron, minimo] of REGLAS) {
 
 // Portada del manual: con una versión nueva, también el mes y el año
 const manual = 'docs/manual/manual.html';
-if (nueva) {
+if (nueva && textos.has(manual)) {
   const hoy = new Date();
   const fecha = `${MESES[hoy.getMonth()]} ${hoy.getFullYear()}`;
   textos.set(manual, textos.get(manual).replace(/(<div class="fecha">)([^<]*)(<\/div>)/, (t, a, f, d) => {
