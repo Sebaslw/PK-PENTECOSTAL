@@ -7,16 +7,7 @@ Todas las versiones publicadas, de la más nueva a la más antigua. Cada una tie
 
 (Nada por ahora.)
 
-## 2.0.9 · 2026-11-27 · Biblias completas y app para Mac y Linux
-
-- 📖 Las 9 Biblias completas: los 31.102 versículos en todas las versiones (RV1960, NVI, NTV, DHH, TLA, PDT, KJV, WEB, BBE).
-- 📖 Versículos unidos (TLA, DHH, NTV) se ven como «23-24» y se encuentran con cualquiera de los dos números.
-- 📖 Versículos que algunas traducciones dejan solo en nota (Mateo 17:21, Hechos 8:37…) aparecen según la Reina-Valera 1960, con su nota.
-- 📖 NVI corregida: Salmo 112 completo, Isaías 66 y la numeración de 1 Samuel, Job, Marcos y Hechos.
-- 🍎 Nueva app para Mac (Intel y Apple M1/M2/M3/M4) y 🐧 Linux (.deb y .AppImage).
-- 📘 Manual actualizado.
-
-**Recompilada el 2026-11-28** con:
+## 2.0.10 · 2026-11-28 · Logo actual en todo y Linux .deb que se actualiza solo
 
 - 🐧 **Linux .deb se actualiza solo**, igual que el .AppImage (Linux pide la contraseña para instalar la versión nueva).
 - 🎨 **Logo actual en todas las imágenes**: capturas del manual, README y página, pantallas de bienvenida y cierre, fondos de pantalla (1920×1080 y 4K) y banner del README (ya no aparece el logo viejo).
@@ -25,6 +16,16 @@ Todas las versiones publicadas, de la más nueva a la más antigua. Cada una tie
 - 🛠 `npm run poner-version` pone el número de versión en todos los archivos con un solo comando.
 - 🛠 `server.js` más ordenado: Biblias, canciones en línea, respaldo `.zip` y red en `PK-PENTECOSTAL/lib/`.
 - 📄 Archivo `LICENSE` (todos los derechos reservados) y este historial.
+- ⬆ Sus canciones, fondos y ajustes se conservan; la 2.0.9 instalada se actualiza sola a esta versión.
+
+## 2.0.9 · 2026-11-27 · Biblias completas y app para Mac y Linux
+
+- 📖 Las 9 Biblias completas: los 31.102 versículos en todas las versiones (RV1960, NVI, NTV, DHH, TLA, PDT, KJV, WEB, BBE).
+- 📖 Versículos unidos (TLA, DHH, NTV) se ven como «23-24» y se encuentran con cualquiera de los dos números.
+- 📖 Versículos que algunas traducciones dejan solo en nota (Mateo 17:21, Hechos 8:37…) aparecen según la Reina-Valera 1960, con su nota.
+- 📖 NVI corregida: Salmo 112 completo, Isaías 66 y la numeración de 1 Samuel, Job, Marcos y Hechos.
+- 🍎 Nueva app para Mac (Intel y Apple M1/M2/M3/M4) y 🐧 Linux (.deb y .AppImage).
+- 📘 Manual actualizado.
 
 ## 2.0.8 · 2026-11-25 · Ajustes nuevos
 

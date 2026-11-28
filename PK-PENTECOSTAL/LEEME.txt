@@ -8,32 +8,32 @@
                                                          Salmos 19:4
 =====================================================================
 
-VERSIÓN 2.0.9 - INSTALADORES (recomendados) - NO NECESITAN NODE.JS
+VERSIÓN 2.0.10 - INSTALADORES (recomendados) - NO NECESITAN NODE.JS
   Descárguelos gratis en https://sebaslw.github.io/pk-pentecostal.io/
 
   WINDOWS 10 / 11 (64 bits)
-  · PK-PENTECOSTAL-Instalador-2.0.9.exe -> doble clic, "Siguiente".
+  · PK-PENTECOSTAL-Instalador-2.0.10.exe -> doble clic, "Siguiente".
       Crea accesos directos en el Escritorio y en el menú Inicio.
       Se desinstala desde Configuración -> Aplicaciones.
       SE ACTUALIZA SOLO (desde 2.0.3): avisa, descarga la versión nueva y
       la instala encima, sin desinstalar. Sus datos se conservan.
       Si Windows dice "Windows protegió su PC": Más información ->
       Ejecutar de todas formas.
-  · PK-PENTECOSTAL-Portable-2.0.9.exe   -> no se instala (memoria USB).
+  · PK-PENTECOSTAL-Portable-2.0.10.exe   -> no se instala (memoria USB).
       No se actualiza solo: descargue la nueva desde la página.
 
   MAC (Intel y Apple M1/M2/M3/M4)
-  · PK-PENTECOSTAL-2.0.9-mac.dmg -> ábralo y arrastre PK-PENTECOSTAL a
+  · PK-PENTECOSTAL-2.0.10-mac.dmg -> ábralo y arrastre PK-PENTECOSTAL a
       Aplicaciones. La primera vez: clic derecho -> Abrir -> Abrir.
       (macOS 15 o más nuevo: Ajustes del Sistema -> Privacidad y
       seguridad -> "Abrir igualmente".)
       Avisa cuando hay versión nueva y abre la página para descargarla.
 
   LINUX (Ubuntu, Mint, Debian y otros)
-  · PK-PENTECOSTAL-2.0.9-linux-amd64.deb -> doble clic e Instalar, o
-      sudo apt install ./PK-PENTECOSTAL-2.0.9-linux-amd64.deb
+  · PK-PENTECOSTAL-2.0.10-linux-amd64.deb -> doble clic e Instalar, o
+      sudo apt install ./PK-PENTECOSTAL-2.0.10-linux-amd64.deb
       SE ACTUALIZA SOLO (pide su contraseña para instalar la nueva).
-  · PK-PENTECOSTAL-2.0.9-linux-x86_64.AppImage -> Propiedades -> Permitir
+  · PK-PENTECOSTAL-2.0.10-linux-x86_64.AppImage -> Propiedades -> Permitir
       ejecutar como programa, y doble clic. SE ACTUALIZA SOLO.
       Si no abre (Ubuntu 24.04): use el .deb o agregue --no-sandbox.
 

@@ -95,7 +95,7 @@
         <rect width="150" height="30" rx="15" fill="#ef4444" fill-opacity=".18" stroke="#ef4444" stroke-opacity=".7"/>
         <circle class="vivo" cx="20" cy="15" r="6" fill="#ef4444"/>
         <text x="34" y="20.5" font-size="14" font-weight="800" letter-spacing="2.5" fill="#fecaca">EN VIVO</text>
-        <text x="168" y="20.5" font-size="14" font-weight="700" letter-spacing="2.5" fill="#93c5fd">VERSIÓN 2.0.9</text>
+        <text x="168" y="20.5" font-size="14" font-weight="700" letter-spacing="2.5" fill="#93c5fd">VERSIÓN 2.0.10</text>
       </g>
       <text x="398" y="208" font-size="86" font-weight="900" letter-spacing="1" fill="url(#titulo)">PK-<tspan fill="url(#dorado)">PENTECOSTAL</tspan></text>
       <text x="402" y="254" font-size="27" font-weight="600" fill="#dbeafe">Biblia · Canciones · Rótulos para proyector y OBS Studio</text>

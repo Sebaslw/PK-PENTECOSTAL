@@ -52,14 +52,19 @@ async function navegador() {
     const clic = (sel, texto) => nav.ev(`(()=>{const els=[...document.querySelectorAll(${JSON.stringify(sel)})];const el=${texto ? `els.find(e=>e.textContent.includes(${JSON.stringify(texto)}))` : 'els[0]'};if(!el)throw new Error('no hay ${sel} ${texto || ''}');el.scrollIntoView({block:'nearest'});el.click();return true})()`);
     const tab = async (t) => { await clic(`#tabs button[data-tab="${t}"]`); await sleep(700); };
     const escribir = (sel, v) => nav.ev(`(()=>{const e=document.querySelector(${JSON.stringify(sel)});e.value=${JSON.stringify(v)};e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));return true})()`);
-    const version = (sigla) => nav.ev(`(()=>{const s=document.querySelector('#bibVersion');const o=[...s.options].find(o=>o.textContent.trim().endsWith(${JSON.stringify(sigla)}));s.value=o.value;s.dispatchEvent(new Event('change',{bubbles:true}));return o.textContent})()`);
+    // Espera a que la lista de Biblias tenga esa versión (al cambiar de idioma se vuelve a llenar)
+    const version = (sigla) => nav.ev(`(async()=>{const s=document.querySelector('#bibVersion');let o;for(let i=0;i<40&&!o;i++){o=[...s.options].find(o=>o.textContent.trim().endsWith(${JSON.stringify(sigla)}));if(!o)await new Promise(r=>setTimeout(r,200))}if(!o)throw new Error('No aparece la Biblia ${sigla}: '+[...s.options].map(o=>o.textContent).join(' | '));s.value=o.value;s.dispatchEvent(new Event('change',{bubbles:true}));return o.textContent})()`);
     async function versiculo(ref, n) {
       await escribir('#refInput', ref); await nav.ev(`document.querySelector('#refForm').requestSubmit()`); await sleep(1200);
       await nav.ev(`(()=>{const v=[...document.querySelectorAll('#items .verse')].find(v=>v.querySelector('.n').textContent.trim()==='${n}');v.click();v.scrollIntoView({block:'center'});return true})()`);
       await sleep(1500);
     }
     async function cancion(titulo, slide = 0, buscar) {
-      await escribir('#canBuscar', buscar || titulo); await sleep(2000);
+      // Si los cancioneros aún cargan, la búsqueda sale vacía: se repite hasta que aparezca (máx. ~16 s)
+      for (let i = 0; i < 8; i++) {
+        await escribir('#canBuscar', buscar || titulo); await sleep(2000);
+        if (await nav.ev(`[...document.querySelectorAll('#listaCanciones .list-item')].some(e=>e.textContent.includes(${JSON.stringify(titulo)}))`)) break;
+      }
       await clic('#listaCanciones .list-item', titulo); await sleep(900);
       if (slide != null) { await clic(`#items .slide[data-i="${slide}"]`); await sleep(1500); }
     }
