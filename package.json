@@ -22,7 +22,8 @@
     "probar-biblias": "node electron/prueba-biblias.js && electron electron/prueba-biblias-panel.js",
     "dist:mac": "electron-builder --mac --universal --publish never",
     "dist:linux": "electron-builder --linux --x64 --publish never",
-    "probar-app": "node electron/prueba-app.js"
+    "probar-app": "node electron/prueba-app.js",
+    "poner-version": "node electron/poner-version.js"
   },
   "devDependencies": {
     "electron": "45.4.1",
